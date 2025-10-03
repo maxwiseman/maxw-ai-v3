@@ -1,19 +1,18 @@
 "use client";
 import Link, { type LinkProps } from "next/link";
-import { ModeToggle } from "./mode-toggle";
-import UserMenu from "./user-menu";
 import { Button } from "./ui/button";
-import { IconBrain, IconCards, IconHome } from "@tabler/icons-react";
+import {
+  IconBrain,
+  IconHome,
+  IconListCheck,
+  IconSchool,
+} from "@tabler/icons-react";
 import type { RouteType } from "next/dist/lib/load-custom-routes";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { usePathname } from "next/navigation";
 
 export default function Sidebar() {
-  const links = [
-    { to: "/", label: "Home" },
-    { to: "/dashboard", label: "Dashboard" },
-  ] as const;
   const pathname = usePathname();
 
   return (
@@ -32,10 +31,22 @@ export default function Sidebar() {
             isActive={pathname === "/"}
           />
           <SidebarButton
+            icon={<IconSchool className="size-4.5" />}
+            href="/classes"
+            label="Classes"
+            isActive={pathname.startsWith("/classes")}
+          />
+          <SidebarButton
             icon={<IconBrain className="size-4.5" />}
             href="/study"
             label="Study"
             isActive={pathname.startsWith("/study")}
+          />
+          <SidebarButton
+            icon={<IconListCheck className="size-4.5" />}
+            href="/todo"
+            label="Todo List"
+            isActive={pathname.startsWith("/todo")}
           />
         </nav>
       </div>
@@ -66,7 +77,9 @@ export function SidebarButton({
           variant="ghost"
           asChild
         >
-          <Link href={href}>{icon}</Link>
+          <Link prefetch href={href}>
+            {icon}
+          </Link>
         </Button>
       </TooltipTrigger>
       <TooltipContent side="right">{label}</TooltipContent>
