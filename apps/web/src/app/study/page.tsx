@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,25 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useState } from "react";
+import {
+  RadialBar,
+  RadialBarChart,
+  Label as ChartLabel,
+  PolarAngleAxis,
+} from "recharts";
+
+const chartData = [
+  { browser: "safari", visitors: 75, fill: "var(--color-safari)" },
+];
+const chartConfig = {
+  visitors: {
+    label: "Visitors",
+  },
+  safari: {
+    label: "Safari",
+    color: "var(--primary)",
+  },
+} satisfies ChartConfig;
 
 export default function StudyPage() {
   return (
@@ -69,6 +89,45 @@ export default function StudyPage() {
               id="1"
               title="Science Bowl Practice"
             />
+            <Card className="size-full flex-row items-start justify-between p-0 gap-0">
+              <div className="w-max grow">
+                <CardHeader className="p-4 pb-0 block w-full">
+                  <CardTitle className="text-lg font-normal">
+                    3 hours studied this week
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="!pt-0 p-4 w-full">
+                  <div className="text-muted-foreground">20% of your goal</div>
+                </CardContent>
+              </div>
+              <ChartContainer
+                config={chartConfig}
+                className="mx-auto aspect-square h-full"
+              >
+                <RadialBarChart
+                  data={chartData}
+                  startAngle={90}
+                  endAngle={450}
+                  innerRadius={18}
+                  outerRadius={24}
+                  className="[&_.recharts-radial-bar-background_*]:!fill-none/50"
+                >
+                  <PolarAngleAxis
+                    type="number"
+                    domain={[0, 100]}
+                    angleAxisId={0}
+                    tick={false}
+                    axisLine={false}
+                  />
+                  <RadialBar
+                    stackId="a"
+                    dataKey="visitors"
+                    background
+                    cornerRadius={10}
+                  />
+                </RadialBarChart>
+              </ChartContainer>
+            </Card>
           </div>
         </div>
         <div className="flex flex-col gap-2">
@@ -126,10 +185,10 @@ function StudySetCard({
       <DialogTrigger asChild className="text-left">
         <Button variant="outline" asChild>
           <Card className="p-0 flex flex-col gap-0 h-auto items-start cursor-pointer">
-            <CardHeader className="p-4 pb-0 block">
+            <CardHeader className="p-4 pb-0 block w-full">
               <CardTitle className="text-lg font-normal">{title}</CardTitle>
             </CardHeader>
-            <CardContent className="!pt-0 p-4">
+            <CardContent className="!pt-0 p-4 w-full">
               <div className="text-muted-foreground">
                 {numberOfQuestions} questions, {numberOfTerms} terms
               </div>

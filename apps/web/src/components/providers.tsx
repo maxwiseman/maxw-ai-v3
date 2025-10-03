@@ -3,15 +3,31 @@
 import { ThemeProvider } from "./theme-provider";
 import { Toaster } from "./ui/sonner";
 
-import { QueryClient } from "@tanstack/react-query";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import {
+  QueryClient,
+  QueryClientProvider as RQQueryClientProvider,
+} from "@tanstack/react-query";
+import {
+  persistQueryClient,
+  PersistQueryClientProvider,
+} from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { useMemo } from "react";
 
-const queryClient = new QueryClient();
-
-const persister = createAsyncStoragePersister({
-  storage: typeof window !== "undefined" ? window.localStorage : null,
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: Infinity,
+      staleTime: 300000,
+    },
+  },
+});
+persistQueryClient({
+  queryClient,
+  persister: createAsyncStoragePersister({
+    storage: typeof window !== "undefined" ? window.localStorage : null,
+  }),
 });
 
 export function QueryClientProvider({
@@ -20,13 +36,40 @@ export function QueryClientProvider({
   children: React.ReactNode;
 }) {
   return (
-    <PersistQueryClientProvider
-      persistOptions={{ persister }}
-      client={queryClient}
-    >
+    <RQQueryClientProvider client={queryClient}>
       {children}
-    </PersistQueryClientProvider>
+    </RQQueryClientProvider>
   );
+
+  // const persister = useMemo(() => {
+  //   if (typeof window === "undefined") return undefined;
+  //   return createAsyncStoragePersister({ storage: window.localStorage });
+  // }, []);
+
+  // if (typeof window === "undefined") {
+  //   return (
+  //     <RQQueryClientProvider client={queryClient}>
+  //       {children}
+  //     </RQQueryClientProvider>
+  //   );
+  // }
+
+  // if (!persister) {
+  //   return (
+  //     <RQQueryClientProvider client={queryClient}>
+  //       {children}
+  //     </RQQueryClientProvider>
+  //   );
+  // }
+
+  // return (
+  //   <PersistQueryClientProvider
+  //     persistOptions={{ persister: persister }}
+  //     client={queryClient}
+  //   >
+  //     {children}
+  //   </PersistQueryClientProvider>
+  // );
 }
 
 export default function Providers({ children }: { children: React.ReactNode }) {

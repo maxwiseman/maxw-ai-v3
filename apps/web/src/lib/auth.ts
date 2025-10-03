@@ -22,5 +22,15 @@ export const auth = betterAuth<BetterAuthOptions>({
       httpOnly: true,
     },
   },
+  user: {
+    additionalFields: {
+      settings: {
+        type: "json",
+        required: true,
+        input: false,
+        defaultValue: "",
+      },
+    },
+  },
   plugins: [expo()],
 });
