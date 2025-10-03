@@ -1,41 +1,50 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, EB_Garamond } from "next/font/google";
 import "../index.css";
 import Providers from "@/components/providers";
 import Header from "@/components/header";
+import Sidebar from "@/components/sidebar";
 
 const geistSans = Geist({
-	variable: "--font-geist-sans",
-	subsets: ["latin"],
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-	variable: "--font-geist-mono",
-	subsets: ["latin"],
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const garamond = EB_Garamond({
+  variable: "--font-garamond",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-	title: "maxw-ai-v3",
-	description: "maxw-ai-v3",
+  title: "maxw-ai-v3",
+  description: "maxw-ai-v3",
 };
 
 export default function RootLayout({
-	children,
+  children,
 }: Readonly<{
-	children: React.ReactNode;
+  children: React.ReactNode;
 }>) {
-	return (
-		<html lang="en" suppressHydrationWarning>
-			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-			>
-				<Providers>
-					<div className="grid grid-rows-[auto_1fr] h-svh">
-						<Header />
-						{children}
-					</div>
-				</Providers>
-			</body>
-		</html>
-	);
+  return (
+    <html className="h-full" lang="en" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${garamond.variable} antialiased h-full`}
+      >
+        <Providers>
+          <div className="grid grid-cols-[auto_1fr] h-full">
+            <Sidebar />
+            <div className="grid grid-rows-[auto_1fr] h-full">
+              <Header />
+              {children}
+            </div>
+          </div>
+        </Providers>
+      </body>
+    </html>
+  );
 }
