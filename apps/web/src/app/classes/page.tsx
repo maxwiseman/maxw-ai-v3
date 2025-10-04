@@ -3,10 +3,11 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getAllCanvasCourses } from "./classes-actions";
+import { getAllCanvasCourses, getFrontPage } from "./classes-actions";
 import type { Course } from "@/lib/canvas-types";
 import Link from "next/link";
 import { useEffect } from "react";
+import { queryClient } from "@/components/providers";
 
 export default function ClassesPage() {
   const queryClient = useQueryClient();
@@ -49,7 +50,21 @@ export default function ClassesPage() {
 
 function ClassCard(courseData: Course) {
   return (
-    <Link prefetch href={`/classes/${courseData.id}`}>
+    <Link
+      onMouseEnter={() => {
+        if (!queryClient.getQueryData(["course-frontpage", courseData.id])) {
+          getFrontPage({ courseId: courseData.id.toString() }).then((data) => {
+            console.log("Cached frontpage", courseData.name);
+            queryClient.setQueryData(
+              ["course-frontpage", courseData.id.toString()],
+              data
+            );
+          });
+        }
+      }}
+      prefetch
+      href={`/classes/${courseData.id}`}
+    >
       <Button variant="outline" asChild>
         <Card className="p-0 flex flex-col gap-0 h-auto items-start cursor-pointer">
           <CardHeader className="p-4 pb-0 block w-full">

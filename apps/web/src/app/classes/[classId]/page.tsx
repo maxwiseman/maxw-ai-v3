@@ -1,8 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { use, useEffect } from "react";
-import { getCanvasCourse } from "../classes-actions";
+import { use } from "react";
+import { getCanvasCourse, getFrontPage } from "../classes-actions";
+import { notFound } from "next/navigation";
 
 export default function ClassPage({
   params: paramsPromise,
@@ -10,30 +11,34 @@ export default function ClassPage({
   params: Promise<{ classId: string }>;
 }) {
   const params = use(paramsPromise);
-  const {
-    data: classData,
-    isStale,
-    isPending,
-  } = useQuery({
+  const { data, isPending } = useQuery({
     queryFn: () => getCanvasCourse({ courseId: params.classId }),
     queryKey: ["canvas-course", params.classId],
   });
-  useEffect(() => {
-    console.log(
-      `hasData: ${
-        classData !== undefined
-      }, isStale: ${isStale}, isPending: ${isPending}`
-    );
-  }, [classData, isPending, isStale]);
+  const { data: frontPageData } = useQuery({
+    queryFn: () => getFrontPage({ courseId: params.classId }),
+    queryKey: ["course-frontpage", params.classId],
+    enabled: typeof data === "object" && data.default_view === "wiki",
+  });
 
+  if ((typeof data !== "object" && !isPending) || typeof data === "string")
+    return notFound();
   return (
     <div>
-      <div suppressHydrationWarning>
-        isPrerendered: {String(typeof window === "undefined")}
+      <div className="p-8 flex justify-between">
+        <div>
+          <h1 className="text-4xl font-medium font-serif">{data?.name}</h1>
+          <p className="text-muted-foreground">
+            Get your work done, or have it done for you
+          </p>
+        </div>
       </div>
-      <div>isPending: {String(isPending)}</div>
-      <div>isStale: {String(isStale)}</div>
-      <div>{JSON.stringify(classData)}</div>
+      {typeof frontPageData === "object" && (
+        <div
+          className="mx-auto max-w-prose [&_img]:inline-block"
+          dangerouslySetInnerHTML={{ __html: frontPageData.body }}
+        />
+      )}
     </div>
   );
 }

@@ -1,3 +1,30 @@
+export interface CanvasPage {
+  title: string;
+  created_at: Date;
+  url: string;
+  editing_roles: string;
+  page_id: number;
+  last_edited_by: User;
+  published: boolean;
+  hide_from_students: boolean;
+  front_page: boolean;
+  html_url: string;
+  todo_date: null;
+  publish_at: null;
+  updated_at: Date;
+  locked_for_user: boolean;
+  body: string;
+}
+
+export interface User {
+  id: number;
+  anonymous_id: string;
+  display_name: string;
+  avatar_image_url: string;
+  html_url: string;
+  pronouns: null;
+}
+
 export interface Course {
   id: number;
   name: string;
