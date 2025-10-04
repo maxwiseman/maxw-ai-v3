@@ -17,7 +17,7 @@ export async function getAllCanvasCourses() {
   if (!settings?.canvasApiKey || !settings.canvasDomain)
     return "Settings not configured";
   const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses?enrollment_state=active&per_page=50`,
+    `https://${settings.canvasDomain}/api/v1/courses?enrollment_state=active&per_page=50&include[]=teachers`,
     {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
@@ -37,7 +37,7 @@ export async function getCanvasCourse({ courseId }: { courseId: string }) {
   if (!settings?.canvasApiKey || !settings.canvasDomain)
     return "Settings not configured";
   const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${courseId}`,
+    `https://${settings.canvasDomain}/api/v1/courses/${courseId}?include[]=teachers`,
     {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,

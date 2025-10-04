@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { use } from "react";
 import { getCanvasCourse, getFrontPage } from "../classes-actions";
 import { notFound } from "next/navigation";
+import { toTitleCase } from "@/lib/utils";
 
 export default function ClassPage({
   params: paramsPromise,
@@ -29,7 +30,11 @@ export default function ClassPage({
         <div>
           <h1 className="text-4xl font-medium font-serif">{data?.name}</h1>
           <p className="text-muted-foreground">
-            Get your work done, or have it done for you
+            {(data?.teachers.length ?? 0) > 0
+              ? data?.teachers
+                  .map((teacher) => toTitleCase(teacher.display_name))
+                  .join(", ")
+              : "No teachers"}
           </p>
         </div>
       </div>

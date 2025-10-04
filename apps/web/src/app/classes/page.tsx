@@ -8,6 +8,7 @@ import type { Course } from "@/lib/canvas-types";
 import Link from "next/link";
 import { useEffect } from "react";
 import { queryClient } from "@/components/providers";
+import { toTitleCase } from "@/lib/utils";
 
 export default function ClassesPage() {
   const queryClient = useQueryClient();
@@ -49,6 +50,7 @@ export default function ClassesPage() {
 }
 
 function ClassCard(courseData: Course) {
+  const teacher = courseData.teachers?.[0]?.display_name;
   return (
     <Link
       onMouseEnter={() => {
@@ -73,7 +75,9 @@ function ClassCard(courseData: Course) {
             </CardTitle>
           </CardHeader>
           <CardContent className="!pt-0 p-4 w-full">
-            <div className="text-muted-foreground">Some kinda information</div>
+            <div className="text-muted-foreground">
+              {teacher ? toTitleCase(teacher) : "No teachers"}
+            </div>
           </CardContent>
         </Card>
       </Button>

@@ -49,6 +49,7 @@ export interface Course {
   course_color: null;
   friendly_name: null;
   apply_assignment_group_weights: boolean;
+  teachers: User[];
   calendar: Calendar;
   time_zone: TimeZone;
   original_name?: string;
