@@ -9,6 +9,12 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { queryClient } from "@/components/providers";
 import { toTitleCase } from "@/lib/utils";
+import {
+  PageHeader,
+  PageHeaderContent,
+  PageHeaderDescription,
+  PageHeaderTitle,
+} from "@/components/page-header";
 
 export default function ClassesPage() {
   const queryClient = useQueryClient();
@@ -30,14 +36,14 @@ export default function ClassesPage() {
 
   return (
     <div>
-      <div className="p-8 flex justify-between">
-        <div>
-          <h1 className="text-4xl font-medium font-serif">Your Classes</h1>
-          <p className="text-muted-foreground">
+      <PageHeader>
+        <PageHeaderContent>
+          <PageHeaderTitle>Your Classes</PageHeaderTitle>
+          <PageHeaderDescription>
             Get your work done, or have it done for you
-          </p>
-        </div>
-      </div>
+          </PageHeaderDescription>
+        </PageHeaderContent>
+      </PageHeader>
       {typeof data === "object" ? (
         <div className="grid grid-cols-3 px-8 pb-8 gap-4">
           {data.map((course) => (

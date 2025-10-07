@@ -147,3 +147,55 @@ export function toTitleCase(
 
   return resultTokens.join(" ");
 }
+
+import { isToday, isTomorrow, isSameWeek, format } from "date-fns";
+
+type Options = {
+  // reference date defaults to now
+  referenceDate?: Date;
+  // weekday format: "short" => Tue, "long" => Tuesday
+  weekdayFormat?: "short" | "long";
+  // when not a friendly label, which date format to use
+  fallbackFormat?: string;
+};
+
+export function humanReadableDate(
+  targetDate: Date | string | number,
+  opts: Options = {}
+): string {
+  const {
+    referenceDate = new Date(),
+    weekdayFormat = "long",
+    fallbackFormat = "MMM d",
+  } = opts;
+
+  const date =
+    typeof targetDate === "object"
+      ? (targetDate as Date)
+      : new Date(targetDate);
+
+  // Today
+  if (isToday(date)) return "Today";
+
+  // Tomorrow
+  if (isTomorrow(date)) return "Tomorrow";
+
+  // Next 6 days in same week (including next week day names if within next 7 days)
+  // We'll treat "Next <Weekday>" for dates in the next 7 days that are not today/tomorrow.
+  const daysDiff = Math.round(
+    (date.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  // If within next 7 days and not today/tomorrow, return weekday name (optionally prefix "Next" for clarity)
+  if (daysDiff > 0 && daysDiff <= 7) {
+    const weekday = format(date, weekdayFormat === "short" ? "EEE" : "EEEE");
+    // Optionally show "Next Tuesday" only if it's in the next calendar week relative to referenceDate:
+    // if (!isSameWeek(date, referenceDate, { weekStartsOn: 0 })) return `Next ${weekday}`;
+    // Simpler: when within 7 days show weekday, and if it's in the *next* calendar week prefix `Next `
+    const sameWeek = isSameWeek(date, referenceDate, { weekStartsOn: 0 });
+    return sameWeek ? weekday : `Next ${weekday}`;
+  }
+
+  // Fallback to a date format (e.g., "Apr 7, 2025")
+  return format(date, fallbackFormat);
+}

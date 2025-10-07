@@ -36,10 +36,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${garamond.variable} antialiased h-full`}
       >
         <Providers>
-          <div className="grid grid-cols-[auto_1fr] h-full">
-            <Sidebar />
-            <div className="grid grid-rows-[auto_1fr] h-full">
-              <Header />
+          <div className="grid grid-rows-[auto_1fr] size-full">
+            <Header />
+            <div className="grid grid-cols-[auto_1fr] size-full">
+              <Sidebar />
               {children}
             </div>
           </div>

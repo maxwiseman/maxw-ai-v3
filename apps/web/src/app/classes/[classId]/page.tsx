@@ -5,6 +5,12 @@ import { use } from "react";
 import { getCanvasCourse, getFrontPage } from "../classes-actions";
 import { notFound } from "next/navigation";
 import { toTitleCase } from "@/lib/utils";
+import {
+  PageHeader,
+  PageHeaderContent,
+  PageHeaderDescription,
+  PageHeaderTitle,
+} from "@/components/page-header";
 
 export default function ClassPage({
   params: paramsPromise,
@@ -26,18 +32,18 @@ export default function ClassPage({
     return notFound();
   return (
     <div>
-      <div className="p-8 flex justify-between">
-        <div>
-          <h1 className="text-4xl font-medium font-serif">{data?.name}</h1>
-          <p className="text-muted-foreground">
+      <PageHeader>
+        <PageHeaderContent>
+          <PageHeaderTitle>{data?.name}</PageHeaderTitle>
+          <PageHeaderDescription>
             {(data?.teachers.length ?? 0) > 0
               ? data?.teachers
                   .map((teacher) => toTitleCase(teacher.display_name))
                   .join(", ")
               : "No teachers"}
-          </p>
-        </div>
-      </div>
+          </PageHeaderDescription>
+        </PageHeaderContent>
+      </PageHeader>
       {typeof frontPageData === "object" && (
         <div
           className="mx-auto max-w-prose [&_img]:inline-block"

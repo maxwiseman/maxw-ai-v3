@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  PageHeader,
+  PageHeaderActions,
+  PageHeaderContent,
+  PageHeaderDescription,
+  PageHeaderTitle,
+} from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -64,7 +71,23 @@ const chartConfig = {
 export default function StudyPage() {
   return (
     <div className="mx-auto w-full">
-      <div className="mb-8 border-b p-8 flex justify-between">
+      <PageHeader className="mb-8 border-b border-border">
+        <PageHeaderContent>
+          <PageHeaderTitle>Study Sets</PageHeaderTitle>
+          <PageHeaderDescription>
+            Refine your knowledge and improve your scores
+          </PageHeaderDescription>
+        </PageHeaderContent>
+        <PageHeaderActions>
+          <Button asChild variant="outline">
+            <Link href="/study/new">
+              <IconPlus />
+              New study set
+            </Link>
+          </Button>
+        </PageHeaderActions>
+      </PageHeader>
+      {/* <div className="mb-8 border-b p-8 flex justify-between">
         <div>
           <h1 className="text-4xl font-medium font-serif">Study Sets</h1>
           <p className="text-muted-foreground">
@@ -77,7 +100,7 @@ export default function StudyPage() {
             New study set
           </Link>
         </Button>
-      </div>
+      </div> */}
       <div className="px-8 space-y-8">
         <div className="flex flex-col gap-2">
           <div className="font-medium text-lg">Continue Studying</div>

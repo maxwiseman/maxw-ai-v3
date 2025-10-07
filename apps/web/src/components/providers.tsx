@@ -7,13 +7,10 @@ import {
   QueryClient,
   QueryClientProvider as RQQueryClientProvider,
 } from "@tanstack/react-query";
-import {
-  persistQueryClient,
-  PersistQueryClientProvider,
-} from "@tanstack/react-query-persist-client";
+import { persistQueryClient } from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { useMemo } from "react";
+import { SidebarExtensionProvider } from "./sidebar";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,10 +77,21 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       enableSystem
       disableTransitionOnChange
     >
+      {/* <SidebarProvider
+        style={
+          {
+            "--sidebar-width": "350px",
+          } as React.CSSProperties
+        }
+        className="size-full"
+      > */}
       <QueryClientProvider>
-        <NuqsAdapter>{children}</NuqsAdapter>
+        <NuqsAdapter>
+          <SidebarExtensionProvider>{children}</SidebarExtensionProvider>
+        </NuqsAdapter>
       </QueryClientProvider>
       <Toaster richColors />
+      {/* </SidebarProvider> */}
     </ThemeProvider>
   );
 }
