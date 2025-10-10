@@ -1,3 +1,65 @@
+export interface CanvasModule {
+  id: number;
+  name: string;
+  position: number;
+  unlock_at: null;
+  require_sequential_progress: boolean;
+  requirement_type: CanvasModuleItemRequirementType;
+  publish_final_grade: boolean;
+  prerequisite_module_ids: any[];
+  state: State;
+  completed_at: Date;
+  items_count: number;
+  items_url: string;
+  items: CanvasModuleItem[];
+}
+
+export interface CanvasModuleItem {
+  id: number;
+  title: string;
+  position: number;
+  indent: number;
+  quiz_lti: boolean;
+  type: CanvasModuleItemType;
+  module_id: number;
+  html_url: string;
+  external_url?: string;
+  page_url?: string;
+  publish_at?: null;
+  url: string;
+  content_id?: number;
+}
+
+export enum CanvasModuleItemType {
+  Assignment = "Assignment",
+  File = "File",
+  Page = "Page",
+  Quiz = "Quiz",
+  ExternalUrl = "ExternalUrl",
+}
+
+export function moduleItemDetailsUrl(classId: string, item: CanvasModuleItem) {
+  if (!item) return;
+  if (item.type === CanvasModuleItemType.Assignment)
+    return `/classes/${classId}/assignments/${item.content_id}`;
+  if (item.type === CanvasModuleItemType.File)
+    return `/classes/${classId}/files/${item.content_id}`;
+  if (item.type === CanvasModuleItemType.Page)
+    return `/classes/${classId}/pages/${item.content_id}`;
+  if (item.type === CanvasModuleItemType.Quiz)
+    return `/classes/${classId}/quizzes/${item.content_id}`;
+  if (item.type === CanvasModuleItemType.ExternalUrl) return item.external_url;
+  return item.html_url;
+}
+
+export enum CanvasModuleItemRequirementType {
+  All = "all",
+}
+
+export enum State {
+  Completed = "completed",
+}
+
 export interface CanvasPage {
   title: string;
   created_at: Date;

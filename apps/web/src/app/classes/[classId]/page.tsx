@@ -11,6 +11,7 @@ import {
   PageHeaderDescription,
   PageHeaderTitle,
 } from "@/components/page-header";
+import { ClassSidebar } from "./class-sidebar";
 
 export default function ClassPage({
   params: paramsPromise,
@@ -24,7 +25,7 @@ export default function ClassPage({
   });
   const { data: frontPageData } = useQuery({
     queryFn: () => getFrontPage({ courseId: params.classId }),
-    queryKey: ["course-frontpage", params.classId],
+    queryKey: ["canvas-course", params.classId, "frontpage"],
     enabled: typeof data === "object" && data.default_view === "wiki",
   });
 
@@ -32,6 +33,7 @@ export default function ClassPage({
     return notFound();
   return (
     <div>
+      <ClassSidebar classId={params.classId} />
       <PageHeader>
         <PageHeaderContent>
           <PageHeaderTitle>{data?.name}</PageHeaderTitle>

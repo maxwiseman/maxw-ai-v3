@@ -60,11 +60,17 @@ function ClassCard(courseData: Course) {
   return (
     <Link
       onMouseEnter={() => {
-        if (!queryClient.getQueryData(["course-frontpage", courseData.id])) {
+        if (
+          !queryClient.getQueryData([
+            "canvas-course",
+            courseData.id,
+            "frontpage",
+          ])
+        ) {
           getFrontPage({ courseId: courseData.id.toString() }).then((data) => {
             console.log("Cached frontpage", courseData.name);
             queryClient.setQueryData(
-              ["course-frontpage", courseData.id.toString()],
+              ["canvas-course", courseData.id.toString(), "frontpage"],
               data
             );
           });
