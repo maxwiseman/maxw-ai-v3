@@ -1,18 +1,18 @@
-import { Stack } from "expo-router";
 import {
 	DarkTheme,
 	DefaultTheme,
 	type Theme,
 	ThemeProvider,
 } from "@react-navigation/native";
+import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../global.css";
-import { NAV_THEME } from "@/lib/constants";
 import React, { useRef } from "react";
-import { useColorScheme } from "@/lib/use-color-scheme";
 import { Platform } from "react-native";
 import { setAndroidNavigationBar } from "@/lib/android-navigation-bar";
+import { NAV_THEME } from "@/lib/constants";
+import { useColorScheme } from "@/lib/use-color-scheme";
 
 const LIGHT_THEME: Theme = {
 	...DefaultTheme,

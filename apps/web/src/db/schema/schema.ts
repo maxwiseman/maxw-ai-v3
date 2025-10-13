@@ -1,1 +1,1 @@
-import { pgTable, text, timestamp, boolean, serial } from "drizzle-orm/pg-core";
+import { boolean, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";

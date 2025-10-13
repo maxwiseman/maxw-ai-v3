@@ -1,5 +1,5 @@
-import type { NextConfig } from "next";
 import { config } from "dotenv";
+import type { NextConfig } from "next";
 
 // Load environment variables from root .env file
 config({ path: "../../.env" });
@@ -8,7 +8,7 @@ config({ path: "../../.env" });
 import "./src/env";
 
 const nextConfig: NextConfig = {
-  typedRoutes: true,
+	typedRoutes: true,
 };
 
 export default nextConfig;
