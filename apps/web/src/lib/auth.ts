@@ -6,31 +6,31 @@ import * as schema from "../db/schema/auth";
 import { env } from "../env";
 
 export const auth = betterAuth<BetterAuthOptions>({
-	database: drizzleAdapter(db, {
-		provider: "pg",
-		schema: schema,
-	}),
-	secret: env.AUTH_SECRET,
-	trustedOrigins: ["exp://"],
-	emailAndPassword: {
-		enabled: true,
-	},
-	advanced: {
-		defaultCookieAttributes: {
-			sameSite: "none",
-			secure: true,
-			httpOnly: true,
-		},
-	},
-	user: {
-		additionalFields: {
-			settings: {
-				type: "json",
-				required: true,
-				input: false,
-				defaultValue: "",
-			},
-		},
-	},
-	plugins: [expo()],
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    schema: schema,
+  }),
+  secret: env.AUTH_SECRET,
+  trustedOrigins: ["exp://"],
+  emailAndPassword: {
+    enabled: true,
+  },
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: "none",
+      secure: true,
+      httpOnly: true,
+    },
+  },
+  user: {
+    additionalFields: {
+      settings: {
+        type: "json",
+        required: true,
+        input: false,
+        defaultValue: "",
+      },
+    },
+  },
+  plugins: [expo()],
 });

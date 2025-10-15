@@ -11,62 +11,62 @@ import "katex/dist/katex.min.css";
 import { InlineMath } from "react-katex";
 
 export function CanvasHTML({
-	children,
-	className,
-	...props
+  children,
+  className,
+  ...props
 }: Omit<ComponentProps<"div">, "children"> & { children?: string }) {
-	if (!children) return null;
+  if (!children) return null;
 
-	const processor = unified()
-		.use(rehypeParse, { fragment: true })
-		.use(rehypeReact, {
-			jsx: jsx,
-			jsxs: jsxs,
-			Fragment: Fragment,
-			components: {
-				a: ({ href, ...props }: ComponentProps<"a">) =>
-					new RegExp(/.*instructure.com.*/).test(href ?? "") ? (
-						<Link
-							{...props}
-							// @ts-expect-error -- It's fine if it's an external link
-							href={
-								href
-									?.match(/^https?:\/\/(?:[^/]+\.)?instructure\.com(\/.*)?$/)
-									?.join("") ?? ""
-							}
-							target="_blank"
-						/>
-					) : (
-						<span className="inline-flex items-center gap-1">
-							<a {...props} href={href} target="_blank" />
-							<IconExternalLink className="size-4" />
-						</span>
-					),
+  const processor = unified()
+    .use(rehypeParse, { fragment: true })
+    .use(rehypeReact, {
+      jsx: jsx,
+      jsxs: jsxs,
+      Fragment: Fragment,
+      components: {
+        a: ({ href, ...props }: ComponentProps<"a">) =>
+          new RegExp(/.*instructure.com.*/).test(href ?? "") ? (
+            <Link
+              {...props}
+              // @ts-expect-error -- It's fine if it's an external link
+              href={
+                href
+                  ?.match(/^https?:\/\/(?:[^/]+\.)?instructure\.com(\/.*)?$/)
+                  ?.join("") ?? ""
+              }
+              target="_blank"
+            />
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              <a {...props} href={href} target="_blank" />
+              <IconExternalLink className="size-4" />
+            </span>
+          ),
 
-				img: ({
-					"data-equation-content": latex,
-					...props
-				}: ComponentProps<"img"> & { "data-equation-content"?: string }) =>
-					latex ? (
-						<InlineMath math={latex} />
-					) : (
-						<img {...props} className="mx-auto max-w-lg" />
-					),
-			},
-		});
+        img: ({
+          "data-equation-content": latex,
+          ...props
+        }: ComponentProps<"img"> & { "data-equation-content"?: string }) =>
+          latex ? (
+            <InlineMath math={latex} />
+          ) : (
+            <img {...props} className="mx-auto max-w-lg" />
+          ),
+      },
+    });
 
-	// Process to React nodes
-	const result = processor.processSync(children).result;
+  // Process to React nodes
+  const result = processor.processSync(children).result;
 
-	return (
-		<div
-			className={cn(
-				"prose dark:prose-invert prose-neutral **:wrap-anywhere w-full max-w-full [&_img.equation\\_image]:invert [&_img]:inline-block",
-				className,
-			)}
-			{...props}
-		>
-			{result}
-		</div>
-	);
+  return (
+    <div
+      className={cn(
+        "prose dark:prose-invert prose-neutral **:wrap-anywhere w-full max-w-full [&_img.equation\\_image]:invert [&_img]:inline-block",
+        className,
+      )}
+      {...props}
+    >
+      {result}
+    </div>
+  );
 }

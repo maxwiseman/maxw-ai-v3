@@ -7,50 +7,50 @@ import { cn } from "@/lib/utils";
 import styles from "./checkbox.module.css";
 
 export function AnimatedCheckbox({
-	className,
-	checked: checkedInput,
-	onCheckedChange,
-	withBorder = false,
-	...props
+  className,
+  checked: checkedInput,
+  onCheckedChange,
+  withBorder = false,
+  ...props
 }: React.ComponentProps<typeof CheckboxPrimitive.Root> & {
-	withBorder?: boolean;
+  withBorder?: boolean;
 }) {
-	const [checked, setChecked] =
-		useControlledState<CheckboxPrimitive.CheckedState>({
-			defaultValue: false,
-			value: checkedInput,
-			onChange: onCheckedChange,
-		});
+  const [checked, setChecked] =
+    useControlledState<CheckboxPrimitive.CheckedState>({
+      defaultValue: false,
+      value: checkedInput,
+      onChange: onCheckedChange,
+    });
 
-	return (
-		<CheckboxPrimitive.Root
-			data-slot="checkbox"
-			className={cn(
-				"flex size-4.5 cursor-pointer items-center justify-center rounded-[5px] border border-input shadow-xs transition-[background,border,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:bg-input/30 dark:data-[state=checked]:bg-primary dark:aria-invalid:ring-destructive/40",
-				checked === true && withBorder ? styles.checkboxBg : undefined,
-				className,
-			)}
-			checked={checked}
-			onCheckedChange={setChecked}
-			{...props}
-		>
-			<CheckboxPrimitive.Indicator
-				forceMount
-				data-slot="checkbox-indicator"
-				className="flex items-center justify-center text-current"
-			>
-				<IconCheck
-					pathLength={100}
-					style={{
-						strokeDasharray: 100,
-						strokeDashoffset: checked !== false ? 0 : 100,
-					}}
-					className={cn(
-						"size-4 text-primary-foreground transition-[stroke-dashoffset] duration-100",
-						checked === true && "duration-1000",
-					)}
-				/>
-			</CheckboxPrimitive.Indicator>
-		</CheckboxPrimitive.Root>
-	);
+  return (
+    <CheckboxPrimitive.Root
+      data-slot="checkbox"
+      className={cn(
+        "flex size-4.5 cursor-pointer items-center justify-center rounded-[5px] border border-input shadow-xs transition-[background,border,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:bg-input/30 dark:data-[state=checked]:bg-primary dark:aria-invalid:ring-destructive/40",
+        checked === true && withBorder ? styles.checkboxBg : undefined,
+        className,
+      )}
+      checked={checked}
+      onCheckedChange={setChecked}
+      {...props}
+    >
+      <CheckboxPrimitive.Indicator
+        forceMount
+        data-slot="checkbox-indicator"
+        className="flex items-center justify-center text-current"
+      >
+        <IconCheck
+          pathLength={100}
+          style={{
+            strokeDasharray: 100,
+            strokeDashoffset: checked !== false ? 0 : 100,
+          }}
+          className={cn(
+            "size-4 text-primary-foreground transition-[stroke-dashoffset] duration-100",
+            checked === true && "duration-1000",
+          )}
+        />
+      </CheckboxPrimitive.Indicator>
+    </CheckboxPrimitive.Root>
+  );
 }

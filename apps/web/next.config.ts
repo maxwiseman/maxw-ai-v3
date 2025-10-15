@@ -8,10 +8,10 @@ config({ path: "../../.env" });
 import "./src/env";
 
 const nextConfig: NextConfig = {
-	typedRoutes: true,
-	experimental: {
-		viewTransition: true,
-	},
+  typedRoutes: true,
+  experimental: {
+    viewTransition: true,
+  },
 };
 
 export default nextConfig;

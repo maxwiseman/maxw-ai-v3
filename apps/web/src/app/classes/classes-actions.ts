@@ -27,7 +27,7 @@ export async function getAllCanvasCourses() {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    }
+    },
   ).then((res) => res.json())) as Course[];
   return data;
 }
@@ -47,7 +47,7 @@ export async function getCanvasCourse({ classId }: { classId: string }) {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    }
+    },
   ).then((res) => res.json())) as Course;
   return data;
 }
@@ -67,7 +67,7 @@ export async function getFrontPage({ classId }: { classId: string }) {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    }
+    },
   ).then((res) => res.json())) as CanvasPage;
   return data;
 }
@@ -87,7 +87,7 @@ export async function getClassModules({ classId }: { classId: string }) {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    }
+    },
   ).then((res) => res.json())) as CanvasModule[];
   return data;
 }
@@ -113,7 +113,7 @@ export async function getAssignment({
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    }
+    },
   ).then((res) => res.json())) as CanvasAssignment;
   return data;
 }
@@ -139,7 +139,7 @@ export async function getPage({
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    }
+    },
   ).then((res) => res.json())) as CanvasPage;
   return data;
 }

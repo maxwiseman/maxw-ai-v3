@@ -6,49 +6,49 @@ import Providers from "@/components/providers";
 import Sidebar from "@/components/sidebar";
 
 const geistSans = Geist({
-	variable: "--font-geist-sans",
-	subsets: ["latin"],
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-	variable: "--font-geist-mono",
-	subsets: ["latin"],
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
 });
 
 const garamond = EB_Garamond({
-	variable: "--font-garamond",
-	subsets: ["latin"],
+  variable: "--font-garamond",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-	title: "maxw-ai-v3",
-	description: "maxw-ai-v3",
+  title: "maxw-ai-v3",
+  description: "maxw-ai-v3",
 };
 
 export default function RootLayout({
-	children,
+  children,
 }: Readonly<{
-	children: React.ReactNode;
+  children: React.ReactNode;
 }>) {
-	return (
-		<html className="h-full overscroll-none" lang="en" suppressHydrationWarning>
-			<body
-				className={`${geistSans.variable} ${geistMono.variable} ${garamond.variable} h-full antialiased`}
-			>
-				<Providers>
-					<div className="grid size-full grid-rows-[auto_1fr]">
-						<Header />
-						<div className="grid size-full grid-cols-[auto_1fr]">
-							<Sidebar />
-							<div className="flex h-full flex-col">
-								<div className="-mt-16 h-0 grow overflow-scroll pt-16">
-									{children}
-								</div>
-							</div>
-						</div>
-					</div>
-				</Providers>
-			</body>
-		</html>
-	);
+  return (
+    <html className="h-full overscroll-none" lang="en" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${garamond.variable} h-full antialiased`}
+      >
+        <Providers>
+          <div className="grid size-full grid-rows-[auto_1fr]">
+            <Header />
+            <div className="grid size-full grid-cols-[auto_1fr]">
+              <Sidebar />
+              <div className="flex h-full flex-col">
+                <div className="-mt-16 h-0 grow overflow-scroll pt-16">
+                  {children}
+                </div>
+              </div>
+            </div>
+          </div>
+        </Providers>
+      </body>
+    </html>
+  );
 }

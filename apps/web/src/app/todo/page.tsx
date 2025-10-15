@@ -12,7 +12,8 @@ import {
   IconStar,
 } from "@tabler/icons-react";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   PageHeader,
   PageHeaderContent,
@@ -105,7 +106,7 @@ export default function TodoPage() {
             <IconChevronDown
               className={cn(
                 "size-5 transition-[rotate]",
-                completedExpanded && "rotate-180"
+                completedExpanded && "rotate-180",
               )}
             />
             {completedExpanded ? "Hide completed" : "Show completed"}
@@ -113,7 +114,7 @@ export default function TodoPage() {
           <div
             className={cn(
               "flex h-0 flex-col gap-1 overflow-y-clip overflow-x-visible transition-[height]",
-              completedExpanded && "h-auto"
+              completedExpanded && "h-auto",
             )}
           >
             {data
@@ -153,7 +154,7 @@ function TodoListItem({
     (newData: Partial<TodoListTask>) => {
       setTask(todo.id, newData);
     },
-    [todo.id]
+    [todo.id],
   );
 
   type LocalTask = Omit<TodoListTask, "checked" | "id">;
@@ -184,7 +185,7 @@ function TodoListItem({
         updateTask(newData);
       }, 300);
     },
-    [updateTask]
+    [updateTask],
   );
 
   return (
@@ -193,7 +194,7 @@ function TodoListItem({
       className={cn(
         "-mx-3 h-auto w-full max-w-full cursor-pointer flex-col items-start justify-start gap-0 border border-transparent p-0 transition-[background-color,box-shadow,border,margin,gap]",
         expanded &&
-          "my-2 cursor-[unset] border-border bg-neutral-50 shadow-lg/3 first:mt-0 last:mb-0 hover:bg-neutral-50 dark:bg-neutral-900 dark:hover:bg-neutral-900"
+          "my-2 cursor-[unset] border-border bg-neutral-50 shadow-lg/3 first:mt-0 last:mb-0 hover:bg-neutral-50 dark:bg-neutral-900 dark:hover:bg-neutral-900",
       )}
       variant="ghost"
     >
@@ -204,7 +205,7 @@ function TodoListItem({
           }}
           className={cn(
             "flex w-full cursor-pointer items-center gap-3 p-3 transition-[padding]",
-            expanded && "pb-2"
+            expanded && "pb-2",
           )}
         >
           <label
@@ -244,7 +245,7 @@ function TodoListItem({
             }}
             className={cn(
               "field-sizing-content pointer-events-none min-w-24 resize-none break-all pr-8 focus-visible:outline-none",
-              expanded && "pointer-events-auto"
+              expanded && "pointer-events-auto",
             )}
             placeholder="Title"
           />
@@ -252,7 +253,7 @@ function TodoListItem({
         <div
           className={cn(
             "flex h-0 w-full flex-col gap-3 overflow-hidden pr-4 pl-11 transition-[height,padding]",
-            expanded && "h-auto pb-3"
+            expanded && "h-auto pb-3",
           )}
         >
           <textarea
@@ -349,8 +350,8 @@ function TodoSubTaskList({
                     typeof newVal === "boolean" ? newVal : false;
                   onUpdate(
                     subTasks.map((s) =>
-                      s.id === subTask.id ? { ...s, checked: newChecked } : s
-                    )
+                      s.id === subTask.id ? { ...s, checked: newChecked } : s,
+                    ),
                   );
                 }}
                 className="mx-[2px] size-4 border-neutral-300 shadow-none dark:border-neutral-700 [&>*]:size-3.5"
@@ -361,8 +362,8 @@ function TodoSubTaskList({
                 onChange={(e) => {
                   onUpdate(
                     subTasks.map((s) =>
-                      s.id === subTask.id ? { ...s, title: e.target.value } : s
-                    )
+                      s.id === subTask.id ? { ...s, title: e.target.value } : s,
+                    ),
                   );
                 }}
                 ref={(el) => {
@@ -381,7 +382,7 @@ function TodoSubTaskList({
                             ...subTasks,
                             { id: newId, title: "", checked: false },
                           ]
-                        : [{ id: newId, title: "", checked: false }]
+                        : [{ id: newId, title: "", checked: false }],
                     );
                     setFocused(newId);
                   } else if (
@@ -429,7 +430,7 @@ function TodoChecklistButton({ taskId }: { taskId: string }) {
     <InputGroup
       className={cn(
         "!m-0 !ring-0 !bg-transparent size-8 overflow-hidden border-0 pl-0 shadow-none outline-0 outline-border outline-solid transition-[background-color,width,outline,margin] has-hover:bg-accent dark:has-hover:bg-accent/50",
-        expanded && "dark:!bg-input/30 !mx-2 w-auto outline"
+        expanded && "dark:!bg-input/30 !mx-2 w-auto outline",
       )}
     >
       <InputGroupAddon className="!m-0 p-0">
@@ -488,7 +489,7 @@ function TodoCalendarButton({
         <Button
           className={cn(
             "!p-2 h-8 w-8 max-w-8 justify-start gap-2 overflow-clip text-muted-foreground transition-[width,max-width]",
-            date !== undefined && "w-auto max-w-max"
+            date !== undefined && "w-auto max-w-max",
           )}
           size="sm"
           variant="ghost"

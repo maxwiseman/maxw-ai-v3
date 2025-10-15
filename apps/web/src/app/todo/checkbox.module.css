@@ -1,15 +1,15 @@
 @keyframes checkbox-background {
-	0% {
-		box-shadow: 0 0 0 0px oklch(from var(--color-primary) l c h / 35%);
-	}
-	50% {
-		box-shadow: 0 0 0 3px oklch(from var(--color-primary) l c h / 35%);
-	}
-	100% {
-		box-shadow: 0 0 0 3px oklch(from var(--color-primary) l c h / 0%);
-	}
+  0% {
+    box-shadow: 0 0 0 0px oklch(from var(--color-primary) l c h / 35%);
+  }
+  50% {
+    box-shadow: 0 0 0 3px oklch(from var(--color-primary) l c h / 35%);
+  }
+  100% {
+    box-shadow: 0 0 0 3px oklch(from var(--color-primary) l c h / 0%);
+  }
 }
 
 .checkboxBg {
-	animation: 0.5s checkbox-background ease;
+  animation: 0.5s checkbox-background ease;
 }
