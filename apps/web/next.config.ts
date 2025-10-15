@@ -9,6 +9,9 @@ import "./src/env";
 
 const nextConfig: NextConfig = {
 	typedRoutes: true,
+	experimental: {
+		viewTransition: true,
+	},
 };
 
 export default nextConfig;

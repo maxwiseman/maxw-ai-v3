@@ -9,18 +9,10 @@ import {
   IconFlag,
   IconList,
   IconPlus,
-  type IconProps,
   IconStar,
 } from "@tabler/icons-react";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
-import React, {
-  type ForwardRefExoticComponent,
-  type RefAttributes,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   PageHeader,
   PageHeaderContent,
@@ -44,9 +36,6 @@ import {
 import { cn, humanReadableDate } from "@/lib/utils";
 import { AnimatedCheckbox } from "./animated-checkbox";
 import { type TodoListTask, useTodoList } from "./todo-store";
-
-const MotionTodoItem = motion.create(TodoListItem);
-const MotionButton = motion.create(Button);
 
 export default function TodoPage() {
   const [completedExpanded, setCompletedExpanded] = useState(false);
@@ -80,48 +69,29 @@ export default function TodoPage() {
         </PageHeaderContent>
       </PageHeader>
       <div className="flex flex-col gap-1">
-        <LayoutGroup>
-          <AnimatePresence initial={false}>
-            {data
-              .filter((item) => !item.checked)
-              .map((todo) => (
-                <MotionTodoItem
-                  layout="position"
-                  layoutId={todo.id}
-                  transition={{ duration: 0.2 }}
-                  initial={{
-                    opacity: 0,
-                    filter: "blur(3px)",
-                    translateY: 15,
-                  }}
-                  animate={{ opacity: 1, filter: "blur(0px)", translateY: 0 }}
-                  exit={{
-                    opacity: 0,
-                    filter: "blur(3px)",
-                    translateY: 15,
-                  }}
-                  key={todo.id}
-                  expanded={expanded === todo.id}
-                  onExpandChange={(state) => {
-                    if (state) setExpanded(todo.id);
-                    else setExpanded(undefined);
-                  }}
-                  id={todo.id}
-                />
-              ))}
-          </AnimatePresence>
-          <MotionButton
-            layout="position"
-            className="-mx-3 justify-start p-0 text-muted-foreground hover:text-muted-foreground"
-            variant="ghost"
-            onClick={() => {
-              addTask();
-            }}
-          >
-            <IconPlus className="mx-0.5 size-5" />
-            New task
-          </MotionButton>
-        </LayoutGroup>
+        {data
+          .filter((item) => !item.checked)
+          .map((todo) => (
+            <TodoListItem
+              key={todo.id}
+              expanded={expanded === todo.id}
+              onExpandChange={(state) => {
+                if (state) setExpanded(todo.id);
+                else setExpanded(undefined);
+              }}
+              id={todo.id}
+            />
+          ))}
+        <Button
+          className="-mx-3 justify-start p-0 text-muted-foreground hover:text-muted-foreground"
+          variant="ghost"
+          onClick={() => {
+            addTask();
+          }}
+        >
+          <IconPlus className="mx-0.5 size-5" />
+          New task
+        </Button>
       </div>
       {data.some((item) => item.checked) && (
         <>
@@ -132,13 +102,13 @@ export default function TodoPage() {
             variant="ghost"
             className="hover:!bg-transparent -mx-3 mt-16 mb-2 text-muted-foreground"
           >
-            <IconChevronUp
+            <IconChevronDown
               className={cn(
                 "size-5 transition-[rotate]",
                 completedExpanded && "rotate-180"
               )}
             />
-            {completedExpanded ? "Hide expanded" : "Show completed"}
+            {completedExpanded ? "Hide completed" : "Show completed"}
           </Button>
           <div
             className={cn(
@@ -149,11 +119,7 @@ export default function TodoPage() {
             {data
               .filter((todo) => todo.checked)
               .map((todo) => (
-                <MotionTodoItem
-                  layout="position"
-                  layoutId={todo.id}
-                  initial={{ opacity: 1 }}
-                  animate={{ opacity: 1 }}
+                <TodoListItem
                   key={todo.id}
                   expanded={expanded === todo.id}
                   onExpandChange={(state) => {
@@ -506,7 +472,7 @@ function TodoCalendarButton({
   value: date,
   onValueChange: setDate,
 }: {
-  icon?: ForwardRefExoticComponent<IconProps & RefAttributes<Icon>>;
+  icon?: Icon;
   value: Date | undefined;
   onValueChange: (newVal: Date | undefined) => void;
 }) {
