@@ -31,7 +31,8 @@ function AnimatedCheckbox() {
           checked && styles.checkboxBg,
         )}
       />
-      <div
+      <button
+        type="button"
         onClick={() => {
           setChecked((prev) => !prev);
         }}
@@ -51,7 +52,7 @@ function AnimatedCheckbox() {
             checked && "duration-1000",
           )}
         />
-      </div>
+      </button>
     </div>
   );
 }

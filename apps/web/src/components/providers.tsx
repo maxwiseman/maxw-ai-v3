@@ -1,5 +1,6 @@
 "use client";
 
+import { Provider as AiSdkStoreProvider } from "@ai-sdk-tools/store";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import {
   QueryClient,
@@ -80,14 +81,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         style={
           {
             "--sidebar-width": "350px",
-          } as React.CSSProperties
-        }
-        className="size-full"
-      > */}
+            } as React.CSSProperties
+            }
+            className="size-full"
+            > */}
       <QueryClientProvider>
-        <NuqsAdapter>
-          <SidebarExtensionProvider>{children}</SidebarExtensionProvider>
-        </NuqsAdapter>
+        <AiSdkStoreProvider>
+          <NuqsAdapter>
+            <SidebarExtensionProvider>{children}</SidebarExtensionProvider>
+          </NuqsAdapter>
+        </AiSdkStoreProvider>
       </QueryClientProvider>
       <Toaster richColors />
       {/* </SidebarProvider> */}

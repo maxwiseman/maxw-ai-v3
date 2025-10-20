@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/performance/noImgElement: <explanation> */
 import { IconExternalLink } from "@tabler/icons-react";
 import Link from "next/link";
 import type { ComponentProps } from "react";
@@ -50,6 +51,7 @@ export function CanvasHTML({
           latex ? (
             <InlineMath math={latex} />
           ) : (
+            // biome-ignore lint/a11y/useAltText: This may be already provided by the HTML props
             <img {...props} className="mx-auto max-w-lg" />
           ),
       },

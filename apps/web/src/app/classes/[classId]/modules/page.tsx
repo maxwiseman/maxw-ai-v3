@@ -15,7 +15,6 @@ import { use } from "react";
 import {
   PageHeader,
   PageHeaderContent,
-  PageHeaderDescription,
   PageHeaderTitle,
 } from "@/components/page-header";
 import {
@@ -24,14 +23,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { moduleItemDetailsUrl } from "@/lib/canvas-helpers";
 import {
   type CanvasModuleItem,
   CanvasModuleItemType,
-  moduleItemDetailsUrl,
 } from "@/lib/canvas-types";
 import { getClassModules } from "../../classes-actions";
 import { useModulesState } from "../../modules-store";
-import { ClassSidebar } from "../class-sidebar";
 
 export default function ClassModulesPage({
   params: paramsPromise,
@@ -113,7 +111,7 @@ function ModuleItem({ item }: { item: CanvasModuleItem }) {
     <Link
       // @ts-expect-error
       href={moduleItemDetailsUrl(classId, item) ?? ""}
-      className="flex items-center gap-2 py-4 hover:underline"
+      className="ml-8 flex items-center gap-2 py-4 hover:underline"
       key={item.id}
       target={
         item.type === CanvasModuleItemType.ExternalUrl ? "_blank" : undefined

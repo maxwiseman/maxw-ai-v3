@@ -27,7 +27,7 @@ export async function getAllCanvasCourses() {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    },
+    }
   ).then((res) => res.json())) as Course[];
   return data;
 }
@@ -42,12 +42,12 @@ export async function getCanvasCourse({ classId }: { classId: string }) {
   if (!settings?.canvasApiKey || !settings.canvasDomain)
     return "Settings not configured";
   const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}?include[]=teachers`,
+    `https://${settings.canvasDomain}/api/v1/courses/${classId}?include[]=teachers&enrollment_state=active`,
     {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    },
+    }
   ).then((res) => res.json())) as Course;
   return data;
 }
@@ -67,7 +67,7 @@ export async function getFrontPage({ classId }: { classId: string }) {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    },
+    }
   ).then((res) => res.json())) as CanvasPage;
   return data;
 }
@@ -87,17 +87,43 @@ export async function getClassModules({ classId }: { classId: string }) {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    },
+    }
   ).then((res) => res.json())) as CanvasModule[];
   return data;
 }
 
+export async function getAssignment(args: {
+  classId: string;
+  assignmentId: string;
+  filter?: never;
+}): Promise<CanvasAssignment>;
+export async function getAssignment(args: {
+  classId: string;
+  assignmentId?: undefined;
+  filter?:
+    | "past"
+    | "overdue"
+    | "undated"
+    | "ungraded"
+    | "unsubmitted"
+    | "upcoming"
+    | "future";
+}): Promise<CanvasAssignment[]>;
 export async function getAssignment({
   classId,
   assignmentId,
+  filter,
 }: {
   classId: string;
-  assignmentId: string;
+  assignmentId?: string;
+  filter?:
+    | "past"
+    | "overdue"
+    | "undated"
+    | "ungraded"
+    | "unsubmitted"
+    | "upcoming"
+    | "future";
 }) {
   const authData = await auth.api.getSession({ headers: await headers() });
   if (!authData) return "Unauthorized" as const;
@@ -108,13 +134,15 @@ export async function getAssignment({
   if (!settings?.canvasApiKey || !settings.canvasDomain)
     return "Settings not configured";
   const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/assignments/${assignmentId}`,
+    `https://${settings.canvasDomain}/api/v1/courses/${classId}/assignments${
+      assignmentId ? `/${assignmentId}` : ""
+    }${filter !== undefined ? `?bucket=${filter}` : ""}`,
     {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    },
-  ).then((res) => res.json())) as CanvasAssignment;
+    }
+  ).then((res) => res.json())) as CanvasAssignment | CanvasAssignment[];
   return data;
 }
 
@@ -139,7 +167,7 @@ export async function getPage({
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    },
+    }
   ).then((res) => res.json())) as CanvasPage;
   return data;
 }

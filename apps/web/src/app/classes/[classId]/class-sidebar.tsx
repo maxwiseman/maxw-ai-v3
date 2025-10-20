@@ -27,12 +27,10 @@ export function ClassSidebar({ classId }: { classId: string }) {
 }
 
 function ClassSidebarButton({
-  href,
   path,
   children,
   classId,
 }: {
-  href?: string;
   path: { strict?: boolean; slug: string };
   classId: string;
 } & ComponentProps<"div">) {
@@ -48,7 +46,9 @@ function ClassSidebarButton({
       className="justify-start shadow-none"
       variant={isActive ? "secondary" : "ghost"}
     >
-      <Link href={`/classes/${classId}${path.slug}`}>{children}</Link>
+      <Link prefetch href={`/classes/${classId}${path.slug}`}>
+        {children}
+      </Link>
     </Button>
   );
 }

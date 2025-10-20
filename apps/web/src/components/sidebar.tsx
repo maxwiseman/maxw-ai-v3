@@ -3,6 +3,7 @@ import {
   IconBrain,
   IconHome,
   IconListCheck,
+  IconMessageCircle,
   IconSchool,
 } from "@tabler/icons-react";
 import type { RouteType } from "next/dist/lib/load-custom-routes";
@@ -35,6 +36,12 @@ export default function Sidebar() {
               href="/"
               label="Home"
               isActive={pathname === "/"}
+            />
+            <SidebarButton
+              icon={<IconMessageCircle className="size-4.5" />}
+              href="/chat"
+              label="Chat"
+              isActive={pathname === "/chat"}
             />
             <SidebarButton
               icon={<IconSchool className="size-4.5" />}
