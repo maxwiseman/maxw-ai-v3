@@ -115,6 +115,7 @@ function Carousel({
         canScrollNext,
       }}
     >
+      {/** biome-ignore lint/a11y/useSemanticElements: It's from a shadcn component */}
       <div
         onKeyDownCapture={handleKeyDown}
         className={cn("relative", className)}
@@ -129,13 +130,18 @@ function Carousel({
   );
 }
 
-function CarouselContent({ className, ...props }: React.ComponentProps<"div">) {
+function CarouselContent({
+  className,
+  rootProps,
+  ...props
+}: React.ComponentProps<"div"> & { rootProps?: React.ComponentProps<"div"> }) {
   const { carouselRef, orientation } = useCarousel();
 
   return (
     <div
       ref={carouselRef}
-      className="overflow-hidden"
+      {...rootProps}
+      className={cn("overflow-hidden", rootProps?.className)}
       data-slot="carousel-content"
     >
       <div
@@ -154,6 +160,7 @@ function CarouselItem({ className, ...props }: React.ComponentProps<"div">) {
   const { orientation } = useCarousel();
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: It's from a shadcn component
     <div
       role="group"
       aria-roledescription="slide"

@@ -1,9 +1,11 @@
+/** biome-ignore-all lint/correctness/useUniqueElementIds: <explanation> */
 "use client";
 
 import {
   IconCards,
   IconCheckbox,
   IconKeyboard,
+  IconPencil,
   IconPlus,
 } from "@tabler/icons-react";
 import Link from "next/link";
@@ -241,9 +243,9 @@ function StudySetCard({
                   <IconCards className="size-4 text-muted-foreground" />
                   Flashcards
                 </SelectItem>
-                <SelectItem value="typing">
-                  <IconKeyboard className="size-4 text-muted-foreground" />
-                  Typing
+                <SelectItem value="short-answer">
+                  <IconPencil className="size-4 text-muted-foreground" />
+                  Short Answer
                 </SelectItem>
                 <SelectItem value="multiple-choice">
                   <IconCheckbox className="size-4 text-muted-foreground" />
@@ -265,9 +267,9 @@ function StudySetCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                {tags.map((tag, i) => (
+                {tags.map((tag) => (
                   <DropdownMenuCheckboxItem
-                    key={`${tag}-${i}`}
+                    key={tag}
                     onSelect={(e) => {
                       e.preventDefault();
                       if (activeTags.includes(tag)) {

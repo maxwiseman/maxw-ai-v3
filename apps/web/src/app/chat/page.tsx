@@ -1,9 +1,15 @@
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: <explanation> */
 "use client";
 
 import { useArtifacts } from "@ai-sdk-tools/artifacts/client";
 import { AIDevtools } from "@ai-sdk-tools/devtools";
-import { useChat } from "@ai-sdk-tools/store";
-import { DefaultChatTransport } from "ai";
+import { useChat, useChatStatus } from "@ai-sdk-tools/store";
+import {
+  DefaultChatTransport,
+  type UIDataTypes,
+  type UIMessage,
+  type UITools,
+} from "ai";
 import { useState } from "react";
 import { Message, MessageContent } from "@/components/ai-elements/message";
 import { Response } from "@/components/ai-elements/response";
@@ -15,10 +21,19 @@ import {
 } from "@/components/ai-elements/conversation";
 import { toTitleCase } from "@/lib/utils";
 import { Shimmer } from "@/components/ai-elements/shimmer";
+import { FlashcardToolDisplay } from "@/ai/tools/study/flashcards-ui";
+import type z from "zod";
+import type { createStudySetToolInput } from "@/ai/tools/study/flashcards";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default function ChatPage() {
   const { artifacts } = useArtifacts();
-  const { messages, sendMessage, status, stop } = useChat({
+  const { messages, sendMessage, status, error, stop } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
       prepareSendMessagesRequest({ messages, id }) {
@@ -100,24 +115,22 @@ export default function ChatPage() {
           </div>
           <ConversationContent className="mx-auto max-w-3xl pb-64">
             {messages.map((msg) => (
-              <Message key={msg.id} from={msg.role}>
-                <MessageContent
-                  variant={msg.role !== "user" ? "flat" : "contained"}
-                >
-                  <Response>
-                    {msg.parts
-                      .map((part) => (part.type === "text" ? part.text : ""))
-                      .join("")}
-                  </Response>
-                  {msg.parts[msg.parts.length - 1]?.type === "reasoning" ||
-                  msg.parts[msg.parts.length - 1]?.type.startsWith("tool-") ||
-                  msg.parts[msg.parts.length - 1]?.type.startsWith("data-") ||
-                  (msg.parts.length === 0 && status === "streaming") ? (
-                    <Shimmer>Thinking...</Shimmer>
-                  ) : null}
-                </MessageContent>
-              </Message>
+              <ChatMessage key={msg.id} msg={msg} />
             ))}
+            {status === "error" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {error?.name ?? "An unknown error occurred"}
+                  </CardTitle>
+                  <CardDescription>
+                    {error?.message}
+                    <br />
+                    {error?.cause as string | undefined}
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            )}
             <div className="prose dark:prose-invert prose-neutral">
               {artifacts.map((artifact) => (
                 <table className="w-full max-w-3xl" key={artifact.id}>
@@ -151,5 +164,47 @@ export default function ChatPage() {
         </Conversation>
       )}
     </div>
+  );
+}
+
+function ChatMessage({
+  msg,
+}: {
+  msg: UIMessage<unknown, UIDataTypes, UITools>;
+}) {
+  const status = useChatStatus();
+  return (
+    <Message from={msg.role}>
+      <MessageContent
+        className="space-y-2 overflow-visible"
+        variant={msg.role !== "user" ? "flat" : "contained"}
+      >
+        {msg.parts.map((part, i) => {
+          switch (part.type) {
+            case "text":
+              return part.text.length > 0 ? (
+                <Response key={i}>{part.text}</Response>
+              ) : null;
+            case "tool-createStudySet":
+              return (
+                <FlashcardToolDisplay
+                  key={i}
+                  toolData={
+                    part.input as z.infer<typeof createStudySetToolInput>
+                  }
+                />
+              );
+          }
+          return null;
+        })}
+        {(msg.parts[msg.parts.length - 1]?.type === "reasoning" ||
+          msg.parts[msg.parts.length - 1]?.type.startsWith("tool-") ||
+          msg.parts[msg.parts.length - 1]?.type.startsWith("data-") ||
+          msg.parts.length === 0) &&
+        status === "streaming" ? (
+          <Shimmer>Thinking...</Shimmer>
+        ) : null}
+      </MessageContent>
+    </Message>
   );
 }

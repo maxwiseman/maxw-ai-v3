@@ -6,8 +6,12 @@ import { studyAgent } from "./study";
 
 export const triageAgent = createAgent({
   name: "triage",
-  model: openai("gpt-4.1-nano"),
-  modelSettings: { toolChoice: "required", activeTools: ["handoff_to_agent"] },
+  model: openai("gpt-5-nano"),
+  modelSettings: {
+    toolChoice: "required",
+    activeTools: ["handoff_to_agent"],
+    providerOptions: { openai: { reasoningEffort: "minimal" } },
+  },
   instructions: (ctx) => `Route user requests to the appropriate agent:
 
 **secretary**: Organization, todos, task/assignment tracking, etc.

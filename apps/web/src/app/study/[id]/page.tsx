@@ -13,7 +13,7 @@ export default function Page() {
   const [tags, setTags] = useQueryState("tags", parseAsArrayOf(parseAsString));
   const [mode, setMode] = useQueryState(
     "mode",
-    parseAsStringEnum(["flashcards", "typing", "multiple-choice"]),
+    parseAsStringEnum(["flashcards", "short-answer", "multiple-choice"]),
   );
 
   if (mode === "flashcards") return <Flashcards />;

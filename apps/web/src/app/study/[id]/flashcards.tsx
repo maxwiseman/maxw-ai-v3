@@ -39,19 +39,29 @@ const FlashcardContext = createContext<
   side: "front",
   update: () => null,
 });
-export function Flashcard({ children }: { children: ReactNode }) {
+export function Flashcard({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   const [state, setState] = useState<FlashcardData>({ side: "front" });
 
   return (
     <FlashcardContext.Provider value={{ ...state, update: setState }}>
       <button
+        type="button"
         onClick={() => {
           setState((prev) => ({
             ...prev,
             side: prev.side === "front" ? "back" : "front",
           }));
         }}
-        className="perspective-distant group grid aspect-[1.75] w-full max-w-2xl grid-cols-1 focus-visible:outline-none [&>*]:col-start-1 [&>*]:row-start-1"
+        className={cn(
+          "perspective-distant group grid aspect-[1.75] w-full max-w-2xl grid-cols-1 focus-visible:outline-none [&>*]:col-start-1 [&>*]:row-start-1",
+          className,
+        )}
       >
         {children}
       </button>
@@ -97,7 +107,9 @@ export function FlashcardBack({
       )}
       {...props}
     >
-      <Streamdown className="font-medium text-3xl">{children}</Streamdown>
+      <Streamdown className={cn("font-medium text-3xl", className)}>
+        {children}
+      </Streamdown>
     </Card>
   );
 }
