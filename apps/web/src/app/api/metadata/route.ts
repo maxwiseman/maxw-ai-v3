@@ -1,4 +1,4 @@
-import type { Agent } from "@ai-sdk-tools/agents";
+import type { Agent } from "ai-sdk-tools";
 import { generalAgent } from "@/ai/agents/general";
 import { secretaryAgent } from "@/ai/agents/secretary";
 

@@ -1,6 +1,6 @@
 import { openai } from "@ai-sdk/openai";
 import { generalAgent } from "./general";
-import { createAgent, formatContextForLLM } from "./shared";
+import { createAgent, formatContextForLLM, type AppContext } from "./shared";
 import { secretaryAgent } from "./secretary";
 import { studyAgent } from "./study";
 
@@ -12,7 +12,9 @@ export const triageAgent = createAgent({
     activeTools: ["handoff_to_agent"],
     providerOptions: { openai: { reasoningEffort: "minimal" } },
   },
-  instructions: (ctx) => `Route user requests to the appropriate agent:
+  instructions: (
+    ctx: AppContext
+  ) => `Route user requests to the appropriate agent:
 
 **secretary**: Organization, todos, task/assignment tracking, etc.
   - Find upcoming assignments
@@ -21,7 +23,7 @@ export const triageAgent = createAgent({
   
 **study**: Explanations, flashcards, studying advice
   - Explain things intuitively
-  - Create flashcards
+  - Create flashcards/study sets
   - Give advice for studying
   
 **general**: General queries, web search, AND compound queries

@@ -1,12 +1,12 @@
 import { openai } from "@ai-sdk/openai";
-import { createAgent, formatContextForLLM } from "./shared";
+import { createAgent, formatContextForLLM, type AppContext } from "./shared";
 import { getAssignmentTool } from "../tools/canvas/get-assignment";
 
 export const secretaryAgent = createAgent({
   name: "secretary",
   model: openai("gpt-5-mini"),
   instructions: (
-    ctx
+    ctx: AppContext
   ) => `You are a scheduling specialist and general assistant for a student at ${
     ctx.schoolName
   }. You're kind of like a secretary. You help the student stay up to date on their todos and generally stay organized.

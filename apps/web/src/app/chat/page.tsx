@@ -1,9 +1,9 @@
-/** biome-ignore-all lint/suspicious/noArrayIndexKey: <explanation> */
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: We don't really have any better options here, but the index shouldn't change */
 "use client";
 
-import { useArtifacts } from "@ai-sdk-tools/artifacts/client";
-import { AIDevtools } from "@ai-sdk-tools/devtools";
-import { useChat, useChatStatus } from "@ai-sdk-tools/store";
+// import { useArtifacts } from "ai-sdk-tools/client";
+import { AIDevtools } from "ai-sdk-tools/client";
+import { useChat, useChatStatus } from "ai-sdk-tools";
 import {
   DefaultChatTransport,
   type UIDataTypes,
@@ -30,9 +30,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Action, Actions } from "@/components/ai-elements/actions";
+import { IconCopy, IconPencil } from "@tabler/icons-react";
 
 export default function ChatPage() {
-  const { artifacts } = useArtifacts();
+  // const { artifacts } = useArtifacts();
   const { messages, sendMessage, status, error, stop } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
@@ -53,6 +55,7 @@ export default function ChatPage() {
   });
 
   const [inputText, setInputText] = useState("");
+  const [webSearch, setWebSearch] = useState(false);
 
   const handleSubmit = (message: ChatInputMessage) => {
     // If currently streaming or submitted, stop instead of submitting
@@ -94,14 +97,14 @@ export default function ChatPage() {
             hasMessages={false}
             onSubmit={handleSubmit}
             setText={setInputText}
-            setUseWebSearch={() => {}}
-            useWebSearch={false}
+            setUseWebSearch={setWebSearch}
+            useWebSearch={webSearch}
           />
         </EmptyState>
       ) : (
         <Conversation>
-          <div className="pointer-events-none absolute inset-0 flex h-full w-full flex-col justify-end">
-            <div className="w-full bg-gradient-to-t from-[1.25rem] from-background to-transparent">
+          <div className="pointer-events-none absolute inset-0 z-10 flex h-full w-full flex-col justify-end">
+            <div className="w-full bg-linear-to-t from-[1.25rem] from-background to-transparent">
               <ChatInput
                 className="pointer-events-auto mx-auto w-full max-w-3xl"
                 text={inputText}
@@ -131,7 +134,7 @@ export default function ChatPage() {
                 </CardHeader>
               </Card>
             )}
-            <div className="prose dark:prose-invert prose-neutral">
+            {/* <div className="prose dark:prose-invert prose-neutral">
               {artifacts.map((artifact) => (
                 <table className="w-full max-w-3xl" key={artifact.id}>
                   <tbody>
@@ -159,7 +162,7 @@ export default function ChatPage() {
                   </tbody>
                 </table>
               ))}
-            </div>
+            </div> */}
           </ConversationContent>
         </Conversation>
       )}
@@ -174,7 +177,27 @@ function ChatMessage({
 }) {
   const status = useChatStatus();
   return (
-    <Message from={msg.role}>
+    <Message className="group items-center" from={msg.role}>
+      {msg.role === "user" && (
+        <Actions className="opacity-0 transition-opacity group-hover:opacity-100">
+          <Action
+            onClick={() => {
+              navigator.clipboard.writeText(
+                msg.parts
+                  .filter((p) => p.type === "text")
+                  .map((p) => p.text)
+                  .join(""),
+              );
+            }}
+            label="Copy"
+          >
+            <IconCopy className="size-4" />
+          </Action>
+          <Action label="Edit">
+            <IconPencil className="size-4" />
+          </Action>
+        </Actions>
+      )}
       <MessageContent
         className="space-y-2 overflow-visible"
         variant={msg.role !== "user" ? "flat" : "contained"}

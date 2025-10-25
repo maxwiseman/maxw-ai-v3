@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/suspicious/noUnknownAtRules: Tailwind */
+/** biome-ignore-all lint/suspicious/noDuplicateSelectorsKeyframeBlock: <explanation> */
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
@@ -132,5 +133,101 @@
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
+  }
+
+  @property --top-fade {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+  }
+
+  @property --bottom-fade {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+  }
+
+  @keyframes scrollfade-vertical {
+    0% {
+      --top-fade: 0px;
+    }
+    10%,
+    100% {
+      --top-fade: 3rem;
+    }
+    0%,
+    90% {
+      --bottom-fade: 3rem;
+    }
+    100% {
+      --bottom-fade: 0px;
+    }
+  }
+
+  .scroll-shadow-y {
+    /* height: 200px; */
+    overflow-y: auto;
+    -webkit-mask: linear-gradient(
+      to bottom,
+      transparent 0,
+      white var(--top-fade) calc(100% - var(--bottom-fade)),
+      transparent
+    );
+    mask: linear-gradient(
+      to bottom,
+      transparent 0,
+      white var(--top-fade) calc(100% - var(--bottom-fade)),
+      transparent
+    );
+    animation: scrollfade-vertical linear;
+    animation-timeline: scroll(self block);
+  }
+
+  @property --left-fade {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+  }
+
+  @property --right-fade {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+  }
+
+  @keyframes scrollfade-horizontal {
+    0% {
+      --left-fade: 0px;
+    }
+    10%,
+    100% {
+      --left-fade: 3rem;
+    }
+    0%,
+    90% {
+      --right-fade: 3rem;
+    }
+    100% {
+      --right-fade: 0px;
+    }
+  }
+
+  .scroll-shadow-x {
+    /* width: 200px; */
+    overflow-x: auto;
+    -webkit-mask: linear-gradient(
+      to right,
+      transparent 0,
+      white var(--left-fade) calc(100% - var(--right-fade)),
+      transparent
+    );
+    mask: linear-gradient(
+      to right,
+      transparent 0,
+      white var(--left-fade) calc(100% - var(--right-fade)),
+      transparent
+    );
+    animation: scrollfade-horizontal linear;
+    animation-timeline: scroll(self inline);
   }
 }

@@ -6,9 +6,7 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { AgentConfig } from "@ai-sdk-tools/agents";
-import { Agent } from "@ai-sdk-tools/agents";
-import { InMemoryProvider } from "@ai-sdk-tools/memory";
+import { Agent, InMemoryProvider, type AgentConfig } from "ai-sdk-tools";
 import type { Course } from "@/lib/canvas-types";
 import { classesToLLMKey } from "../utils/canvas-llm-helpers";
 

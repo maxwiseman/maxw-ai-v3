@@ -1,4 +1,4 @@
-import { artifact } from "@ai-sdk-tools/artifacts";
+import { artifact } from "ai-sdk-tools";
 import { z } from "zod";
 
 // Define the balance sheet artifact schema
@@ -71,5 +71,5 @@ export const BalanceSheetArtifact = artifact(
         concerns: z.array(z.string()),
       })
       .optional(),
-  }),
+  })
 );

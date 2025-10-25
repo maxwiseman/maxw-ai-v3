@@ -1,15 +1,15 @@
 "use client";
 
-import { useChatActions } from "@ai-sdk-tools/store";
+import { useChatActions } from "ai-sdk-tools";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 
 const SUGGESTIONS = [
-  "Show me the balance sheet",
-  "What's our revenue this year",
-  "Analyze our burn rate",
-  "Show recent invoices",
-  "How's our cash flow",
+  "What assignments do I have",
+  "Create a flashcard set",
+  "Help me prepare for my test",
+  "Get me caught up with a book",
+  "Explain this math problem",
 ];
 
 export function SuggestionPills() {

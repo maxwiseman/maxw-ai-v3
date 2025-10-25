@@ -1,11 +1,11 @@
 {
   "name": "maxw-ai-v3",
+  "devDependencies": {
+    "turbo": "^2.5.4",
+    "@biomejs/biome": "^2.2.0"
+  },
+  "packageManager": "bun@1.2.21",
   "private": true,
-  "type": "module",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "check": "biome check --write .",
     "dev": "turbo dev",
@@ -20,10 +20,9 @@
     "db:generate": "turbo -F web db:generate",
     "db:migrate": "turbo -F web db:migrate"
   },
-  "dependencies": {},
-  "devDependencies": {
-    "turbo": "^2.5.4",
-    "@biomejs/biome": "^2.2.0"
-  },
-  "packageManager": "bun@1.2.21"
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
 }
