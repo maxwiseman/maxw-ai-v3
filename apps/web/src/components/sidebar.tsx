@@ -15,10 +15,8 @@ import {
   type SetStateAction,
   useContext,
   useEffect,
-  useRef,
   useState,
 } from "react";
-import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
@@ -106,18 +104,26 @@ export function SidebarButton({
 }
 
 export function SidebarExtension({ children }: { children: React.ReactNode }) {
-  const slot = useContext(SidebarExtensionContext);
-  if (!slot.current) return null;
-  return createPortal(children, slot.current);
+  const { setNode } = useContext(SidebarExtensionContext);
+
+  useEffect(() => {
+    setNode(children);
+    return () => {
+      setNode(null);
+    };
+  }, [children, setNode]);
+
+  return null;
 }
 
 type SidebarExtensionContextData = {
-  current: HTMLElement | null;
-  set: Dispatch<SetStateAction<SidebarExtensionContextData>>;
+  node: React.ReactNode;
+  setNode: Dispatch<SetStateAction<React.ReactNode>>;
 };
+
 const SidebarExtensionContext = createContext<SidebarExtensionContextData>({
-  current: null,
-  set: () => null,
+  node: null,
+  setNode: () => {},
 });
 
 export function SidebarExtensionProvider({
@@ -125,34 +131,21 @@ export function SidebarExtensionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [el, setEl] = useState<SidebarExtensionContextData>({
-    current: null,
-    set: () => null,
-  });
-
-  useEffect(() => {
-    setEl((prev) => ({ ...prev, set: setEl }));
-  }, [setEl]);
+  const [node, setNode] = useState<React.ReactNode>(null);
 
   return (
-    <SidebarExtensionContext.Provider value={el}>
+    <SidebarExtensionContext.Provider value={{ node, setNode }}>
       {children}
     </SidebarExtensionContext.Provider>
   );
 }
 
 function SidebarExtensionSlot() {
-  const slot = useContext(SidebarExtensionContext);
-  const ref = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (ref.current) slot.set((prev) => ({ ...prev, current: ref.current }));
-  }, [ref.current]);
+  const { node } = useContext(SidebarExtensionContext);
 
   return (
-    <div
-      className={"[&>*]:has-[*]:!border-r [&>*]:!border-r-0 contents"}
-      ref={ref}
-    />
+    <div className={"[&>*]:has-[*]:!border-r [&>*]:!border-r-0 contents"}>
+      {node}
+    </div>
   );
 }

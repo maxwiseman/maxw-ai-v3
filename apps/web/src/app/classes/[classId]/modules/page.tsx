@@ -1,4 +1,4 @@
-"use client";
+"use cache: private";
 
 import {
   IconChecklist,
@@ -8,10 +8,9 @@ import {
   IconLink,
   IconNotebook,
 } from "@tabler/icons-react";
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { notFound, useParams } from "next/navigation";
-import { use, type ComponentProps } from "react";
+import { notFound } from "next/navigation";
+import { type ComponentProps, use } from "react";
 import {
   PageHeader,
   PageHeaderContent,
@@ -25,23 +24,28 @@ import {
 } from "@/components/ui/accordion";
 import { moduleItemDetailsUrl } from "@/lib/canvas-helpers";
 import {
+    type CanvasModule,
   type CanvasModuleItem,
   CanvasModuleItemType,
 } from "@/lib/canvas-types";
-import { getClassModules } from "../../classes-actions";
-import { useModulesState } from "../../modules-store";
+// import { useModulesState } from "../../modules-store";
+import { eq } from "drizzle-orm";
+import { user } from "@/db/schema/auth";
+import { db } from "@/db";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
-export default function ClassModulesPage({
+export default async function ClassModulesPage({
   params: paramsPromise,
 }: {
   params: Promise<{ classId: string }>;
 }) {
-  const params = use(paramsPromise);
-  const { modulesByClass, setModulesByClass } = useModulesState();
-  const { data } = useQuery({
-    queryFn: () => getClassModules(params),
-    queryKey: ["canvas-course", params.classId, "modules"],
-  });
+  const authData = await auth.api.getSession({ headers: await headers() });
+  if (!authData) notFound  ();
+
+  const params = await paramsPromise;
+  // const { modulesByClass, setModulesByClass } = useModulesState();
+  const data = await fetchData({userId: authData.user.id, classId: params.classId})
 
   if (typeof data === "string") notFound();
 
@@ -53,10 +57,10 @@ export default function ClassModulesPage({
         </PageHeaderContent>
       </PageHeader>
       <Accordion
-        defaultValue={modulesByClass[params.classId]}
-        onValueChange={(newVal) =>
-          setModulesByClass({ [params.classId]: newVal })
-        }
+        // defaultValue={modulesByClass[params.classId]}
+        // onValueChange={(newVal) =>
+        //   setModulesByClass({ [params.classId]: newVal })
+        // }
         className="space-y-2 px-8 pb-8"
         collapsible
         type="single"
@@ -73,7 +77,7 @@ export default function ClassModulesPage({
               </AccordionTrigger>
               <AccordionContent className="divide-y pb-1">
                 {module.items.map((item) => (
-                  <ModuleItem key={item.id} item={item} />
+                  <ModuleItem key={item.id} item={item} classId={params.classId} />
                 ))}
               </AccordionContent>
             </AccordionItem>
@@ -83,8 +87,7 @@ export default function ClassModulesPage({
   );
 }
 
-function ModuleItem({ item }: { item: CanvasModuleItem }) {
-  const { classId } = useParams<{ classId: string }>();
+function ModuleItem({ item, classId }: { item: CanvasModuleItem, classId: string }) {
   const Icon =
     item.type === CanvasModuleItemType.Assignment
       ? IconNotebook
@@ -109,7 +112,11 @@ function ModuleItem({ item }: { item: CanvasModuleItem }) {
 
   return (
     <Link
-      href={moduleItemDetailsUrl(classId, item) as ComponentProps<typeof Link>["href"] ?? ""}
+      href={
+        (moduleItemDetailsUrl(classId, item) as ComponentProps<
+          typeof Link
+        >["href"]) ?? ""
+      }
       className="ml-8 flex items-center gap-2 py-4 hover:underline"
       key={item.id}
       target={
@@ -120,4 +127,22 @@ function ModuleItem({ item }: { item: CanvasModuleItem }) {
       {item.title}
     </Link>
   );
+}
+
+async function fetchData({ classId, userId }: { classId: string, userId: string }) {
+  const settings = (
+    await db.query.user.findFirst({ where: eq(user.id, userId) })
+  )?.settings;
+
+  if (!settings?.canvasApiKey || !settings.canvasDomain)
+    return "Settings not configured" as const;
+  const data = (await fetch(
+    `https://${settings.canvasDomain}/api/v1/courses/${classId}/modules?include[]=items`,
+    {
+      headers: {
+        Authorization: `Bearer ${settings.canvasApiKey}`,
+      },
+    }
+  ).then((res) => res.json())) as CanvasModule[];
+  return data;
 }

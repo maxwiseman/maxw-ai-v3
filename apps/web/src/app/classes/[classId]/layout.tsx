@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, use } from "react";
+import { Suspense } from "react";
 import { ClassSidebar } from "./class-sidebar";
 
 export default function Layout({
