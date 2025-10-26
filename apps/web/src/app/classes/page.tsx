@@ -90,7 +90,7 @@ function ClassCard(courseData: Course) {
               {courseData.name}
             </CardTitle>
           </CardHeader>
-          <CardContent className="!pt-0 w-full p-4">
+          <CardContent className="w-full p-4 pt-0!">
             <div className="text-muted-foreground">
               {teacher ? toTitleCase(teacher) : "No teachers"}
             </div>

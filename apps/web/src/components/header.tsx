@@ -8,7 +8,7 @@ import UserMenu from "./user-menu";
 
 export default function Header() {
   return (
-    <div className="sticky top-0 flex h-16 border-b bg-background/80 backdrop-blur-md">
+    <div className="sticky top-0 z-20 flex h-16 border-b bg-background/80 backdrop-blur-md">
       <div className="flex size-16 shrink-0 items-center justify-center border-r border-b">
         <Button asChild className="size-full" size="icon" variant="ghost">
           <Link href="/">
@@ -21,7 +21,7 @@ export default function Header() {
         <div className="relative">
           <Input
             placeholder="Find anything..."
-            className="!bg-transparent w-xs border-0 pl-9 shadow-none"
+            className="w-xs border-0 bg-transparent! pl-9 shadow-none"
           />
           <IconSearch className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-muted-foreground" />
         </div>

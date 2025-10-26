@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   experimental: {
     viewTransition: true,
+    cacheComponents: true
   },
 };
 
