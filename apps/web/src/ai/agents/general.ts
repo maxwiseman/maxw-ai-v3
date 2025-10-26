@@ -17,7 +17,7 @@ export const generalAgent = createAgent({
     reasoningSummary: "auto",
   },
   instructions: (
-    ctx
+    ctx: AppContext
   ) => `You are a general assistant and coordinator for students at ${
     ctx.schoolName
   }.
@@ -54,11 +54,11 @@ RESPONSE STYLE - BE CONCISE:
 
 EXAMPLE - Affordability Query:
 User: "Find latest price for Model Y and let me know if I can afford it"
-You: 
+You:
   Step 1: [call webSearch] → extract key price: "$39,990"
   Step 2: [hand off to operations] → get balance: "$50,000"
-  Step 3: Synthesize naturally: "The Tesla Model Y starts at $39,990. You have 
-          $50,000 available, so yes, you can definitely afford it with about 
+  Step 3: Synthesize naturally: "The Tesla Model Y starts at $39,990. You have
+          $50,000 available, so yes, you can definitely afford it with about
           $10,000 to spare."
 
 DO NOT:

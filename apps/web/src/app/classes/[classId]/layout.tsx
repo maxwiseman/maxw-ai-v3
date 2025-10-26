@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { Suspense, use } from "react";
 import { ClassSidebar } from "./class-sidebar";
 
 export default function Layout({
@@ -10,11 +10,9 @@ export default function Layout({
   children: React.ReactNode;
   params: Promise<{ classId: string }>;
 }) {
-  const awaitedParams = use(params);
-
   return (
     <div>
-      <ClassSidebar classId={awaitedParams.classId} />
+      <Suspense><ClassSidebar params={params} /></Suspense>
       {children}
     </div>
   );

@@ -1,3 +1,4 @@
+// @ts-ignore
 import { artifact, getWriter } from "ai-sdk-tools";
 import { tool } from "ai";
 import * as z from "zod";

@@ -4,6 +4,7 @@ import "../index.css";
 import Header from "@/components/header";
 import Providers from "@/components/providers";
 import Sidebar from "@/components/sidebar";
+import { Suspense } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,10 +40,10 @@ export default function RootLayout({
           <div className="grid size-full grid-rows-[auto_1fr]">
             <Header />
             <div className="grid size-full grid-cols-[auto_1fr]">
-              <Sidebar />
+              <Suspense><Sidebar /></Suspense>
               <div className="flex h-full flex-col">
                 <div className="-mt-16 h-0 grow overflow-scroll pt-16">
-                  {children}
+                  <Suspense>{children}</Suspense>
                 </div>
               </div>
             </div>

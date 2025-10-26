@@ -1,38 +1,37 @@
-"use client";
+"use cache: private";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useEffect } from "react";
 import {
   PageHeader,
   PageHeaderContent,
   PageHeaderDescription,
   PageHeaderTitle,
 } from "@/components/page-header";
-import { queryClient } from "@/components/providers";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Course } from "@/lib/canvas-types";
 import { toTitleCase } from "@/lib/utils";
-import { getAllCanvasCourses, getFrontPage } from "./classes-actions";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { notFound } from "next/navigation";
+import { db } from "@/db";
+import { eq } from "drizzle-orm";
+import { user } from "@/db/schema/auth";
 
-export default function ClassesPage() {
-  const queryClient = useQueryClient();
-  const { data, isSuccess } = useQuery({
-    queryFn: getAllCanvasCourses,
-    queryKey: ["canvas-course"],
-  });
-  useEffect(() => {
-    if (isSuccess && Array.isArray(data)) {
-      data.forEach((course) => {
-        queryClient.setQueryData(
-          ["canvas-course", course.id.toString()],
-          course,
-        );
-      });
-    }
-  }, [isSuccess, data, queryClient]);
-  console.log(data);
+export const unstable_prefetch = {
+  mode: "runtime",
+  samples: [{
+    cookies: [
+       { name: 'better-auth.session_token', value: 'y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D' },
+    ]
+  }]
+}
+
+export default async function ClassesPage() {
+  const authData = await auth.api.getSession({headers: await headers()})
+  if (!authData?.user) notFound();
+
+  const data = await getAllCanvasCourses({userId: authData.user.id})
 
   return (
     <div>
@@ -52,7 +51,7 @@ export default function ClassesPage() {
         </div>
       ) : (
         <div className="grid size-full max-h-96 place-items-center text-muted-foreground">
-          Loading...
+          Error
         </div>
       )}
     </div>
@@ -63,24 +62,6 @@ function ClassCard(courseData: Course) {
   const teacher = courseData.teachers?.[0]?.display_name;
   return (
     <Link
-      onMouseEnter={() => {
-        if (
-          !queryClient.getQueryData([
-            "canvas-course",
-            courseData.id,
-            "frontpage",
-          ])
-        ) {
-          getFrontPage({ classId: courseData.id.toString() }).then((data) => {
-            console.log("Cached frontpage", courseData.name);
-            queryClient.setQueryData(
-              ["canvas-course", courseData.id.toString(), "frontpage"],
-              data,
-            );
-          });
-        }
-      }}
-      prefetch
       href={`/classes/${courseData.id}`}
     >
       <Button variant="outline" asChild>
@@ -99,4 +80,22 @@ function ClassCard(courseData: Course) {
       </Button>
     </Link>
   );
+}
+
+async function getAllCanvasCourses({userId}: {userId: string}) {
+  const settings = (
+    await db.query.user.findFirst({ where: eq(user.id, userId) })
+  )?.settings;
+
+  if (!settings?.canvasApiKey || !settings.canvasDomain)
+    return "Settings not configured";
+  const data = (await fetch(
+    `https://${settings.canvasDomain}/api/v1/courses?enrollment_state=active&per_page=50&include[]=teachers`,
+    {
+      headers: {
+        Authorization: `Bearer ${settings.canvasApiKey}`,
+      },
+    }
+  ).then((res) => res.json())) as Course[];
+  return data;
 }

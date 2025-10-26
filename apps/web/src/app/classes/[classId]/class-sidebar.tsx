@@ -1,11 +1,13 @@
 import { IconBlocks, IconHome, IconPencil } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ComponentProps } from "react";
+import { use, type ComponentProps } from "react";
 import { SidebarExtension } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 
-export function ClassSidebar({ classId }: { classId: string }) {
+export function ClassSidebar({params}: {params: Promise<{ classId: string }>}) {
+  const classId = use(params).classId
+
   return (
     <SidebarExtension>
       <div className="flex w-3xs flex-col gap-2 p-4">

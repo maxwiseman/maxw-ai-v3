@@ -3,6 +3,7 @@
 
 // import { useArtifacts } from "ai-sdk-tools/client";
 import { AIDevtools } from "ai-sdk-tools/client";
+// @ts-ignore
 import { useChat, useChatStatus } from "ai-sdk-tools";
 import {
   DefaultChatTransport,

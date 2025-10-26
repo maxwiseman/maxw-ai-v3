@@ -11,7 +11,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
-import { use } from "react";
+import { use, type ComponentProps } from "react";
 import {
   PageHeader,
   PageHeaderContent,
@@ -109,8 +109,7 @@ function ModuleItem({ item }: { item: CanvasModuleItem }) {
 
   return (
     <Link
-      // @ts-expect-error
-      href={moduleItemDetailsUrl(classId, item) ?? ""}
+      href={moduleItemDetailsUrl(classId, item) as ComponentProps<typeof Link>["href"] ?? ""}
       className="ml-8 flex items-center gap-2 py-4 hover:underline"
       key={item.id}
       target={

@@ -1,5 +1,6 @@
 "use client";
 
+// @ts-ignore
 import { Provider as ChatProvider } from "ai-sdk-tools";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import {

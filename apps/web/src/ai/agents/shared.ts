@@ -6,7 +6,8 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { Agent, InMemoryProvider, type AgentConfig } from "ai-sdk-tools";
+// @ts-ignore
+import { Agent, type AgentConfig } from "ai-sdk-tools";
 import type { Course } from "@/lib/canvas-types";
 import { classesToLLMKey } from "../utils/canvas-llm-helpers";
 
@@ -84,7 +85,7 @@ CURRENT CONTEXT:
 - School: ${context.schoolName}
 - Locale: ${context.locale}
 
-Important: 
+Important:
 - Use the current date/time above for any time-sensitive operations
 - User-specific information (name, preferences, etc.) is maintained in your working memory
 - If the user tells you specifically that the above information is incorrect, add an entry in your memory to reflect that
@@ -104,11 +105,7 @@ ${classesToLLMKey(
 `;
 }
 
-/**
- * Shared memory provider instance - used across all agents
- * Can be accessed for direct queries (e.g., listing chats)
- */
-export const sharedMemoryProvider = new InMemoryProvider();
+
 
 /**
  * Create a typed agent with AppContext pre-applied
@@ -119,20 +116,4 @@ export const sharedMemoryProvider = new InMemoryProvider();
 export const createAgent = (config: AgentConfig<AppContext>) =>
   Agent.create<AppContext>({
     ...config,
-    memory: {
-      provider: sharedMemoryProvider,
-      workingMemory: {
-        enabled: true,
-        scope: "user",
-        template: memoryTemplate,
-      },
-      history: {
-        enabled: true,
-        limit: 10,
-      },
-      chats: {
-        enabled: true,
-        generateTitle: true, // Uses agent's model
-      },
-    },
   });

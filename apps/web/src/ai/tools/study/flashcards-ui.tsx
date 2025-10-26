@@ -36,6 +36,7 @@ import {
   ItemDescription,
   ItemTitle,
 } from "@/components/ui/item";
+// @ts-ignore
 import { useChatStatus } from "ai-sdk-tools";
 // import { useArtifacts } from "ai-sdk-tools/client";
 

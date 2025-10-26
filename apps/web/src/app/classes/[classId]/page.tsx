@@ -1,8 +1,6 @@
-"use client";
+"use cache: private";
 
-import { useQuery } from "@tanstack/react-query";
 import { notFound } from "next/navigation";
-import { use } from "react";
 import { CanvasHTML } from "@/components/canvas-html";
 import {
   PageHeader,
@@ -11,35 +9,52 @@ import {
   PageHeaderTitle,
 } from "@/components/page-header";
 import { toTitleCase } from "@/lib/utils";
-import { getCanvasCourse, getFrontPage } from "../classes-actions";
-import { ClassSidebar } from "./class-sidebar";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { db } from "@/db";
+import { eq } from "drizzle-orm";
+import { user } from "@/db/schema/auth";
+import type { CanvasPage, Course } from "@/lib/canvas-types";
 
-export default function ClassPage({
+export const unstable_prefetch = {
+  mode: "runtime",
+  samples: [{
+    cookies: [
+       { name: 'better-auth.session_token', value: "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D" },
+    ]
+  }]
+}
+
+export default async function ClassPage({
   params: paramsPromise,
 }: {
   params: Promise<{ classId: string }>;
 }) {
-  const params = use(paramsPromise);
-  const { data, isPending } = useQuery({
-    queryFn: () => getCanvasCourse(params),
-    queryKey: ["canvas-course", params.classId],
-  });
-  const { data: frontPageData } = useQuery({
-    queryFn: () => getFrontPage(params),
-    queryKey: ["canvas-course", params.classId, "frontpage"],
-    enabled: typeof data === "object" && data.default_view === "wiki",
-  });
+  const authData = await auth.api.getSession({ headers: await headers() });
+  if (!authData) notFound();
+  const params = await paramsPromise;
 
-  if ((typeof data !== "object" && !isPending) || typeof data === "string")
-    return notFound();
+  const data = await fetchData({...params, userId: authData.user.id})
+  if (typeof data === "string") notFound();
+  const {frontPageData, classData} = data
+  // const { data, isPending } = useQuery({
+  //   queryFn: () => getCanvasCourse(params),
+  //   queryKey: ["canvas-course", params.classId],
+  // });
+  // const { data: frontPageData } = useQuery({
+  //   queryFn: () => getFrontPage(params),
+  //   queryKey: ["canvas-course", params.classId, "frontpage"],
+  //   enabled: typeof data === "object" && data.default_view === "wiki",
+  // });
+
   return (
     <div>
       <PageHeader>
         <PageHeaderContent>
-          <PageHeaderTitle>{data?.name}</PageHeaderTitle>
+          <PageHeaderTitle>{classData.name}</PageHeaderTitle>
           <PageHeaderDescription>
-            {(data?.teachers.length ?? 0) > 0
-              ? data?.teachers
+            {(classData.teachers.length ?? 0) > 0
+              ? classData.teachers
                   .map((teacher) => toTitleCase(teacher.display_name))
                   .join(", ")
               : "No teachers"}
@@ -51,4 +66,30 @@ export default function ClassPage({
       )}
     </div>
   );
+}
+
+async function fetchData({classId, userId}: {classId: string, userId: string}) {
+  const settings = (
+    await db.query.user.findFirst({ where: eq(user.id, userId) })
+  )?.settings;
+
+  if (!settings?.canvasApiKey || !settings.canvasDomain)
+    return "Settings not configured";
+  const classData = (await fetch(
+    `https://${settings.canvasDomain}/api/v1/courses/${classId}?include[]=teachers`,
+    {
+      headers: {
+        Authorization: `Bearer ${settings.canvasApiKey}`,
+      },
+    }
+  ).then((res) => res.json())) as Course;
+  const frontPageData = (await fetch(
+    `https://${settings.canvasDomain}/api/v1/courses/${classId}/front_page`,
+    {
+      headers: {
+        Authorization: `Bearer ${settings.canvasApiKey}`,
+      },
+    }
+  ).then((res) => res.json())) as CanvasPage;
+  return {classData, frontPageData};
 }

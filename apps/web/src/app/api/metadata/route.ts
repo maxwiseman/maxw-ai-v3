@@ -1,4 +1,5 @@
-import type { Agent } from "ai-sdk-tools";
+// @ts-ignore
+import type { Agent } from "@ai-sdk-tools/agents";
 import { generalAgent } from "@/ai/agents/general";
 import { secretaryAgent } from "@/ai/agents/secretary";
 
@@ -25,9 +26,7 @@ interface MetadataResponse {
 
 // Helper to extract tool names from an agent
 function getToolNames(agent: Agent<AppContext>): string[] {
-  // @ts-expect-error -- This is the reccomended way for some reason
   if (!agent.configuredTools) return [];
-  // @ts-expect-error -- This is the reccomended way for some reason
   return Object.keys(agent.configuredTools).filter(
     (name) => name !== "handoff_to_agent" && name !== "updateWorkingMemory"
   );

@@ -9,9 +9,9 @@ import "./src/env";
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
+  cacheComponents: true,
   experimental: {
     viewTransition: true,
-    cacheComponents: true
   },
 };
 
