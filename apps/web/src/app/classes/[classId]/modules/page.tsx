@@ -34,10 +34,14 @@ import { user } from "@/db/schema/auth";
 import { db } from "@/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import type { Prefetch } from "next/dist/build/segment-config/app/app-segment-config";
 
-export const unstable_prefetch = {
+export const unstable_prefetch: Prefetch = {
   mode: "runtime",
   samples: [{
+    params: {
+      classId: "1234567"
+    },
     cookies: [
        { name: 'better-auth.session_token', value: "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D" },
     ]

@@ -24,6 +24,10 @@ import { headers } from "next/headers";
 export const unstable_prefetch = {
   mode: "runtime",
   samples: [{
+    params: {
+      classId: "1234567",
+      assignmentId: "1234567"
+    },
     cookies: [
        { name: 'better-auth.session_token', value: "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D" },
     ]
@@ -96,7 +100,7 @@ async function fetchData({
   if (!settings?.canvasApiKey || !settings.canvasDomain)
     return "Settings not configured";
   const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/assignments${assignmentId}${filter !== undefined ? `?bucket=${filter}` : ""}`,
+    `https://${settings.canvasDomain}/api/v1/courses/${classId}/assignments/${assignmentId}${filter !== undefined ? `?bucket=${filter}` : ""}`,
     {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
