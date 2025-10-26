@@ -35,6 +35,15 @@ import { db } from "@/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
+export const unstable_prefetch = {
+  mode: "runtime",
+  samples: [{
+    cookies: [
+       { name: 'better-auth.session_token', value: "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D" },
+    ]
+  }]
+}
+
 export default async function ClassModulesPage({
   params: paramsPromise,
 }: {

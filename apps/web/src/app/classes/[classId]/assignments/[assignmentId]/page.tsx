@@ -1,4 +1,4 @@
-"use client";
+"use cache: private";
 
 import { IconPlus } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
@@ -14,22 +14,31 @@ import {
   PageHeaderTitle,
 } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { eq } from "drizzle-orm";
+import { user } from "@/db/schema/auth";
+import { db } from "@/db";
+import type { CanvasAssignment } from "@/lib/canvas-types";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
-export default function AssignmentPage({
+export const unstable_prefetch = {
+  mode: "runtime",
+  samples: [{
+    cookies: [
+       { name: 'better-auth.session_token', value: "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D" },
+    ]
+  }]
+}
+
+export default async function AssignmentPage({
   params: paramsPromise,
 }: {
   params: Promise<{ classId: string; assignmentId: string }>;
 }) {
-  const params = use(paramsPromise);
-  const { data } = useQuery({
-    queryFn: () => getAssignment(params),
-    queryKey: [
-      "canvas-course",
-      params.classId,
-      "assignments",
-      params.assignmentId,
-    ],
-  });
+  const authData = await auth.api.getSession({ headers: await headers() });
+  if (!authData) notFound();
+  const params = await paramsPromise;
+  const data = await fetchData({userId: authData.user.id, ...params})
   if (typeof data === "string") notFound();
 
   return (
@@ -60,4 +69,39 @@ export default function AssignmentPage({
       <CanvasHTML className="px-8 pb-8">{data?.description}</CanvasHTML>
     </div>
   );
+}
+
+async function fetchData({
+  classId,
+  assignmentId,
+  userId,
+  filter,
+}: {
+  classId: string;
+  assignmentId?: string;
+    userId: string;
+  filter?:
+    | "past"
+    | "overdue"
+    | "undated"
+    | "ungraded"
+    | "unsubmitted"
+    | "upcoming"
+    | "future";
+}) {
+  const settings = (
+    await db.query.user.findFirst({ where: eq(user.id, userId) })
+  )?.settings;
+
+  if (!settings?.canvasApiKey || !settings.canvasDomain)
+    return "Settings not configured";
+  const data = (await fetch(
+    `https://${settings.canvasDomain}/api/v1/courses/${classId}/assignments${assignmentId}${filter !== undefined ? `?bucket=${filter}` : ""}`,
+    {
+      headers: {
+        Authorization: `Bearer ${settings.canvasApiKey}`,
+      },
+    }
+  ).then((res) => res.json())) as CanvasAssignment;
+  return data;
 }
