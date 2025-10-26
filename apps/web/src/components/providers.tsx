@@ -1,6 +1,6 @@
 "use client";
 
-// import { Provider as ChatProvider } from "@ai-sdk-tools/store";
+import { Provider as ChatProvider } from "ai-sdk-tools";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import {
   QueryClient,
@@ -86,11 +86,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             className="size-full"
             > */}
       <QueryClientProvider>
-         {/* <ChatProvider> */}
+          <ChatProvider>
         <NuqsAdapter>
           <SidebarExtensionProvider>{children}</SidebarExtensionProvider>
         </NuqsAdapter>
-         {/* </ChatProvider> */}
+          </ChatProvider>
       </QueryClientProvider>
       <Toaster richColors />
       {/* </SidebarProvider> */}
