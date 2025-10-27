@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-expect-error
 import { artifact } from "ai-sdk-tools";
 import { z } from "zod";
 
@@ -72,5 +72,5 @@ export const BalanceSheetArtifact = artifact(
         concerns: z.array(z.string()),
       })
       .optional(),
-  })
+  }),
 );

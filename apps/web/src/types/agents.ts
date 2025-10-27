@@ -1,7 +1,7 @@
 import type {
-// @ts-ignore
+  // @ts-expect-error
   AgentDataParts,
-// @ts-ignore
+  // @ts-expect-error
   AgentUIMessage as BaseAgentUIMessage,
 } from "ai-sdk-tools";
 

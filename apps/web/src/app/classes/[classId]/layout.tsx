@@ -12,7 +12,9 @@ export default function Layout({
 }) {
   return (
     <div>
-      <Suspense><ClassSidebar params={params} /></Suspense>
+      <Suspense>
+        <ClassSidebar params={params} />
+      </Suspense>
       {children}
     </div>
   );

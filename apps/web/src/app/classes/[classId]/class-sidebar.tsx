@@ -5,8 +5,12 @@ import { type ComponentProps, use } from "react";
 import { SidebarExtension } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 
-export function ClassSidebar({params}: {params: Promise<{ classId: string }>}) {
-  const classId = use(params).classId
+export function ClassSidebar({
+  params,
+}: {
+  params: Promise<{ classId: string }>;
+}) {
+  const classId = use(params).classId;
 
   return (
     <SidebarExtension>

@@ -1,9 +1,9 @@
-import Header from "@/components/header";
-import Providers from "@/components/providers";
-import Sidebar from "@/components/sidebar";
 import type { Metadata } from "next";
 import { EB_Garamond, Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
+import Header from "@/components/header";
+import Providers from "@/components/providers";
+import Sidebar from "@/components/sidebar";
 import "../index.css";
 
 const geistSans = Geist({
@@ -32,7 +32,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html className="h-full overflow-y-hidden overscroll-none" lang="en" suppressHydrationWarning>
+    <html
+      className="h-full overflow-y-hidden overscroll-none"
+      lang="en"
+      suppressHydrationWarning
+    >
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${garamond.variable} h-full antialiased`}
       >
@@ -40,7 +44,9 @@ export default function RootLayout({
           <div className="grid size-full grid-rows-[auto_1fr]">
             <Header />
             <div className="grid size-full grid-cols-[auto_1fr]">
-              <Suspense><Sidebar /></Suspense>
+              <Suspense>
+                <Sidebar />
+              </Suspense>
               <div className="flex h-full flex-col">
                 <div className="-mt-16 h-0 grow overflow-scroll pt-16">
                   <Suspense>{children}</Suspense>

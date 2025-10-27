@@ -31,22 +31,28 @@ import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
 import { moduleItemDetailsUrl } from "@/lib/canvas-helpers";
 import {
-    type CanvasModule,
+  type CanvasModule,
   type CanvasModuleItem,
   CanvasModuleItemType,
 } from "@/lib/canvas-types";
 
 export const unstable_prefetch: Prefetch = {
   mode: "runtime",
-  samples: [{
-    params: {
-      classId: "1234567"
+  samples: [
+    {
+      params: {
+        classId: "1234567",
+      },
+      cookies: [
+        {
+          name: "better-auth.session_token",
+          value:
+            "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D",
+        },
+      ],
     },
-    cookies: [
-       { name: 'better-auth.session_token', value: "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D" },
-    ]
-  }]
-}
+  ],
+};
 
 export default async function ClassModulesPage({
   params: paramsPromise,
@@ -54,11 +60,14 @@ export default async function ClassModulesPage({
   params: Promise<{ classId: string }>;
 }) {
   const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) notFound  ();
+  if (!authData) notFound();
 
   const params = await paramsPromise;
   // const { modulesByClass, setModulesByClass } = useModulesState();
-  const data = await fetchData({userId: authData.user.id, classId: params.classId})
+  const data = await fetchData({
+    userId: authData.user.id,
+    classId: params.classId,
+  });
 
   if (typeof data === "string") notFound();
 
@@ -90,7 +99,11 @@ export default async function ClassModulesPage({
               </AccordionTrigger>
               <AccordionContent className="divide-y pb-1">
                 {module.items.map((item) => (
-                  <ModuleItem key={item.id} item={item} classId={params.classId} />
+                  <ModuleItem
+                    key={item.id}
+                    item={item}
+                    classId={params.classId}
+                  />
                 ))}
               </AccordionContent>
             </AccordionItem>
@@ -100,7 +113,13 @@ export default async function ClassModulesPage({
   );
 }
 
-function ModuleItem({ item, classId }: { item: CanvasModuleItem, classId: string }) {
+function ModuleItem({
+  item,
+  classId,
+}: {
+  item: CanvasModuleItem;
+  classId: string;
+}) {
   const Icon =
     item.type === CanvasModuleItemType.Assignment
       ? IconNotebook
@@ -142,7 +161,13 @@ function ModuleItem({ item, classId }: { item: CanvasModuleItem, classId: string
   );
 }
 
-async function fetchData({ classId, userId }: { classId: string, userId: string }) {
+async function fetchData({
+  classId,
+  userId,
+}: {
+  classId: string;
+  userId: string;
+}) {
   const settings = (
     await db.query.user.findFirst({ where: eq(user.id, userId) })
   )?.settings;
@@ -155,7 +180,7 @@ async function fetchData({ classId, userId }: { classId: string, userId: string 
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    }
+    },
   ).then((res) => res.json())) as CanvasModule[];
   return data;
 }

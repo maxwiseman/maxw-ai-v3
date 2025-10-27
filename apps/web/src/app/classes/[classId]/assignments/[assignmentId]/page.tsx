@@ -20,16 +20,22 @@ import type { CanvasAssignment } from "@/lib/canvas-types";
 
 export const unstable_prefetch = {
   mode: "runtime",
-  samples: [{
-    params: {
-      classId: "1234567",
-      assignmentId: "1234567"
+  samples: [
+    {
+      params: {
+        classId: "1234567",
+        assignmentId: "1234567",
+      },
+      cookies: [
+        {
+          name: "better-auth.session_token",
+          value:
+            "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D",
+        },
+      ],
     },
-    cookies: [
-       { name: 'better-auth.session_token', value: "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D" },
-    ]
-  }]
-}
+  ],
+};
 
 export default async function AssignmentPage({
   params: paramsPromise,
@@ -39,7 +45,7 @@ export default async function AssignmentPage({
   const authData = await auth.api.getSession({ headers: await headers() });
   if (!authData) notFound();
   const params = await paramsPromise;
-  const data = await fetchData({userId: authData.user.id, ...params})
+  const data = await fetchData({ userId: authData.user.id, ...params });
   if (typeof data === "string") notFound();
 
   return (
@@ -80,7 +86,7 @@ async function fetchData({
 }: {
   classId: string;
   assignmentId?: string;
-    userId: string;
+  userId: string;
   filter?:
     | "past"
     | "overdue"
@@ -102,7 +108,7 @@ async function fetchData({
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    }
+    },
   ).then((res) => res.json())) as CanvasAssignment;
   return data;
 }

@@ -22,7 +22,7 @@ export const createStudySetToolInput = z.object({
         explanation: z.string().nullable(),
         options: z.array(z.object({ correct: z.boolean(), text: z.string() })),
       }),
-    ])
+    ]),
   ),
 });
 
@@ -45,13 +45,14 @@ export const studySetArtifactData = z.object({
         explanation: z.string().nullable(),
         options: z.array(z.object({ correct: z.boolean(), text: z.string() })),
       }),
-    ])
+    ]),
   ),
 });
 
 export const studySetArtifact = artifact("study-set", studySetArtifactData);
 
 export const createStudySetTool = tool({
+  name: "study-set",
   inputSchema: createStudySetToolInput,
   execute: async (data, executionOptions) => {
     const writer = getWriter(executionOptions);
@@ -63,7 +64,7 @@ export const createStudySetTool = tool({
           tags: i.tags === null ? undefined : i.tags,
         })),
       },
-      writer
+      writer,
     );
     artifact.complete();
     return "Flashcard created successfully. It is currently being displayed to the user.";

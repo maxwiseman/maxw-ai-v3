@@ -48,13 +48,16 @@ export function buildFilterDescription(filters: FilterOptions): string {
  * Extract only defined filters
  */
 export function cleanFilters<T extends Record<string, unknown>>(
-  filters: T
+  filters: T,
 ): Partial<T> {
-  return Object.entries(filters).reduce((acc, [key, value]) => {
-    if (value !== undefined && value !== null) {
-      // @ts-expect-error
-      acc[key as keyof T] = value;
-    }
-    return acc;
-  }, {} as Partial<T>);
+  return Object.entries(filters).reduce(
+    (acc, [key, value]) => {
+      if (value !== undefined && value !== null) {
+        // @ts-expect-error
+        acc[key as keyof T] = value;
+      }
+      return acc;
+    },
+    {} as Partial<T>,
+  );
 }

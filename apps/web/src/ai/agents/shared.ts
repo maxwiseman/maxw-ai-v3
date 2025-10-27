@@ -6,7 +6,7 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-// @ts-ignore
+// @ts-expect-error
 import { Agent, type AgentConfig } from "ai-sdk-tools";
 import type { Course } from "@/lib/canvas-types";
 import { classesToLLMKey } from "../utils/canvas-llm-helpers";
@@ -14,7 +14,7 @@ import { classesToLLMKey } from "../utils/canvas-llm-helpers";
 // Load memory template from markdown file
 const memoryTemplate = readFileSync(
   join(process.cwd(), "src/ai/agents/memory-template.md"),
-  "utf-8"
+  "utf-8",
 );
 
 /**
@@ -100,12 +100,10 @@ ${classesToLLMKey(
     name: course.original_name ?? course.name,
     id: course.id,
     shortName: course.name,
-  }))
+  })),
 )}
 `;
 }
-
-
 
 /**
  * Create a typed agent with AppContext pre-applied

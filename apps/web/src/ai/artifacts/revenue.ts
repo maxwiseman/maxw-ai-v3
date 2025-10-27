@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-expect-error
 import { artifact } from "ai-sdk-tools";
 import { z } from "zod";
 
@@ -18,31 +18,31 @@ export const RevenueArtifact = artifact(
           month: z.string(),
           revenue: z.number(),
           growth: z.number(),
-        })
+        }),
       ),
       revenueByCategory: z.array(
         z.object({
           category: z.string(),
           revenue: z.number(),
           percentage: z.number(),
-        })
+        }),
       ),
       quarterlyTrends: z.array(
         z.object({
           quarter: z.string(),
           revenue: z.number(),
           growth: z.number(),
-        })
+        }),
       ),
       topCustomers: z.array(
         z.object({
           name: z.string(),
           revenue: z.number(),
           deals: z.number(),
-        })
+        }),
       ),
     }),
-  })
+  }),
 );
 
 export type RevenueArtifact = z.infer<typeof RevenueArtifact>;

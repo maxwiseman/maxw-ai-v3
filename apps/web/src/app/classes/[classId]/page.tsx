@@ -18,12 +18,18 @@ import { toTitleCase } from "@/lib/utils";
 
 export const unstable_prefetch = {
   mode: "runtime",
-  samples: [{
-    cookies: [
-       { name: 'better-auth.session_token', value: "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D" },
-    ]
-  }]
-}
+  samples: [
+    {
+      cookies: [
+        {
+          name: "better-auth.session_token",
+          value:
+            "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D",
+        },
+      ],
+    },
+  ],
+};
 
 export default async function ClassPage({
   params: paramsPromise,
@@ -34,9 +40,9 @@ export default async function ClassPage({
   if (!authData) notFound();
   const params = await paramsPromise;
 
-  const data = await fetchData({...params, userId: authData.user.id})
+  const data = await fetchData({ ...params, userId: authData.user.id });
   if (typeof data === "string") notFound();
-  const {frontPageData, classData} = data
+  const { frontPageData, classData } = data;
   // const { data, isPending } = useQuery({
   //   queryFn: () => getCanvasCourse(params),
   //   queryKey: ["canvas-course", params.classId],
@@ -68,7 +74,13 @@ export default async function ClassPage({
   );
 }
 
-async function fetchData({classId, userId}: {classId: string, userId: string}) {
+async function fetchData({
+  classId,
+  userId,
+}: {
+  classId: string;
+  userId: string;
+}) {
   const settings = (
     await db.query.user.findFirst({ where: eq(user.id, userId) })
   )?.settings;
@@ -81,7 +93,7 @@ async function fetchData({classId, userId}: {classId: string, userId: string}) {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    }
+    },
   ).then((res) => res.json())) as Course;
   const frontPageData = (await fetch(
     `https://${settings.canvasDomain}/api/v1/courses/${classId}/front_page`,
@@ -89,7 +101,7 @@ async function fetchData({classId, userId}: {classId: string, userId: string}) {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    }
+    },
   ).then((res) => res.json())) as CanvasPage;
-  return {classData, frontPageData};
+  return { classData, frontPageData };
 }

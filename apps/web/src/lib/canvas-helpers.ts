@@ -1,6 +1,6 @@
 import {
-  CanvasModuleItemType,
   type CanvasModuleItem,
+  CanvasModuleItemType,
 } from "@/lib/canvas-types";
 
 export function moduleItemDetailsUrl(classId: string, item: CanvasModuleItem) {

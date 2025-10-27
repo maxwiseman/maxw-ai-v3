@@ -1,13 +1,13 @@
 "use client";
 
-// @ts-ignore
-import { Provider as ChatProvider } from "ai-sdk-tools";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import {
   QueryClient,
   QueryClientProvider as RQQueryClientProvider,
 } from "@tanstack/react-query";
 import { persistQueryClient } from "@tanstack/react-query-persist-client";
+// @ts-expect-error
+import { Provider as ChatProvider } from "ai-sdk-tools";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { SidebarExtensionProvider } from "./sidebar";
 import { ThemeProvider } from "./theme-provider";
@@ -87,11 +87,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             className="size-full"
             > */}
       <QueryClientProvider>
-          <ChatProvider>
-        <NuqsAdapter>
-          <SidebarExtensionProvider>{children}</SidebarExtensionProvider>
-        </NuqsAdapter>
-          </ChatProvider>
+        <ChatProvider>
+          <NuqsAdapter>
+            <SidebarExtensionProvider>{children}</SidebarExtensionProvider>
+          </NuqsAdapter>
+        </ChatProvider>
       </QueryClientProvider>
       <Toaster richColors />
       {/* </SidebarProvider> */}

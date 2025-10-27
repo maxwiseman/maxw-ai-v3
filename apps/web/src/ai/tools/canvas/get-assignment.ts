@@ -1,10 +1,10 @@
+import { tool } from "ai";
+import z from "zod";
 import { LLMKeyToCanvasId } from "@/ai/utils/canvas-llm-helpers";
 import {
   getAllCanvasCourses,
   getAssignment,
 } from "@/app/classes/classes-actions";
-import { tool } from "ai";
-import z from "zod";
 
 export const getAssignmentTool = tool({
   description: "Get one or many assignments for the current user",
@@ -56,13 +56,13 @@ async function getAssignmentsExec({
             name: course.original_name ?? course.name,
             id: course.id,
             shortName: course.name,
-          }))
+          })),
         );
   const assignmentPromises = courses
     .filter((course) =>
       classId !== undefined
         ? convertedClassId?.toString() === course.id.toString()
-        : true
+        : true,
     )
     .map(async (course) => {
       return {
@@ -88,10 +88,10 @@ async function getAssignmentsExec({
                         assignment.due_at
                           ? new Date(assignment.due_at).toLocaleDateString()
                           : "No due date"
-                      }; Submitted: ${assignment.has_submitted_submissions}`
+                      }; Submitted: ${assignment.has_submitted_submissions}`,
                   )
                   .join("\n")
-          }`
+          }`,
     )
     .join("\n---\n");
   console.log(returnData);

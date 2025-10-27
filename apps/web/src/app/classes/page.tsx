@@ -1,6 +1,9 @@
 "use cache: private";
 
+import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import {
   PageHeader,
   PageHeaderContent,
@@ -9,29 +12,32 @@ import {
 } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { db } from "@/db";
+import { user } from "@/db/schema/auth";
+import { auth } from "@/lib/auth";
 import type { Course } from "@/lib/canvas-types";
 import { toTitleCase } from "@/lib/utils";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import { notFound } from "next/navigation";
-import { db } from "@/db";
-import { eq } from "drizzle-orm";
-import { user } from "@/db/schema/auth";
 
 export const unstable_prefetch = {
   mode: "runtime",
-  samples: [{
-    cookies: [
-       { name: 'better-auth.session_token', value: 'y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D' },
-    ]
-  }]
-}
+  samples: [
+    {
+      cookies: [
+        {
+          name: "better-auth.session_token",
+          value:
+            "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D",
+        },
+      ],
+    },
+  ],
+};
 
 export default async function ClassesPage() {
-  const authData = await auth.api.getSession({headers: await headers()})
+  const authData = await auth.api.getSession({ headers: await headers() });
   if (!authData?.user) notFound();
 
-  const data = await getAllCanvasCourses({userId: authData.user.id})
+  const data = await getAllCanvasCourses({ userId: authData.user.id });
 
   return (
     <div>
@@ -61,9 +67,7 @@ export default async function ClassesPage() {
 function ClassCard(courseData: Course) {
   const teacher = courseData.teachers?.[0]?.display_name;
   return (
-    <Link
-      href={`/classes/${courseData.id}`}
-    >
+    <Link href={`/classes/${courseData.id}`}>
       <Button variant="outline" asChild>
         <Card className="flex h-auto cursor-pointer flex-col items-start gap-0 p-0">
           <CardHeader className="block w-full p-4 pb-0">
@@ -82,7 +86,7 @@ function ClassCard(courseData: Course) {
   );
 }
 
-async function getAllCanvasCourses({userId}: {userId: string}) {
+async function getAllCanvasCourses({ userId }: { userId: string }) {
   const settings = (
     await db.query.user.findFirst({ where: eq(user.id, userId) })
   )?.settings;
@@ -95,7 +99,7 @@ async function getAllCanvasCourses({userId}: {userId: string}) {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
-    }
+    },
   ).then((res) => res.json())) as Course[];
   return data;
 }

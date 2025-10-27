@@ -5,8 +5,8 @@
  */
 
 import { openai } from "@ai-sdk/openai";
-import { createAgent, formatContextForLLM, type AppContext } from "./shared";
 import { createStudySetTool } from "../tools/study/flashcards";
+import { type AppContext, createAgent, formatContextForLLM } from "./shared";
 
 export const studyAgent = createAgent({
   name: "study",

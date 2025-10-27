@@ -1,7 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { generalAgent } from "./general";
-import { createAgent, formatContextForLLM, type AppContext } from "./shared";
 import { secretaryAgent } from "./secretary";
+import { type AppContext, createAgent, formatContextForLLM } from "./shared";
 import { studyAgent } from "./study";
 
 export const triageAgent = createAgent({
@@ -13,7 +13,7 @@ export const triageAgent = createAgent({
     providerOptions: { openai: { reasoningEffort: "minimal" } },
   },
   instructions: (
-    ctx: AppContext
+    ctx: AppContext,
   ) => `Route user requests to the appropriate agent:
 
 **secretary**: Organization, todos, task/assignment tracking, etc.

@@ -1,8 +1,8 @@
 import { openai } from "@ai-sdk/openai";
 import { createWebSearchTool } from "../tools/search";
+import { secretaryAgent } from "./secretary";
 // Import specialists for handoffs
 import { type AppContext, createAgent, formatContextForLLM } from "./shared";
-import { secretaryAgent } from "./secretary";
 import { studyAgent } from "./study";
 
 export const generalAgent = createAgent({
@@ -17,7 +17,7 @@ export const generalAgent = createAgent({
     reasoningSummary: "auto",
   },
   instructions: (
-    ctx: AppContext
+    ctx: AppContext,
   ) => `You are a general assistant and coordinator for students at ${
     ctx.schoolName
   }.

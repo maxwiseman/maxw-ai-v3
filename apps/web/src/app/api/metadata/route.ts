@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-expect-error
 import type { Agent } from "@ai-sdk-tools/agents";
 import { generalAgent } from "@/ai/agents/general";
 import { secretaryAgent } from "@/ai/agents/secretary";
@@ -28,7 +28,7 @@ interface MetadataResponse {
 function getToolNames(agent: Agent<AppContext>): string[] {
   if (!agent.configuredTools) return [];
   return Object.keys(agent.configuredTools).filter(
-    (name) => name !== "handoff_to_agent" && name !== "updateWorkingMemory"
+    (name) => name !== "handoff_to_agent" && name !== "updateWorkingMemory",
   );
 }
 
@@ -91,7 +91,7 @@ export async function GET() {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 }

@@ -8,12 +8,13 @@ import {
   type UIMessage,
   type UITools,
 } from "ai";
-import { useChat, useChatStatus, type ArtifactData } from "ai-sdk-tools";
+import { type ArtifactData, useChat, useChatStatus } from "ai-sdk-tools";
 import { AIDevtools, useArtifact, useArtifacts } from "ai-sdk-tools/client";
 import { useState } from "react";
 import type z from "zod";
 import type { createStudySetToolInput } from "@/ai/tools/study/flashcards";
 import { FlashcardToolDisplay } from "@/ai/tools/study/flashcards-ui";
+import { toolStatus } from "@/ai/tools/tool-status";
 import { Action, Actions } from "@/components/ai-elements/actions";
 import {
   Conversation,
@@ -104,8 +105,8 @@ export default function ChatPage() {
                 hasMessages={false}
                 onSubmit={handleSubmit}
                 setText={setInputText}
-                setUseWebSearch={() => {}}
-                useWebSearch={false}
+                setUseWebSearch={setWebSearch}
+                useWebSearch={webSearch}
               />
             </div>
           </div>
@@ -127,7 +128,7 @@ export default function ChatPage() {
                 </CardHeader>
               </Card>
             )}
-             {/*{process.env.NODE_ENV === "development" && <div className="prose dark:prose-invert prose-neutral">
+            {/*{process.env.NODE_ENV === "development" && <div className="prose dark:prose-invert prose-neutral">
               {artifacts.map((artifact) => (
                 <table className="w-full max-w-3xl" key={artifact.id}>
                   <tbody>
@@ -168,8 +169,8 @@ function ChatMessage({
 }: {
   msg: UIMessage<unknown, UIDataTypes, UITools>;
 }) {
-  const status = useChatStatus();
-  const {artifacts} = useArtifacts  ()
+  const { artifacts } = useArtifacts();
+
   return (
     <Message className="group items-center" from={msg.role}>
       {msg.role === "user" && (
@@ -204,12 +205,16 @@ function ChatMessage({
               ) : null;
             case part.type.startsWith("data-artifact"): {
               const typedPart = part as ArtifactData<unknown>;
-              const artifactData = artifacts.find(artifact => artifact.id === typedPart.id);
+              const artifactData = artifacts.find(
+                (artifact) => artifact.id === typedPart.id,
+              );
               return (
                 <FlashcardToolDisplay
                   key={i}
                   data={
-                    artifactData?.payload as z.infer<typeof createStudySetToolInput>
+                    artifactData?.payload as z.infer<
+                      typeof createStudySetToolInput
+                    >
                   }
                 />
               );
@@ -217,14 +222,36 @@ function ChatMessage({
           }
           return null;
         })}
-        {(msg.parts[msg.parts.length - 1]?.type === "reasoning" ||
-          msg.parts[msg.parts.length - 1]?.type.startsWith("tool-") ||
-          msg.parts[msg.parts.length - 1]?.type.startsWith("data-") ||
-          msg.parts.length === 0) &&
-        status === "streaming" ? (
-          <Shimmer>Thinking...</Shimmer>
-        ) : null}
+        <StatusMessage parts={msg.parts} />
       </MessageContent>
     </Message>
   );
+}
+
+function StatusMessage({
+  parts,
+}: {
+  parts: UIMessage<unknown, UIDataTypes, UITools>["parts"];
+}) {
+  const status = useChatStatus();
+  const lastPart = parts[parts.length - 1];
+  const lastestToolStatus = lastPart?.type.startsWith("tool-")
+    ? toolStatus[lastPart.type.replace("tool-", "")]
+    : undefined;
+  if (status !== "streaming") return null;
+
+  if (
+    !lastPart ||
+    lastPart.type.startsWith("data-") ||
+    lastPart.type === "reasoning"
+  )
+    return <Shimmer>Thinking...</Shimmer>;
+
+  if (lastPart.type.startsWith("tool-") && lastestToolStatus)
+    return (
+      <div className="flex items-center gap-2">
+        <lastestToolStatus.icon className="size-4 text-muted-foreground" />
+        <Shimmer>{`${lastestToolStatus.text}...`}</Shimmer>
+      </div>
+    );
 }

@@ -40,9 +40,7 @@ export function FlashcardToolDisplay({
 
   return (
     <div className="w-full space-y-2">
-      <div
-        className="scroll-shadow-x snap-x snap-mandatory overflow-y-visible overflow-x-scroll"
-      >
+      <div className="scroll-shadow-x snap-x snap-mandatory overflow-y-visible overflow-x-scroll">
         <div className="flex flex-1 gap-4">
           {data?.items
             ?.filter((item) => item?.type && item.type === "term")
@@ -69,9 +67,7 @@ export function FlashcardToolDisplay({
           </ItemDescription>
         </ItemContent>
         <ItemActions>
-          <Select
-            defaultValue="flashcards"
-          >
+          <Select defaultValue="flashcards">
             <SelectTrigger>
               <SelectValue placeholder="Study mode..." />
             </SelectTrigger>
