@@ -1,6 +1,5 @@
 "use client";
 
-// @ts-expect-error
 import { useChatActions } from "ai-sdk-tools";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";

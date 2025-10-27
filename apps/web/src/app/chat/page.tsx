@@ -9,7 +9,7 @@ import {
   type UITools,
 } from "ai";
 import { type ArtifactData, useChat, useChatStatus } from "ai-sdk-tools";
-import { AIDevtools, useArtifact, useArtifacts } from "ai-sdk-tools/client";
+import { AIDevtools, useArtifacts } from "ai-sdk-tools/client";
 import { useState } from "react";
 import type z from "zod";
 import type { createStudySetToolInput } from "@/ai/tools/study/flashcards";
@@ -22,7 +22,6 @@ import {
 } from "@/components/ai-elements/conversation";
 import { Message, MessageContent } from "@/components/ai-elements/message";
 import { Response } from "@/components/ai-elements/response";
-import { Shimmer } from "@/components/ai-elements/shimmer";
 import { ChatInput, type ChatInputMessage } from "@/components/chat/chat-input";
 import { EmptyState } from "@/components/chat/empty-state";
 import {
@@ -31,10 +30,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { toTitleCase } from "@/lib/utils";
+import { AnimatedStatus } from "@/components/chat/animated-status";
 
 export default function ChatPage() {
-  const { artifacts } = useArtifacts();
   const { messages, sendMessage, status, error, stop } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
@@ -235,7 +233,7 @@ function StatusMessage({
 }) {
   const status = useChatStatus();
   const lastPart = parts[parts.length - 1];
-  const lastestToolStatus = lastPart?.type.startsWith("tool-")
+  const latestToolStatus = lastPart?.type.startsWith("tool-")
     ? toolStatus[lastPart.type.replace("tool-", "")]
     : undefined;
   if (status !== "streaming") return null;
@@ -245,13 +243,10 @@ function StatusMessage({
     lastPart.type.startsWith("data-") ||
     lastPart.type === "reasoning"
   )
-    return <Shimmer>Thinking...</Shimmer>;
+    return <AnimatedStatus text="Thinking..." />;
 
-  if (lastPart.type.startsWith("tool-") && lastestToolStatus)
+  if (lastPart.type.startsWith("tool-") && latestToolStatus)
     return (
-      <div className="flex items-center gap-2">
-        <lastestToolStatus.icon className="size-4 text-muted-foreground" />
-        <Shimmer>{`${lastestToolStatus.text}...`}</Shimmer>
-      </div>
-    );
+      <AnimatedStatus {...latestToolStatus} text={`${latestToolStatus.text}...`} />
+    )
 }

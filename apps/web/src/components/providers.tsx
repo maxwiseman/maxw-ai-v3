@@ -6,7 +6,6 @@ import {
   QueryClientProvider as RQQueryClientProvider,
 } from "@tanstack/react-query";
 import { persistQueryClient } from "@tanstack/react-query-persist-client";
-// @ts-expect-error
 import { Provider as ChatProvider } from "ai-sdk-tools";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { SidebarExtensionProvider } from "./sidebar";
