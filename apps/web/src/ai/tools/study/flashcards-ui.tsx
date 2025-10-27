@@ -1,34 +1,20 @@
 "use client";
 
+import { IconCards, IconCheckbox, IconPencil } from "@tabler/icons-react";
 import type * as z from "zod";
-import type { createStudySetToolInput } from "./flashcards";
 import {
   Flashcard,
   FlashcardBack,
   FlashcardFront,
 } from "@/app/study/[id]/flashcards";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectItem,
-  SelectContent,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { IconCards, IconCheckbox, IconPencil } from "@tabler/icons-react";
+// import {
+//   Carousel,
+//   CarouselContent,
+//   CarouselItem,
+//   CarouselNext,
+//   CarouselPrevious,
+// } from "@/components/ui/carousel";
 import {
   Item,
   ItemActions,
@@ -36,30 +22,29 @@ import {
   ItemDescription,
   ItemTitle,
 } from "@/components/ui/item";
-// @ts-ignore
-import { useChatStatus } from "ai-sdk-tools";
-// import { useArtifacts } from "ai-sdk-tools/client";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { createStudySetToolInput } from "./flashcards";
 
 export function FlashcardToolDisplay({
-  toolData,
+  data,
 }: {
-  toolData: Partial<z.infer<typeof createStudySetToolInput>>;
+  data: Partial<z.infer<typeof createStudySetToolInput>>;
 }) {
-  const chatStatus = useChatStatus();
-  //   const { byType } = useArtifacts();
-  if ((toolData?.items?.length ?? 0) < 1) return null;
+  if ((data?.items?.length ?? 0) < 1) return null;
 
   return (
     <div className="w-full space-y-2">
       <div
-        // style={{
-        //   maskImage:
-        //     "linear-gradient(90deg,#000,#000,transparent 0,#000 calc(var(--spacing) * 8),#000 calc(100% - calc(var(--spacing) * 8)),transparent)",
-        // }}
         className="scroll-shadow-x snap-x snap-mandatory overflow-y-visible overflow-x-scroll"
       >
         <div className="flex flex-1 gap-4">
-          {toolData?.items
+          {data?.items
             ?.filter((item) => item?.type && item.type === "term")
             .map((item) => (
               <Flashcard
@@ -77,7 +62,7 @@ export function FlashcardToolDisplay({
       <Item className="mb-6 p-0">
         <ItemContent className="gap-0">
           <ItemTitle className="font-bold text-lg">
-            {toolData.title ?? "Untitled"}
+            {data.title ?? "Untitled"}
           </ItemTitle>
           <ItemDescription className="text-base">
             Draft Study Set
@@ -85,7 +70,6 @@ export function FlashcardToolDisplay({
         </ItemContent>
         <ItemActions>
           <Select
-            disabled={chatStatus === "streaming"}
             defaultValue="flashcards"
           >
             <SelectTrigger>
@@ -106,7 +90,7 @@ export function FlashcardToolDisplay({
               </SelectItem>
             </SelectContent>
           </Select>
-          <Button disabled={chatStatus === "streaming"}>Save</Button>
+          <Button>Save</Button>
         </ItemActions>
       </Item>
     </div>

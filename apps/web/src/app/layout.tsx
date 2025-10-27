@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
-import { EB_Garamond, Geist, Geist_Mono } from "next/font/google";
-import "../index.css";
 import Header from "@/components/header";
 import Providers from "@/components/providers";
 import Sidebar from "@/components/sidebar";
+import type { Metadata } from "next";
+import { EB_Garamond, Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
+import "../index.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html className="h-full overscroll-none" lang="en" suppressHydrationWarning>
+    <html className="h-full overflow-y-hidden overscroll-none" lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${garamond.variable} h-full antialiased`}
       >

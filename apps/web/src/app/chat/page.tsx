@@ -1,41 +1,39 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: We don't really have any better options here, but the index shouldn't change */
 "use client";
 
-// import { useArtifacts } from "ai-sdk-tools/client";
-import { AIDevtools } from "ai-sdk-tools/client";
-// @ts-ignore
-import { useChat, useChatStatus } from "ai-sdk-tools";
+import { IconCopy, IconPencil } from "@tabler/icons-react";
 import {
   DefaultChatTransport,
   type UIDataTypes,
   type UIMessage,
   type UITools,
 } from "ai";
+import { useChat, useChatStatus, type ArtifactData } from "ai-sdk-tools";
+import { AIDevtools, useArtifact, useArtifacts } from "ai-sdk-tools/client";
 import { useState } from "react";
-import { Message, MessageContent } from "@/components/ai-elements/message";
-import { Response } from "@/components/ai-elements/response";
-import { ChatInput, type ChatInputMessage } from "@/components/chat/chat-input";
-import { EmptyState } from "@/components/chat/empty-state";
+import type z from "zod";
+import type { createStudySetToolInput } from "@/ai/tools/study/flashcards";
+import { FlashcardToolDisplay } from "@/ai/tools/study/flashcards-ui";
+import { Action, Actions } from "@/components/ai-elements/actions";
 import {
   Conversation,
   ConversationContent,
 } from "@/components/ai-elements/conversation";
-import { toTitleCase } from "@/lib/utils";
+import { Message, MessageContent } from "@/components/ai-elements/message";
+import { Response } from "@/components/ai-elements/response";
 import { Shimmer } from "@/components/ai-elements/shimmer";
-import { FlashcardToolDisplay } from "@/ai/tools/study/flashcards-ui";
-import type z from "zod";
-import type { createStudySetToolInput } from "@/ai/tools/study/flashcards";
+import { ChatInput, type ChatInputMessage } from "@/components/chat/chat-input";
+import { EmptyState } from "@/components/chat/empty-state";
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Action, Actions } from "@/components/ai-elements/actions";
-import { IconCopy, IconPencil } from "@tabler/icons-react";
+import { toTitleCase } from "@/lib/utils";
 
 export default function ChatPage() {
-  // const { artifacts } = useArtifacts();
+  const { artifacts } = useArtifacts();
   const { messages, sendMessage, status, error, stop } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
@@ -71,12 +69,6 @@ export default function ChatPage() {
     if (!(hasText || hasAttachments)) {
       return;
     }
-
-    // if (message.files?.length) {
-    //   toast.success("Files attached", {
-    //     description: `${message.files.length} file(s) attached to message`,
-    //   });
-    // }
 
     sendMessage({
       text: message.text || "Sent with attachments",
@@ -135,7 +127,7 @@ export default function ChatPage() {
                 </CardHeader>
               </Card>
             )}
-            {/* <div className="prose dark:prose-invert prose-neutral">
+             {/*{process.env.NODE_ENV === "development" && <div className="prose dark:prose-invert prose-neutral">
               {artifacts.map((artifact) => (
                 <table className="w-full max-w-3xl" key={artifact.id}>
                   <tbody>
@@ -163,7 +155,7 @@ export default function ChatPage() {
                   </tbody>
                 </table>
               ))}
-            </div> */}
+             </div>}*/}
           </ConversationContent>
         </Conversation>
       )}
@@ -177,6 +169,7 @@ function ChatMessage({
   msg: UIMessage<unknown, UIDataTypes, UITools>;
 }) {
   const status = useChatStatus();
+  const {artifacts} = useArtifacts  ()
   return (
     <Message className="group items-center" from={msg.role}>
       {msg.role === "user" && (
@@ -204,20 +197,23 @@ function ChatMessage({
         variant={msg.role !== "user" ? "flat" : "contained"}
       >
         {msg.parts.map((part, i) => {
-          switch (part.type) {
-            case "text":
+          switch (true) {
+            case part.type === "text":
               return part.text.length > 0 ? (
                 <Response key={i}>{part.text}</Response>
               ) : null;
-            case "tool-createStudySet":
+            case part.type.startsWith("data-artifact"): {
+              const typedPart = part as ArtifactData<unknown>;
+              const artifactData = artifacts.find(artifact => artifact.id === typedPart.id);
               return (
                 <FlashcardToolDisplay
                   key={i}
-                  toolData={
-                    part.input as z.infer<typeof createStudySetToolInput>
+                  data={
+                    artifactData?.payload as z.infer<typeof createStudySetToolInput>
                   }
                 />
               );
+            }
           }
           return null;
         })}

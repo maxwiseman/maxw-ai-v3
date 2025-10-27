@@ -1,7 +1,7 @@
 import { IconBlocks, IconHome, IconPencil } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { use, type ComponentProps } from "react";
+import { type ComponentProps, use } from "react";
 import { SidebarExtension } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 

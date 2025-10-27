@@ -1,10 +1,9 @@
 "use cache: private";
 
 import { IconPlus } from "@tabler/icons-react";
-import { useQuery } from "@tanstack/react-query";
+import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { use } from "react";
-import { getAssignment } from "@/app/classes/classes-actions";
 import { CanvasHTML } from "@/components/canvas-html";
 import {
   PageHeader,
@@ -14,12 +13,10 @@ import {
   PageHeaderTitle,
 } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { eq } from "drizzle-orm";
-import { user } from "@/db/schema/auth";
 import { db } from "@/db";
-import type { CanvasAssignment } from "@/lib/canvas-types";
+import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import type { CanvasAssignment } from "@/lib/canvas-types";
 
 export const unstable_prefetch = {
   mode: "runtime",

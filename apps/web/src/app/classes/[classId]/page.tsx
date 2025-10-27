@@ -1,5 +1,7 @@
 "use cache: private";
 
+import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { CanvasHTML } from "@/components/canvas-html";
 import {
@@ -8,13 +10,11 @@ import {
   PageHeaderDescription,
   PageHeaderTitle,
 } from "@/components/page-header";
-import { toTitleCase } from "@/lib/utils";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { db } from "@/db";
-import { eq } from "drizzle-orm";
 import { user } from "@/db/schema/auth";
+import { auth } from "@/lib/auth";
 import type { CanvasPage, Course } from "@/lib/canvas-types";
+import { toTitleCase } from "@/lib/utils";
 
 export const unstable_prefetch = {
   mode: "runtime",

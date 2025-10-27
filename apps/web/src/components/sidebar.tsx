@@ -25,7 +25,7 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="top-16 flex h-full divide-x [&>*]:last:border-r">
+    <div className="top-16 flex h-full divide-x *:last:border-r">
       <div className="flex h-full w-16 flex-col items-center">
         <div className="flex h-full w-full flex-col items-center justify-between py-4">
           <nav className="flex flex-col items-center gap-4 text-lg">

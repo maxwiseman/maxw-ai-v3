@@ -8,9 +8,13 @@ import {
   IconLink,
   IconNotebook,
 } from "@tabler/icons-react";
+// import { useModulesState } from "../../modules-store";
+import { eq } from "drizzle-orm";
+import type { Prefetch } from "next/dist/build/segment-config/app/app-segment-config";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { type ComponentProps, use } from "react";
+import type { ComponentProps } from "react";
 import {
   PageHeader,
   PageHeaderContent,
@@ -22,19 +26,15 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { db } from "@/db";
+import { user } from "@/db/schema/auth";
+import { auth } from "@/lib/auth";
 import { moduleItemDetailsUrl } from "@/lib/canvas-helpers";
 import {
     type CanvasModule,
   type CanvasModuleItem,
   CanvasModuleItemType,
 } from "@/lib/canvas-types";
-// import { useModulesState } from "../../modules-store";
-import { eq } from "drizzle-orm";
-import { user } from "@/db/schema/auth";
-import { db } from "@/db";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import type { Prefetch } from "next/dist/build/segment-config/app/app-segment-config";
 
 export const unstable_prefetch: Prefetch = {
   mode: "runtime",

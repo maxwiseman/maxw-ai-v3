@@ -1,6 +1,5 @@
-// @ts-ignore
-import { artifact, getWriter } from "ai-sdk-tools";
 import { tool } from "ai";
+import { artifact, getWriter } from "ai-sdk-tools";
 import * as z from "zod";
 
 export const createStudySetToolInput = z.object({
@@ -54,9 +53,8 @@ export const studySetArtifact = artifact("study-set", studySetArtifactData);
 
 export const createStudySetTool = tool({
   inputSchema: createStudySetToolInput,
-  execute: async (data) => {
-    console.log(data);
-    const writer = getWriter();
+  execute: async (data, executionOptions) => {
+    const writer = getWriter(executionOptions);
     const artifact = studySetArtifact.stream(
       {
         ...data,
