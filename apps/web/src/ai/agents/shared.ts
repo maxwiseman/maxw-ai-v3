@@ -165,12 +165,12 @@ export const createAgent = (config: AgentConfig<AppContext>) => {
  Return only the title.
  </output-format>`,
         },
-        generateSuggestions: {
-          enabled: true,
-          model: openai("gpt-4.1-nano"),
-          limit: 5,
-          instructions: suggestionsInstructions,
-        },
+        // generateSuggestions: {
+        //   enabled: true,
+        //   model: openai("gpt-4.1-nano"),
+        //   limit: 5,
+        //   instructions: suggestionsInstructions,
+        // },
       },
     },
   });

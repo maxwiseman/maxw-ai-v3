@@ -53,7 +53,7 @@ export function PromptSuggestions({ delay = 0 }: PromptSuggestionsProps = {}) {
               variant="ghost"
               size="sm"
               onClick={() => handlePromptClick(prompt)}
-              className="flex-shrink-0 whitespace-nowrap rounded-full border border-border/50 bg-[#fafafa]/80 font-normal text-muted-foreground/60 text-xs backdrop-blur-sm hover:bg-accent hover:text-foreground dark:bg-background/70"
+              className="shrink-0 whitespace-nowrap rounded-full border border-border/50 bg-[#fafafa]/80 font-normal text-muted-foreground/60 text-xs backdrop-blur-sm hover:bg-accent hover:text-foreground dark:bg-background/70"
             >
               {prompt}
             </Button>
