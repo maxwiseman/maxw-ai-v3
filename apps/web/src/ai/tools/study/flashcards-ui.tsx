@@ -47,7 +47,7 @@ export function FlashcardToolDisplay({
             .map((item) => (
               <Flashcard
                 key={item.term}
-                className="h-full w-full max-w-lg shrink-0 snap-center"
+                className="h-full w-full max-w-md shrink-0 snap-center"
               >
                 <FlashcardFront className="">{item.term}</FlashcardFront>
                 <FlashcardBack className="text-lg">

@@ -7,13 +7,20 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 // @ts-ignore -- This library is a little broken
-import { Agent, type AgentConfig } from "ai-sdk-tools";
+import { Agent, InMemoryProvider, type AgentConfig } from "ai-sdk-tools";
 import type { Course } from "@/lib/canvas-types";
 import { classesToLLMKey } from "../utils/canvas-llm-helpers";
+import { openai } from "@ai-sdk/openai";
 
 // Load memory template from markdown file
 const memoryTemplate = readFileSync(
   join(process.cwd(), "src/ai/agents/memory-template.md"),
+  "utf-8",
+);
+
+// Load suggestions instructions from markdown file
+const suggestionsInstructions = readFileSync(
+  join(process.cwd(), "src/ai/agents/suggestions-instructions.md"),
   "utf-8",
 );
 
@@ -106,12 +113,65 @@ ${classesToLLMKey(
 }
 
 /**
+ * Memory provider instance - used across all agents
+ * Can be accessed for direct queries (e.g., listing chats)
+ */
+export const memoryProvider = new InMemoryProvider()
+
+/**
  * Create a typed agent with AppContext pre-applied
  * This enables automatic type inference for the context parameter
  *
  * All agents automatically get shared memory configuration
  */
-export const createAgent = (config: AgentConfig<AppContext>) =>
-  Agent.create<AppContext>({
-    ...config,
-  });
+ export const createAgent = (config: AgentConfig<AppContext>) => {
+   return new Agent({
+     ...config,
+     modelSettings: {
+       parallel_tool_calls: true,
+       ...config.modelSettings
+     },
+     memory: {
+       provider: memoryProvider,
+       history: {
+         enabled: true,
+         limit: 10,
+       },
+       workingMemory: {
+         enabled: true,
+         template: memoryTemplate,
+         scope: "user",
+       },
+       chats: {
+         enabled: true,
+         generateTitle: {
+           model: openai("gpt-4.1-nano"),
+           instructions: `Generate a concise title that captures the user's intent.
+
+ <rules>
+ - Extract the core topic/intent, not the question itself
+ - Use noun phrases (e.g., "Tesla Affordability" not "Can I Afford Tesla")
+ - Maximum 30 characters
+ - Title case (capitalize all major words)
+ - No periods unless it's an abbreviation
+ - Use proper abbreviations (Q1, Q2, etc.)
+ </rules>
+
+ <the-ask>
+ Generate a title for the conversation.
+ </the-ask>
+
+ <output-format>
+ Return only the title.
+ </output-format>`,
+         },
+         generateSuggestions: {
+           enabled: true,
+           model: openai("gpt-4.1-nano"),
+           limit: 5,
+           instructions: suggestionsInstructions,
+         },
+       },
+     },
+   });
+ };

@@ -31,6 +31,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { AnimatedStatus } from "@/components/chat/animated-status";
+import { ChatTitle } from "@/components/chat/chat-title";
+import { PromptSuggestions } from "@/components/chat/prompt-suggestions";
 
 export default function ChatPage() {
   const { messages, sendMessage, status, error, stop } = useChat({
@@ -95,20 +97,24 @@ export default function ChatPage() {
         </EmptyState>
       ) : (
         <Conversation>
+          <div className="absolute top-0 inset-x-0 flex justify-center items-center z-10 h-10 bg-background/90 backdrop-blur-sm"><ChatTitle /></div>
           <div className="pointer-events-none absolute inset-0 z-10 flex h-full w-full flex-col justify-end">
             <div className="w-full bg-linear-to-t from-[1.25rem] from-background to-transparent">
-              <ChatInput
-                className="pointer-events-auto mx-auto w-full max-w-3xl"
-                text={inputText}
-                hasMessages={false}
-                onSubmit={handleSubmit}
-                setText={setInputText}
-                setUseWebSearch={setWebSearch}
-                useWebSearch={webSearch}
-              />
+              <div className="mx-auto w-full max-w-2xl pb-4">
+                <PromptSuggestions delay={1} />
+                <ChatInput
+                  className="pointer-events-auto mx-auto w-full"
+                  text={inputText}
+                  hasMessages={false}
+                  onSubmit={handleSubmit}
+                  setText={setInputText}
+                  setUseWebSearch={setWebSearch}
+                  useWebSearch={webSearch}
+                />
+              </div>
             </div>
           </div>
-          <ConversationContent className="mx-auto max-w-3xl pb-64">
+          <ConversationContent className="mx-auto max-w-3xl pb-64 pt-10">
             {messages.map((msg) => (
               <ChatMessage key={msg.id} msg={msg} />
             ))}
