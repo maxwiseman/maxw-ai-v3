@@ -35,6 +35,7 @@ import {
   type CanvasModuleItem,
   CanvasModuleItemType,
 } from "@/lib/canvas-types";
+import { NotAuthenticated } from "@/components/not-authenticated";
 
 export const unstable_prefetch: Prefetch = {
   mode: "runtime",
@@ -60,7 +61,7 @@ export default async function ClassModulesPage({
   params: Promise<{ classId: string }>;
 }) {
   const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) notFound();
+  if (!authData) return <NotAuthenticated />;
 
   const params = await paramsPromise;
   // const { modulesByClass, setModulesByClass } = useModulesState();

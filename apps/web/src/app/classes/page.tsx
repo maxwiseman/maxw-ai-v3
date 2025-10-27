@@ -3,7 +3,6 @@
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import {
   PageHeader,
   PageHeaderContent,
@@ -17,6 +16,7 @@ import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
 import type { Course } from "@/lib/canvas-types";
 import { toTitleCase } from "@/lib/utils";
+import { NotAuthenticated } from "@/components/not-authenticated";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -35,7 +35,7 @@ export const unstable_prefetch = {
 
 export default async function ClassesPage() {
   const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData?.user) notFound();
+  if (!authData?.user) return <NotAuthenticated />;
 
   const data = await getAllCanvasCourses({ userId: authData.user.id });
 

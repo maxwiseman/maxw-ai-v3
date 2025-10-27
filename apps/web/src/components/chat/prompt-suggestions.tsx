@@ -35,7 +35,7 @@ export function PromptSuggestions({ delay = 0 }: PromptSuggestionsProps = {}) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 10 }}
         transition={{ duration: 0.3, delay, ease: "easeOut" }}
-        className="flex pointer-events-auto gap-2 mb-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="pointer-events-auto mb-2 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {prompts.map((prompt, index) => (
           <motion.div
@@ -53,7 +53,7 @@ export function PromptSuggestions({ delay = 0 }: PromptSuggestionsProps = {}) {
               variant="ghost"
               size="sm"
               onClick={() => handlePromptClick(prompt)}
-              className="rounded-full text-xs font-normal text-muted-foreground/60 hover:text-foreground hover:bg-accent border border-border/50 bg-[#fafafa]/80 dark:bg-background/70 backdrop-blur-sm flex-shrink-0 whitespace-nowrap"
+              className="flex-shrink-0 whitespace-nowrap rounded-full border border-border/50 bg-[#fafafa]/80 font-normal text-muted-foreground/60 text-xs backdrop-blur-sm hover:bg-accent hover:text-foreground dark:bg-background/70"
             >
               {prompt}
             </Button>

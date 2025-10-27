@@ -6,11 +6,11 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { openai } from "@ai-sdk/openai";
 // @ts-ignore -- This library is a little broken
-import { Agent, InMemoryProvider, type AgentConfig } from "ai-sdk-tools";
+import { Agent, type AgentConfig, InMemoryProvider } from "ai-sdk-tools";
 import type { Course } from "@/lib/canvas-types";
 import { classesToLLMKey } from "../utils/canvas-llm-helpers";
-import { openai } from "@ai-sdk/openai";
 
 // Load memory template from markdown file
 const memoryTemplate = readFileSync(
@@ -116,7 +116,7 @@ ${classesToLLMKey(
  * Memory provider instance - used across all agents
  * Can be accessed for direct queries (e.g., listing chats)
  */
-export const memoryProvider = new InMemoryProvider()
+export const memoryProvider = new InMemoryProvider();
 
 /**
  * Create a typed agent with AppContext pre-applied
@@ -124,29 +124,29 @@ export const memoryProvider = new InMemoryProvider()
  *
  * All agents automatically get shared memory configuration
  */
- export const createAgent = (config: AgentConfig<AppContext>) => {
-   return new Agent({
-     ...config,
-     modelSettings: {
-       parallel_tool_calls: true,
-       ...config.modelSettings
-     },
-     memory: {
-       provider: memoryProvider,
-       history: {
-         enabled: true,
-         limit: 10,
-       },
-       workingMemory: {
-         enabled: true,
-         template: memoryTemplate,
-         scope: "user",
-       },
-       chats: {
-         enabled: true,
-         generateTitle: {
-           model: openai("gpt-4.1-nano"),
-           instructions: `Generate a concise title that captures the user's intent.
+export const createAgent = (config: AgentConfig<AppContext>) => {
+  return new Agent({
+    ...config,
+    modelSettings: {
+      parallel_tool_calls: true,
+      ...config.modelSettings,
+    },
+    memory: {
+      provider: memoryProvider,
+      history: {
+        enabled: true,
+        limit: 10,
+      },
+      workingMemory: {
+        enabled: true,
+        template: memoryTemplate,
+        scope: "user",
+      },
+      chats: {
+        enabled: true,
+        generateTitle: {
+          model: openai("gpt-4.1-nano"),
+          instructions: `Generate a concise title that captures the user's intent.
 
  <rules>
  - Extract the core topic/intent, not the question itself
@@ -164,14 +164,14 @@ export const memoryProvider = new InMemoryProvider()
  <output-format>
  Return only the title.
  </output-format>`,
-         },
-         generateSuggestions: {
-           enabled: true,
-           model: openai("gpt-4.1-nano"),
-           limit: 5,
-           instructions: suggestionsInstructions,
-         },
-       },
-     },
-   });
- };
+        },
+        generateSuggestions: {
+          enabled: true,
+          model: openai("gpt-4.1-nano"),
+          limit: 5,
+          instructions: suggestionsInstructions,
+        },
+      },
+    },
+  });
+};

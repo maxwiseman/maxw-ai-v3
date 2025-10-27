@@ -22,17 +22,17 @@ import {
 } from "@/components/ai-elements/conversation";
 import { Message, MessageContent } from "@/components/ai-elements/message";
 import { Response } from "@/components/ai-elements/response";
+import { AnimatedStatus } from "@/components/chat/animated-status";
 import { ChatInput, type ChatInputMessage } from "@/components/chat/chat-input";
+import { ChatTitle } from "@/components/chat/chat-title";
 import { EmptyState } from "@/components/chat/empty-state";
+import { PromptSuggestions } from "@/components/chat/prompt-suggestions";
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { AnimatedStatus } from "@/components/chat/animated-status";
-import { ChatTitle } from "@/components/chat/chat-title";
-import { PromptSuggestions } from "@/components/chat/prompt-suggestions";
 
 export default function ChatPage() {
   const { messages, sendMessage, status, error, stop } = useChat({
@@ -97,7 +97,9 @@ export default function ChatPage() {
         </EmptyState>
       ) : (
         <Conversation>
-          <div className="absolute top-0 inset-x-0 flex justify-center items-center z-10 h-10 bg-background/90 backdrop-blur-sm"><ChatTitle /></div>
+          <div className="absolute inset-x-0 top-0 z-10 flex h-10 items-center justify-center bg-background/90 backdrop-blur-sm">
+            <ChatTitle />
+          </div>
           <div className="pointer-events-none absolute inset-0 z-10 flex h-full w-full flex-col justify-end">
             <div className="w-full bg-linear-to-t from-[1.25rem] from-background to-transparent">
               <div className="mx-auto w-full max-w-2xl pb-4">
@@ -114,7 +116,7 @@ export default function ChatPage() {
               </div>
             </div>
           </div>
-          <ConversationContent className="mx-auto max-w-3xl pb-64 pt-10">
+          <ConversationContent className="mx-auto max-w-3xl pt-10 pb-64">
             {messages.map((msg) => (
               <ChatMessage key={msg.id} msg={msg} />
             ))}
@@ -253,6 +255,9 @@ function StatusMessage({
 
   if (lastPart.type.startsWith("tool-") && latestToolStatus)
     return (
-      <AnimatedStatus {...latestToolStatus} text={`${latestToolStatus.text}...`} />
-    )
+      <AnimatedStatus
+        {...latestToolStatus}
+        text={`${latestToolStatus.text}...`}
+      />
+    );
 }

@@ -15,6 +15,7 @@ import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
 import type { CanvasPage, Course } from "@/lib/canvas-types";
 import { toTitleCase } from "@/lib/utils";
+import { NotAuthenticated } from "@/components/not-authenticated";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -37,7 +38,7 @@ export default async function ClassPage({
   params: Promise<{ classId: string }>;
 }) {
   const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) notFound();
+  if (!authData) return <NotAuthenticated />;
   const params = await paramsPromise;
 
   const data = await fetchData({ ...params, userId: authData.user.id });
