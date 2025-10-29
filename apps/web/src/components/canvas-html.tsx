@@ -2,7 +2,6 @@
 import { IconExternalLink } from "@tabler/icons-react";
 import Link from "next/link";
 import type { ComponentProps } from "react";
-import React from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import rehypeParse from "rehype-parse";
 import rehypeReact from "rehype-react";
@@ -10,6 +9,7 @@ import { unified } from "unified";
 import { cn } from "@/lib/utils";
 import "katex/dist/katex.min.css";
 import { InlineMath } from "react-katex";
+import Image from "next/image";
 
 export function CanvasHTML({
   children,
@@ -51,8 +51,7 @@ export function CanvasHTML({
           latex ? (
             <InlineMath math={latex} />
           ) : (
-            // biome-ignore lint/a11y/useAltText: This may be already provided by the HTML props
-            <img {...props} loading="eager" className="mx-auto max-w-lg" />
+              <CanvasImage {...props} />
           ),
       },
     });
@@ -71,4 +70,15 @@ export function CanvasHTML({
       {result}
     </div>
   );
+}
+
+function CanvasImage(props: ComponentProps<"img">) {
+  const width = Number.isNaN(Number(props.width)) ? undefined : Number(props.width)
+  const height = Number.isNaN(Number(props.height)) ? undefined : Number(props.height)
+
+  return (
+    <span className="block size-max mx-auto max-w-lg">
+      <Image alt="" src="" {...props} width={width} ref={undefined} height={height} fill={height === undefined && width === undefined} loading="eager" className="relative! inset-0" />
+    </span>
+  )
 }

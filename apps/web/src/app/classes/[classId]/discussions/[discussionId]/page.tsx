@@ -62,6 +62,7 @@ export default async function DiscussionPage({
               {new Date(data.assignment.due_at).toLocaleString("en-us", {
                 timeStyle: "short",
                 dateStyle: "medium",
+                timeZone: "America/New_York"
               })}
             </PageHeaderDescription>
           )}
@@ -78,8 +79,8 @@ export default async function DiscussionPage({
         </PageHeaderActions>
       </PageHeader>
       <CanvasHTML className="px-8 pb-8">{data.message}</CanvasHTML>
-      <div className="px-8 pb-8 space-y-4">
-        {data.view.map((entry) => (
+      <div className="space-y-16 px-8 pb-8">
+        {data.view.reverse().map((entry) => (
           <DiscussionEntry key={entry.id} participants={data.participants} entry={entry} />
         ))}
       </div>
@@ -90,7 +91,7 @@ export default async function DiscussionPage({
 function DiscussionEntry({participants, entry}: {participants: CanvasDiscussionView["participants"], entry: CanvasDiscussionEntry}) {
   const user = participants.find(p => p.id === entry.user_id)
   return (
-    <Card key={entry.id}>
+    <Card className="mx-auto max-w-3xl" key={entry.id}>
       <CardHeader className="flex items-center gap-4">
         <Avatar className="size-10 bg-accent">
           <AvatarImage src={user?.avatar_image_url ?? ""} />
@@ -98,7 +99,7 @@ function DiscussionEntry({participants, entry}: {participants: CanvasDiscussionV
         </Avatar>
         <div>
           <CardTitle className="text-lg">{toTitleCase(user?.display_name ?? "")}</CardTitle>
-          <CardDescription className="text-base">{new Date(entry.created_at).toLocaleString("en-us", {timeStyle: "short", dateStyle: "medium"})}</CardDescription>
+          <CardDescription className="text-base">{new Date(entry.created_at).toLocaleString("en-us", {timeStyle: "short", dateStyle: "medium", timeZone: "America/New_York"})}</CardDescription>
         </div>
       </CardHeader>
       <CardContent>
