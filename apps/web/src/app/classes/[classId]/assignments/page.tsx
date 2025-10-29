@@ -39,6 +39,7 @@ import {
   type CanvasModuleItem,
   CanvasModuleItemType,
 } from "@/lib/canvas-types";
+import { DateDisplay } from "@/components/date-display";
 
 export const unstable_prefetch: Prefetch = {
   mode: "runtime",
@@ -110,7 +111,7 @@ export default async function ClassAssignmentsPage({
                     <IconNotebook className="size-5 text-muted-foreground" />
                     <div>
                       {assignment.name}
-                      {assignment.due_at && <div className="text-muted-foreground text-xs">{new Date(assignment.due_at).toLocaleString("en-us", {timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short"})}</div>}
+                      {assignment.due_at && <DateDisplay className="block text-muted-foreground text-xs" date={assignment.due_at} options={{dateStyle: "medium", timeStyle: "short"}} />}
                     </div>
                   </Link>
                 ))}
@@ -133,7 +134,7 @@ export default async function ClassAssignmentsPage({
                     <IconNotebook className="size-5 text-muted-foreground" />
                     <div>
                       {assignment.name}
-                      {assignment.due_at && <div className="text-muted-foreground text-xs">{new Date(assignment.due_at).toLocaleString("en-us", {timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short"})}</div>}
+                      {assignment.due_at && <DateDisplay className="block text-muted-foreground text-xs" date={assignment.due_at} options={{dateStyle: "medium", timeStyle: "short"}} />}
                     </div>
                   </Link>
                 ))}

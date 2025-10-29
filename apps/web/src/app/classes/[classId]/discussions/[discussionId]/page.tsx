@@ -31,6 +31,7 @@ import type {
   CanvasDiscussionView,
 } from "@/lib/canvas-types";
 import { cn, toTitleCase } from "@/lib/utils";
+import { DateDisplay } from "@/components/date-display";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -66,9 +67,7 @@ export default async function DiscussionPage({
     <div>
       <PageHeader className="flex-wrap">
         <PageHeaderContent>
-          <PageHeaderTitle
-            className={cn(data.title.length >= 50 && "text-3xl")}
-          >
+          <PageHeaderTitle>
             {data.title}
           </PageHeaderTitle>
           {data.assignment.due_at && (
@@ -128,11 +127,7 @@ function DiscussionEntry({
             {toTitleCase(user?.display_name ?? "")}
           </CardTitle>
           <CardDescription className="text-base">
-            {new Date(entry.created_at).toLocaleString("en-us", {
-              timeStyle: "short",
-              dateStyle: "medium",
-              timeZone: "America/New_York",
-            })}
+            <DateDisplay date={entry.created_at} options={{dateStyle: "medium", timeStyle: "short"}} />
           </CardDescription>
         </div>
       </CardHeader>

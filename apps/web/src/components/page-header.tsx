@@ -30,7 +30,7 @@ export function PageHeaderTitle({
 }: ComponentProps<typeof Item>) {
   return (
     <ItemTitle
-      className={cn("font-medium font-serif text-4xl", className)}
+      className={cn("font-medium font-serif text-4xl", typeof props.children === "string" && props.children.length >= 50 && "text-3xl", className)}
       {...props}
     />
   );

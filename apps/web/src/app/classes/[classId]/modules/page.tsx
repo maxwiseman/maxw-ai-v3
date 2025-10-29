@@ -38,6 +38,7 @@ import {
   type CanvasModuleItem,
   CanvasModuleItemType,
 } from "@/lib/canvas-types";
+import { DateDisplay } from "@/components/date-display";
 
 export const unstable_prefetch: Prefetch = {
   mode: "runtime",
@@ -160,7 +161,7 @@ function ModuleItem({
       <Icon className="size-5 text-muted-foreground" />
       <div>
         {item.title}
-        {item.content_details?.due_at && <div className="text-muted-foreground text-xs">{new Date(item.content_details?.due_at).toLocaleString("en-us", {timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short"})}</div>}
+        {item.content_details?.due_at && <DateDisplay className="block text-muted-foreground text-xs" date={item.content_details?.due_at} options={{dateStyle: "medium", timeStyle: "short"}} />}
       </div>
     </Link>
   );

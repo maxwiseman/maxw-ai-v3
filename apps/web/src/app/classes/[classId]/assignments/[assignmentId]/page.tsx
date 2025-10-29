@@ -18,6 +18,7 @@ import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
 import type { CanvasAssignment } from "@/lib/canvas-types";
+import { DateDisplay } from "@/components/date-display";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -53,13 +54,14 @@ export default async function AssignmentPage({
     <div>
       <PageHeader className="flex-wrap">
         <PageHeaderContent>
-          <PageHeaderTitle className="max-w-lg">{data?.name}</PageHeaderTitle>
+          <PageHeaderTitle>{data?.name}</PageHeaderTitle>
           {data?.due_at && (
             <PageHeaderDescription className="text-lg">
-              {new Date(data?.due_at).toLocaleString("en-us", {
+              {/*{new Date(data?.due_at).toLocaleString("en-us", {
                 timeStyle: "short",
                 dateStyle: "medium",
-              })}
+              })}*/}
+              <DateDisplay date={data?.due_at} options={{timeStyle: "short", dateStyle: "medium"}} />
             </PageHeaderDescription>
           )}
         </PageHeaderContent>

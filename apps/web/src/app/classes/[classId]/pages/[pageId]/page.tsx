@@ -52,7 +52,7 @@ export default async function AssignmentPage({
     <div>
       <PageHeader className="flex-wrap">
         <PageHeaderContent>
-          <PageHeaderTitle className="max-w-lg">{data?.title}</PageHeaderTitle>
+          <PageHeaderTitle>{data?.title}</PageHeaderTitle>
         </PageHeaderContent>
         <PageHeaderActions>
           <Button variant="outline">
