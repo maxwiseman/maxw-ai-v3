@@ -90,8 +90,8 @@ export default async function ClassAssignmentsPage({
         //   setModulesByClass({ [params.classId]: newVal })
         // }
         className="space-y-2 px-8 pb-8"
-        collapsible
-        type="single"
+        type="multiple"
+        defaultValue={["upcoming","past","undated"]}
       >
             <AccordionItem
               className="rounded-md border bg-background px-4 py-1 outline-none last:border-b has-focus-visible:border-ring has-focus-visible:ring-[3px] has-focus-visible:ring-ring/50"
@@ -133,8 +133,28 @@ export default async function ClassAssignmentsPage({
                     <IconNotebook className="size-5 text-muted-foreground" />
                     <div>
                       {assignment.name}
-                      {assignment.due_at && <div className="text-xs text-muted-foreground">{new Date(assignment.due_at).toLocaleString("en-us", {timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short"})}</div>}
+                      {assignment.due_at && <div className="text-muted-foreground text-xs">{new Date(assignment.due_at).toLocaleString("en-us", {timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short"})}</div>}
                     </div>
+                  </Link>
+                ))}
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem
+              className="rounded-md border bg-background px-4 py-1 outline-none last:border-b has-focus-visible:border-ring has-focus-visible:ring-[3px] has-focus-visible:ring-ring/50"
+              value={"undated"}
+            >
+              <AccordionTrigger className="[&>svg]:-order-1 justify-start gap-3 py-2 text-[15px] leading-6 hover:no-underline focus-visible:ring-0 [&>svg]:size-5">
+                Undated Assignments
+              </AccordionTrigger>
+              <AccordionContent className="divide-y pb-1">
+                {data.filter(a => !a.due_at).map(assignment => (
+                  <Link
+                    href={`/classes/${params.classId}/assignments/${assignment.id}`}
+                    className="ml-8 flex items-center gap-2 py-4 hover:underline"
+                    key={assignment.id}
+                  >
+                    <IconNotebook className="size-5 text-muted-foreground" />
+                    {assignment.name}
                   </Link>
                 ))}
               </AccordionContent>
