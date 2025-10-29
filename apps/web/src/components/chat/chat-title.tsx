@@ -8,7 +8,7 @@ interface ChatTitleData {
   title: string;
 }
 
-export function ChatTitle({setTabTitle = true}: {setTabTitle?: boolean}) {
+export function ChatTitle({ setTabTitle = true }: { setTabTitle?: boolean }) {
   const [chatTitle] = useDataPart<ChatTitleData>("chat-title", {
     onData: (dataPart) => {
       if (dataPart.data.title && setTabTitle) {

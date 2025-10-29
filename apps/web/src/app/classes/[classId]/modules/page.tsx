@@ -1,6 +1,7 @@
 "use cache: private";
 
 import {
+  type Icon,
   IconChecklist,
   IconFile,
   IconFileDescription,
@@ -8,7 +9,6 @@ import {
   IconLink,
   IconMessage,
   IconNotebook,
-  type Icon,
 } from "@tabler/icons-react";
 // import { useModulesState } from "../../modules-store";
 import { eq } from "drizzle-orm";
@@ -17,6 +17,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ComponentProps } from "react";
+import { NotAuthenticated } from "@/components/not-authenticated";
 import {
   PageHeader,
   PageHeaderContent,
@@ -37,7 +38,6 @@ import {
   type CanvasModuleItem,
   CanvasModuleItemType,
 } from "@/lib/canvas-types";
-import { NotAuthenticated } from "@/components/not-authenticated";
 
 export const unstable_prefetch: Prefetch = {
   mode: "runtime",
@@ -123,7 +123,7 @@ const moduleItemIcons: Partial<Record<CanvasModuleItemType, Icon>> = {
   [CanvasModuleItemType.Quiz]: IconChecklist,
   [CanvasModuleItemType.Discussion]: IconMessage,
   [CanvasModuleItemType.ExternalUrl]: IconLink,
-}
+};
 
 function ModuleItem({
   item,
@@ -132,7 +132,7 @@ function ModuleItem({
   item: CanvasModuleItem;
   classId: string;
 }) {
-  const Icon = moduleItemIcons[item.type] ?? IconFileDots
+  const Icon = moduleItemIcons[item.type] ?? IconFileDots;
 
   console.log(item);
   if (classId === undefined) return;

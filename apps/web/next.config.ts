@@ -14,8 +14,8 @@ const nextConfig: NextConfig = {
     viewTransition: true,
   },
   images: {
-    remotePatterns: [{protocol: "https", hostname: "**.instructure.com"}]
-  }
+    remotePatterns: [{ protocol: "https", hostname: "**.instructure.com" }],
+  },
 };
 
 export default nextConfig;

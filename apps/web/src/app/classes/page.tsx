@@ -3,6 +3,7 @@
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import Link from "next/link";
+import { NotAuthenticated } from "@/components/not-authenticated";
 import {
   PageHeader,
   PageHeaderContent,
@@ -16,7 +17,6 @@ import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
 import type { Course } from "@/lib/canvas-types";
 import { toTitleCase } from "@/lib/utils";
-import { NotAuthenticated } from "@/components/not-authenticated";
 
 export const unstable_prefetch = {
   mode: "runtime",

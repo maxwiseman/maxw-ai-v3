@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { CanvasHTML } from "@/components/canvas-html";
+import { NotAuthenticated } from "@/components/not-authenticated";
 import {
   PageHeader,
   PageHeaderActions,
@@ -12,15 +13,24 @@ import {
   PageHeaderDescription,
   PageHeaderTitle,
 } from "@/components/page-header";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
-import type { CanvasDiscussion, CanvasDiscussionEntry, CanvasDiscussionView } from "@/lib/canvas-types";
-import { NotAuthenticated } from "@/components/not-authenticated";
+import type {
+  CanvasDiscussion,
+  CanvasDiscussionEntry,
+  CanvasDiscussionView,
+} from "@/lib/canvas-types";
 import { cn, toTitleCase } from "@/lib/utils";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -56,13 +66,17 @@ export default async function DiscussionPage({
     <div>
       <PageHeader className="flex-wrap">
         <PageHeaderContent>
-          <PageHeaderTitle className={cn(data.title.length >= 50 && "text-3xl")}>{data.title}</PageHeaderTitle>
+          <PageHeaderTitle
+            className={cn(data.title.length >= 50 && "text-3xl")}
+          >
+            {data.title}
+          </PageHeaderTitle>
           {data.assignment.due_at && (
             <PageHeaderDescription className="text-lg">
               {new Date(data.assignment.due_at).toLocaleString("en-us", {
                 timeStyle: "short",
                 dateStyle: "medium",
-                timeZone: "America/New_York"
+                timeZone: "America/New_York",
               })}
             </PageHeaderDescription>
           )}
@@ -81,32 +95,52 @@ export default async function DiscussionPage({
       <CanvasHTML className="px-8 pb-8">{data.message}</CanvasHTML>
       <div className="space-y-16 px-8 pb-8">
         {data.view.reverse().map((entry) => (
-          <DiscussionEntry key={entry.id} participants={data.participants} entry={entry} />
+          <DiscussionEntry
+            key={entry.id}
+            participants={data.participants}
+            entry={entry}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function DiscussionEntry({participants, entry}: {participants: CanvasDiscussionView["participants"], entry: CanvasDiscussionEntry}) {
-  const user = participants.find(p => p.id === entry.user_id)
+function DiscussionEntry({
+  participants,
+  entry,
+}: {
+  participants: CanvasDiscussionView["participants"];
+  entry: CanvasDiscussionEntry;
+}) {
+  const user = participants.find((p) => p.id === entry.user_id);
   return (
     <Card className="mx-auto max-w-3xl" key={entry.id}>
       <CardHeader className="flex items-center gap-4">
         <Avatar className="size-10 bg-accent">
           <AvatarImage src={user?.avatar_image_url ?? ""} />
-          <AvatarFallback><IconUser /></AvatarFallback>
+          <AvatarFallback>
+            <IconUser />
+          </AvatarFallback>
         </Avatar>
         <div>
-          <CardTitle className="text-lg">{toTitleCase(user?.display_name ?? "")}</CardTitle>
-          <CardDescription className="text-base">{new Date(entry.created_at).toLocaleString("en-us", {timeStyle: "short", dateStyle: "medium", timeZone: "America/New_York"})}</CardDescription>
+          <CardTitle className="text-lg">
+            {toTitleCase(user?.display_name ?? "")}
+          </CardTitle>
+          <CardDescription className="text-base">
+            {new Date(entry.created_at).toLocaleString("en-us", {
+              timeStyle: "short",
+              dateStyle: "medium",
+              timeZone: "America/New_York",
+            })}
+          </CardDescription>
         </div>
       </CardHeader>
       <CardContent>
         <CanvasHTML>{entry.message}</CanvasHTML>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 async function fetchData({
@@ -140,5 +174,5 @@ async function fetchData({
       },
     },
   ).then((res) => res.json())) as CanvasDiscussionView;
-  return {...data, ...view};
+  return { ...data, ...view };
 }

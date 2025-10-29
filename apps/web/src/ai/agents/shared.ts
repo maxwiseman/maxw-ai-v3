@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { openai } from "@ai-sdk/openai";
-// @ts-ignore -- This library is a little broken
+// @ts-expect-error -- This library is a little broken
 import { Agent, type AgentConfig, InMemoryProvider } from "ai-sdk-tools";
 import type { Course } from "@/lib/canvas-types";
 import { classesToLLMKey } from "../utils/canvas-llm-helpers";

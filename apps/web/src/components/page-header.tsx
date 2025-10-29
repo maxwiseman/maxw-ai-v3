@@ -15,7 +15,10 @@ export function PageHeader({
 }: ComponentProps<typeof Item>) {
   return (
     <Item
-      className={cn("flex items-center border-0 border-border p-8 lg:gap-24", className)}
+      className={cn(
+        "flex items-center border-0 border-border p-8 lg:gap-24",
+        className,
+      )}
       {...props}
     />
   );

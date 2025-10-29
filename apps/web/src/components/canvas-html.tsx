@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/performance/noImgElement: <explanation> */
 import { IconExternalLink } from "@tabler/icons-react";
 import Link from "next/link";
 import type { ComponentProps } from "react";
@@ -8,8 +7,8 @@ import rehypeReact from "rehype-react";
 import { unified } from "unified";
 import { cn } from "@/lib/utils";
 import "katex/dist/katex.min.css";
-import { InlineMath } from "react-katex";
 import Image from "next/image";
+import { InlineMath } from "react-katex";
 
 export function CanvasHTML({
   children,
@@ -33,7 +32,8 @@ export function CanvasHTML({
               href={
                 href
                   ?.match(/^https?:\/\/(?:[^/]+\.)?instructure\.com(\/.*)?$/)
-                  ?.join("") ?? ""
+                  ?.join("")
+                  .replace("courses", "classes") ?? ""
               }
               target="_blank"
             />
@@ -48,11 +48,7 @@ export function CanvasHTML({
           "data-equation-content": latex,
           ...props
         }: ComponentProps<"img"> & { "data-equation-content"?: string }) =>
-          latex ? (
-            <InlineMath math={latex} />
-          ) : (
-              <CanvasImage {...props} />
-          ),
+          latex ? <InlineMath math={latex} /> : <CanvasImage {...props} />,
       },
     });
 
@@ -73,12 +69,26 @@ export function CanvasHTML({
 }
 
 function CanvasImage(props: ComponentProps<"img">) {
-  const width = Number.isNaN(Number(props.width)) ? undefined : Number(props.width)
-  const height = Number.isNaN(Number(props.height)) ? undefined : Number(props.height)
+  const width = Number.isNaN(Number(props.width))
+    ? undefined
+    : Number(props.width);
+  const height = Number.isNaN(Number(props.height))
+    ? undefined
+    : Number(props.height);
 
   return (
-    <span className="block size-max mx-auto max-w-lg">
-      <Image alt="" src="" {...props} width={width} ref={undefined} height={height} fill={height === undefined && width === undefined} loading="eager" className="relative! inset-0" />
+    <span className="mx-auto block size-max max-w-lg">
+      <Image
+        alt=""
+        src=""
+        {...props}
+        width={width}
+        ref={undefined}
+        height={height}
+        fill={height === undefined && width === undefined}
+        loading="eager"
+        className="relative! inset-0"
+      />
     </span>
-  )
+  );
 }

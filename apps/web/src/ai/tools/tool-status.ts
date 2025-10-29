@@ -1,4 +1,9 @@
-import { type Icon, IconBrain, IconCards, IconNotebook } from "@tabler/icons-react";
+import {
+  type Icon,
+  IconBrain,
+  IconCards,
+  IconNotebook,
+} from "@tabler/icons-react";
 
 export const toolStatus: Record<string, { icon: Icon; text: string }> = {
   updateWorkingMemory: {
