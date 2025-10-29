@@ -158,7 +158,10 @@ function ModuleItem({
       }
     >
       <Icon className="size-5 text-muted-foreground" />
-      {item.title}
+      <div>
+        {item.title}
+        {item.content_details?.due_at && <div className="text-muted-foreground text-xs">{new Date(item.content_details?.due_at).toLocaleString("en-us", {timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short"})}</div>}
+      </div>
     </Link>
   );
 }
@@ -177,7 +180,7 @@ async function fetchData({
   if (!settings?.canvasApiKey || !settings.canvasDomain)
     return "Settings not configured" as const;
   const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/modules?include[]=items`,
+    `https://${settings.canvasDomain}/api/v1/courses/${classId}/modules?include[]=items&include[]=content_details`,
     {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
