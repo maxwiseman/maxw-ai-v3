@@ -6,7 +6,9 @@ import {
   IconFileDescription,
   IconFileDots,
   IconLink,
+  IconMessage,
   IconNotebook,
+  type Icon,
 } from "@tabler/icons-react";
 // import { useModulesState } from "../../modules-store";
 import { eq } from "drizzle-orm";
@@ -114,6 +116,15 @@ export default async function ClassModulesPage({
   );
 }
 
+const moduleItemIcons: Partial<Record<CanvasModuleItemType, Icon>> = {
+  [CanvasModuleItemType.Assignment]: IconNotebook,
+  [CanvasModuleItemType.File]: IconFile,
+  [CanvasModuleItemType.Page]: IconFileDescription,
+  [CanvasModuleItemType.Quiz]: IconChecklist,
+  [CanvasModuleItemType.Discussion]: IconMessage,
+  [CanvasModuleItemType.ExternalUrl]: IconLink,
+}
+
 function ModuleItem({
   item,
   classId,
@@ -121,18 +132,8 @@ function ModuleItem({
   item: CanvasModuleItem;
   classId: string;
 }) {
-  const Icon =
-    item.type === CanvasModuleItemType.Assignment
-      ? IconNotebook
-      : item.type === CanvasModuleItemType.File
-        ? IconFile
-        : item.type === CanvasModuleItemType.Page
-          ? IconFileDescription
-          : item.type === CanvasModuleItemType.Quiz
-            ? IconChecklist
-            : item.type === CanvasModuleItemType.ExternalUrl
-              ? IconLink
-              : IconFileDots;
+  const Icon = moduleItemIcons[item.type] ?? IconFileDots
+
   console.log(item);
   if (classId === undefined) return;
 

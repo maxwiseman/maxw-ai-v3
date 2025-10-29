@@ -52,7 +52,7 @@ export function CanvasHTML({
             <InlineMath math={latex} />
           ) : (
             // biome-ignore lint/a11y/useAltText: This may be already provided by the HTML props
-            <img {...props} className="mx-auto max-w-lg" />
+            <img {...props} loading="eager" className="mx-auto max-w-lg" />
           ),
       },
     });

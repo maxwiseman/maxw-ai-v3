@@ -102,7 +102,7 @@ export default function ChatPage() {
           </div>
           <div className="pointer-events-none absolute inset-0 z-10 flex h-full w-full flex-col justify-end">
             <div className="w-full bg-linear-to-t from-[1.25rem] from-background to-transparent">
-              <div className="mx-auto w-full max-w-2xl pb-4">
+              <div className="mx-auto w-full max-w-2xl">
                 <PromptSuggestions delay={1} />
                 <ChatInput
                   className="pointer-events-auto mx-auto w-full"
