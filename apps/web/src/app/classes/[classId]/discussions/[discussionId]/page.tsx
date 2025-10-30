@@ -70,7 +70,7 @@ export default async function DiscussionPage({
           <PageHeaderTitle>
             {data.title}
           </PageHeaderTitle>
-          {data.assignment.due_at && (
+          {data.assignment?.due_at && (
             <PageHeaderDescription className="text-lg">
               {new Date(data.assignment.due_at).toLocaleString("en-us", {
                 timeStyle: "short",
