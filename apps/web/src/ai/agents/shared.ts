@@ -7,8 +7,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { openai } from "@ai-sdk/openai";
-// @ts-ignore -- This library is a little broken
-import { Agent, type AgentConfig, InMemoryProvider } from "ai-sdk-tools";
+import { Agent, type AgentConfig } from "ai-sdk-tools";
+import { InMemoryProvider } from "@ai-sdk-tools/memory/in-memory"
 import type { Course } from "@/lib/canvas-types";
 import { classesToLLMKey } from "../utils/canvas-llm-helpers";
 
@@ -165,12 +165,12 @@ export const createAgent = (config: AgentConfig<AppContext>) => {
  Return only the title.
  </output-format>`,
         },
-        // generateSuggestions: {
-        //   enabled: true,
-        //   model: openai("gpt-4.1-nano"),
-        //   limit: 5,
-        //   instructions: suggestionsInstructions,
-        // },
+        generateSuggestions: {
+          enabled: true,
+          model: openai("gpt-4.1-nano"),
+          limit: 5,
+          instructions: suggestionsInstructions,
+        },
       },
     },
   });

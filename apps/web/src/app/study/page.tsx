@@ -4,14 +4,12 @@
 import {
   IconCards,
   IconCheckbox,
-  IconKeyboard,
   IconPencil,
   IconPlus,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useState } from "react";
 import {
-  Label as ChartLabel,
   PolarAngleAxis,
   RadialBar,
   RadialBarChart,
@@ -27,7 +25,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -55,7 +52,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 
 const chartData = [
   { browser: "safari", visitors: 75, fill: "var(--color-safari)" },

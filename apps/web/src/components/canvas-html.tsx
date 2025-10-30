@@ -76,19 +76,28 @@ function CanvasImage(props: ComponentProps<"img">) {
     ? undefined
     : Number(props.height);
 
+  if (/https:\/\/.*\.instructure\.com.*/.test(props.src ?? "")) {
+    return (
+      <span className="mx-auto block size-max max-w-lg">
+        <Image
+          alt=""
+          src=""
+          {...props}
+          width={width}
+          ref={undefined}
+          height={height}
+          fill={height === undefined && width === undefined}
+          loading="eager"
+          className="relative! inset-0"
+        />
+      </span>
+    );
+  }
+
   return (
     <span className="mx-auto block size-max max-w-lg">
-      <Image
-        alt=""
-        src=""
-        {...props}
-        width={width}
-        ref={undefined}
-        height={height}
-        fill={height === undefined && width === undefined}
-        loading="eager"
-        className="relative! inset-0"
-      />
+      {/** biome-ignore lint/performance/noImgElement: If the URL isn't trusted, we don't want to host it on our own servers */}
+      <img {...props} alt={props.alt ?? ""} width={width} height={height} />
     </span>
   );
 }

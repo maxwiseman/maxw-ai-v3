@@ -1,7 +1,5 @@
 import type {
-  // @ts-ignore
   AgentDataParts,
-  // @ts-ignore
   AgentUIMessage as BaseAgentUIMessage,
 } from "ai-sdk-tools";
 
