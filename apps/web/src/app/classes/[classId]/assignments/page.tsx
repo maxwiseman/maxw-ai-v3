@@ -105,13 +105,13 @@ export default async function ClassAssignmentsPage({
                 {data.filter(a => a.due_at && new Date(a.due_at).getDate() >= new Date().getDate()).map(assignment => (
                   <Link
                     href={`/classes/${params.classId}/assignments/${assignment.id}`}
-                    className="ml-8 flex items-center gap-2 py-4 hover:underline"
+                    className="ml-8 flex items-center gap-2 py-4 hover:underline group"
                     key={assignment.id}
                   >
                     <IconNotebook className="size-5 text-muted-foreground" />
                     <div>
                       {assignment.name}
-                      {assignment.due_at && <DateDisplay className="block text-muted-foreground text-xs" date={assignment.due_at} options={{dateStyle: "medium", timeStyle: "short"}} />}
+                      {assignment.due_at && <DateDisplay className="block text-muted-foreground text-xs group-hover:underline decoration-muted-foreground" date={assignment.due_at} options={{dateStyle: "medium", timeStyle: "short"}} />}
                     </div>
                   </Link>
                 ))}
@@ -128,13 +128,13 @@ export default async function ClassAssignmentsPage({
                 {data.filter(a => a.due_at && new Date(a.due_at).getDate() <= new Date().getDate()).map(assignment => (
                   <Link
                     href={`/classes/${params.classId}/assignments/${assignment.id}`}
-                    className="ml-8 flex items-center gap-2 py-4 hover:underline"
+                    className="ml-8 flex items-center gap-2 py-4 group hover:underline"
                     key={assignment.id}
                   >
                     <IconNotebook className="size-5 text-muted-foreground" />
-                    <div>
+                    <div className="">
                       {assignment.name}
-                      {assignment.due_at && <DateDisplay className="block text-muted-foreground text-xs" date={assignment.due_at} options={{dateStyle: "medium", timeStyle: "short"}} />}
+                      {assignment.due_at && <DateDisplay className="block text-muted-foreground text-xs group-hover:underline decoration-muted-foreground" date={assignment.due_at} options={{dateStyle: "medium", timeStyle: "short"}} />}
                     </div>
                   </Link>
                 ))}

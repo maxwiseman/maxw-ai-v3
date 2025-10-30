@@ -67,7 +67,7 @@ export function FlashcardToolDisplay({
           </ItemDescription>
         </ItemContent>
         <ItemActions>
-          <Select defaultValue="flashcards">
+          <Select defaultValue={data.displayMode}>
             <SelectTrigger>
               <SelectValue placeholder="Study mode..." />
             </SelectTrigger>

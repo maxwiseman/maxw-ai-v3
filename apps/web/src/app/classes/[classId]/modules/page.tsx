@@ -152,7 +152,7 @@ function ModuleItem({
           typeof Link
         >["href"]) ?? ""
       }
-      className="ml-8 flex items-center gap-2 py-4 hover:underline"
+      className="ml-8 flex items-center gap-2 py-4 hover:underline group"
       key={item.id}
       target={
         item.type === CanvasModuleItemType.ExternalUrl ? "_blank" : undefined
@@ -161,7 +161,7 @@ function ModuleItem({
       <Icon className="size-5 text-muted-foreground" />
       <div>
         {item.title}
-        {item.content_details?.due_at && <DateDisplay className="block text-muted-foreground text-xs" date={item.content_details?.due_at} options={{dateStyle: "medium", timeStyle: "short"}} />}
+        {item.content_details?.due_at && <DateDisplay className="block text-muted-foreground text-xs group-hover:underline decoration-muted-foreground" date={item.content_details?.due_at} options={{dateStyle: "medium", timeStyle: "short"}} />}
       </div>
     </Link>
   );

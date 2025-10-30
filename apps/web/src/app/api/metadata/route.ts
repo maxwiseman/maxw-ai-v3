@@ -25,7 +25,9 @@ interface MetadataResponse {
 
 // Helper to extract tool names from an agent
 function getToolNames(agent: Agent<AppContext>): string[] {
+  // @ts-expect-error -- This is ok, it's from the example
   if (!agent.configuredTools) return [];
+  // @ts-expect-error -- This is ok, it's from the example
   return Object.keys(agent.configuredTools).filter(
     (name) => name !== "handoff_to_agent" && name !== "updateWorkingMemory",
   );
