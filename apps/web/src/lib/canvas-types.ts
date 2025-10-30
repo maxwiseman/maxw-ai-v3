@@ -217,19 +217,19 @@ export interface CanvasModuleItem {
   publish_at?: null;
   url: string;
   content_id?: number;
-  content_details?: CanvasContentDetails
+  content_details?: CanvasContentDetails;
 }
 
 export interface CanvasContentDetails {
-    due_at?:           Date;
-    locked_for_user?:   boolean;
-    points_possible?:  number;
-    unlock_at?:        Date;
-    lock_at?:          Date;
-    lock_info?:        LockInfo;
-    lock_explanation?: string;
-    display_name?:     string;
-    thumbnail_url?:    null;
+  due_at?: Date;
+  locked_for_user?: boolean;
+  points_possible?: number;
+  unlock_at?: Date;
+  lock_at?: Date;
+  lock_info?: LockInfo;
+  lock_explanation?: string;
+  display_name?: string;
+  thumbnail_url?: null;
 }
 
 export enum CanvasModuleItemType {

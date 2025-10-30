@@ -76,7 +76,10 @@ function CanvasImage(props: ComponentProps<"img">) {
     ? undefined
     : Number(props.height);
 
-  if (typeof props.src === "string" && /https:\/\/.*\.instructure\.com.*/.test(props.src ?? "")) {
+  if (
+    typeof props.src === "string" &&
+    /https:\/\/.*\.instructure\.com.*/.test(props.src ?? "")
+  ) {
     return (
       <span className="mx-auto block size-max max-w-lg">
         <Image

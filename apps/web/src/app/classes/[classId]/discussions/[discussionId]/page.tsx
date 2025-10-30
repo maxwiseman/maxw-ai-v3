@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { CanvasHTML } from "@/components/canvas-html";
+import { DateDisplay } from "@/components/date-display";
 import { NotAuthenticated } from "@/components/not-authenticated";
 import {
   PageHeader,
@@ -31,7 +32,6 @@ import type {
   CanvasDiscussionView,
 } from "@/lib/canvas-types";
 import { cn, toTitleCase } from "@/lib/utils";
-import { DateDisplay } from "@/components/date-display";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -67,9 +67,7 @@ export default async function DiscussionPage({
     <div>
       <PageHeader className="flex-wrap">
         <PageHeaderContent>
-          <PageHeaderTitle>
-            {data.title}
-          </PageHeaderTitle>
+          <PageHeaderTitle>{data.title}</PageHeaderTitle>
           {data.assignment?.due_at && (
             <PageHeaderDescription className="text-lg">
               {new Date(data.assignment.due_at).toLocaleString("en-us", {
@@ -127,7 +125,10 @@ function DiscussionEntry({
             {toTitleCase(user?.display_name ?? "")}
           </CardTitle>
           <CardDescription className="text-base">
-            <DateDisplay date={entry.created_at} options={{dateStyle: "medium", timeStyle: "short"}} />
+            <DateDisplay
+              date={entry.created_at}
+              options={{ dateStyle: "medium", timeStyle: "short" }}
+            />
           </CardDescription>
         </div>
       </CardHeader>

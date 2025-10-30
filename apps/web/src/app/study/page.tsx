@@ -9,11 +9,7 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useState } from "react";
-import {
-  PolarAngleAxis,
-  RadialBar,
-  RadialBarChart,
-} from "recharts";
+import { PolarAngleAxis, RadialBar, RadialBarChart } from "recharts";
 import {
   PageHeader,
   PageHeaderActions,
@@ -22,12 +18,7 @@ import {
   PageHeaderTitle,
 } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ChartConfig, ChartContainer } from "@/components/ui/chart";
 import {
   Dialog,

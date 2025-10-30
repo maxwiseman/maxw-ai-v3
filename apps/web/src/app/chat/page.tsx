@@ -240,8 +240,8 @@ function StatusMessage({
   parts: UIMessage<unknown, UIDataTypes, UITools>["parts"];
 }) {
   const status = useChatStatus();
-  const ignoredParts = ["data-chat-title"]
-  const filteredParts = parts.filter(p => !ignoredParts.includes(p.type))
+  const ignoredParts = ["data-chat-title"];
+  const filteredParts = parts.filter((p) => !ignoredParts.includes(p.type));
   const lastPart = filteredParts[filteredParts.length - 1];
   const latestToolStatus = lastPart?.type.startsWith("tool-")
     ? toolStatus[lastPart.type.replace("tool-", "")]

@@ -17,6 +17,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ComponentProps } from "react";
+import { DateDisplay } from "@/components/date-display";
 import { NotAuthenticated } from "@/components/not-authenticated";
 import {
   PageHeader,
@@ -38,7 +39,6 @@ import {
   type CanvasModuleItem,
   CanvasModuleItemType,
 } from "@/lib/canvas-types";
-import { DateDisplay } from "@/components/date-display";
 
 export const unstable_prefetch: Prefetch = {
   mode: "runtime",
@@ -152,7 +152,7 @@ function ModuleItem({
           typeof Link
         >["href"]) ?? ""
       }
-      className="ml-8 flex items-center gap-2 py-4 hover:underline group"
+      className="group ml-8 flex items-center gap-2 py-4 hover:underline"
       key={item.id}
       target={
         item.type === CanvasModuleItemType.ExternalUrl ? "_blank" : undefined
@@ -161,7 +161,13 @@ function ModuleItem({
       <Icon className="size-5 text-muted-foreground" />
       <div>
         {item.title}
-        {item.content_details?.due_at && <DateDisplay className="block text-muted-foreground text-xs group-hover:underline decoration-muted-foreground" date={item.content_details?.due_at} options={{dateStyle: "medium", timeStyle: "short"}} />}
+        {item.content_details?.due_at && (
+          <DateDisplay
+            className="block text-muted-foreground text-xs decoration-muted-foreground group-hover:underline"
+            date={item.content_details?.due_at}
+            options={{ dateStyle: "medium", timeStyle: "short" }}
+          />
+        )}
       </div>
     </Link>
   );
