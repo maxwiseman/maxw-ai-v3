@@ -44,12 +44,12 @@ export default function RootLayout({
           <div className="grid size-full grid-rows-[auto_1fr]">
             <Header />
             <div className="grid size-full grid-cols-[auto_1fr]">
-              <Suspense>
+              <Suspense fallback={<div />}>
                 <Sidebar />
               </Suspense>
               <div className="flex h-full flex-col">
                 <div className="-mt-16 h-0 grow overflow-scroll pt-16">
-                  <Suspense>{children}</Suspense>
+                  {children}
                 </div>
               </div>
             </div>
