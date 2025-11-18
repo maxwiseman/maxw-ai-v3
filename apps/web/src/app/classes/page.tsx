@@ -1,6 +1,7 @@
 "use cache: private";
 
 import { eq } from "drizzle-orm";
+import { cacheLife } from "next/cache";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { NotAuthenticated } from "@/components/not-authenticated";
@@ -34,6 +35,7 @@ export const unstable_prefetch = {
 };
 
 export default async function ClassesPage() {
+  cacheLife("max");
   const authData = await auth.api.getSession({ headers: await headers() });
   if (!authData?.user) return <NotAuthenticated />;
 

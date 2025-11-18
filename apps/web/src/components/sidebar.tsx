@@ -144,8 +144,6 @@ function SidebarExtensionSlot() {
   const { node } = useContext(SidebarExtensionContext);
 
   return (
-    <div className={"[&>*]:has-[*]:!border-r [&>*]:!border-r-0 contents"}>
-      {node}
-    </div>
+    <div className={"contents *:border-r-0! *:has-[*]:border-r!"}>{node}</div>
   );
 }

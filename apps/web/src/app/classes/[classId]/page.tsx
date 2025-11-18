@@ -1,6 +1,7 @@
 "use cache: private";
 
 import { eq } from "drizzle-orm";
+import { cacheLife } from "next/cache";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { CanvasHTML } from "@/components/canvas-html";
@@ -37,6 +38,7 @@ export default async function ClassPage({
 }: {
   params: Promise<{ classId: string }>;
 }) {
+  cacheLife("max");
   const authData = await auth.api.getSession({ headers: await headers() });
   if (!authData) return <NotAuthenticated />;
   const params = await paramsPromise;

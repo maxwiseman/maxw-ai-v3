@@ -1,8 +1,8 @@
 "use client";
 
 import { IconPlus } from "@tabler/icons-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { generateTodo } from "@/app/actions/generate-todo";
 import { cn } from "@/lib/utils";
 import { DatePicker } from "./date-picker";

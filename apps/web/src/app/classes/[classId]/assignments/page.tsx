@@ -1,15 +1,6 @@
 "use cache: private";
 
-import {
-  type Icon,
-  IconChecklist,
-  IconFile,
-  IconFileDescription,
-  IconFileDots,
-  IconLink,
-  IconMessage,
-  IconNotebook,
-} from "@tabler/icons-react";
+import { IconNotebook } from "@tabler/icons-react";
 // import { useModulesState } from "../../modules-store";
 import { eq } from "drizzle-orm";
 import { cacheLife } from "next/cache";
@@ -17,7 +8,6 @@ import type { Prefetch } from "next/dist/build/segment-config/app/app-segment-co
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { ComponentProps } from "react";
 import { DateDisplay } from "@/components/date-display";
 import { NotAuthenticated } from "@/components/not-authenticated";
 import {
@@ -34,12 +24,7 @@ import {
 import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
-import { moduleItemDetailsUrl } from "@/lib/canvas-helpers";
-import {
-  type CanvasAssignment,
-  type CanvasModuleItem,
-  CanvasModuleItemType,
-} from "@/lib/canvas-types";
+import type { CanvasAssignment } from "@/lib/canvas-types";
 
 export const unstable_prefetch: Prefetch = {
   mode: "runtime",
@@ -189,53 +174,6 @@ export default async function ClassAssignmentsPage({
         </AccordionItem>
       </Accordion>
     </div>
-  );
-}
-
-const moduleItemIcons: Partial<Record<CanvasModuleItemType, Icon>> = {
-  [CanvasModuleItemType.Assignment]: IconNotebook,
-  [CanvasModuleItemType.File]: IconFile,
-  [CanvasModuleItemType.Page]: IconFileDescription,
-  [CanvasModuleItemType.Quiz]: IconChecklist,
-  [CanvasModuleItemType.Discussion]: IconMessage,
-  [CanvasModuleItemType.ExternalUrl]: IconLink,
-};
-
-function ModuleItem({
-  item,
-  classId,
-}: {
-  item: CanvasModuleItem;
-  classId: string;
-}) {
-  const Icon = moduleItemIcons[item.type] ?? IconFileDots;
-
-  console.log(item);
-  if (classId === undefined) return;
-
-  if (item.type === CanvasModuleItemType.SubHeader)
-    return (
-      <div className="flex items-center gap-2 py-4 font-medium">
-        {item.title}
-      </div>
-    );
-
-  return (
-    <Link
-      href={
-        (moduleItemDetailsUrl(classId, item) as ComponentProps<
-          typeof Link
-        >["href"]) ?? ""
-      }
-      className="ml-8 flex items-center gap-2 py-4 hover:underline"
-      key={item.id}
-      target={
-        item.type === CanvasModuleItemType.ExternalUrl ? "_blank" : undefined
-      }
-    >
-      <Icon className="size-5 text-muted-foreground" />
-      {item.title}
-    </Link>
   );
 }
 

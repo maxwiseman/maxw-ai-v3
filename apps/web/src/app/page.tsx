@@ -72,7 +72,7 @@ function DashboardCard({
           {title}
         </CardTitle>
       </CardHeader>
-      <CardContent className="!pt-0 p-4">{children}</CardContent>
+      <CardContent className="p-4 pt-0!">{children}</CardContent>
       {actions && actions.length > 0 && (
         <CardFooter className="justify-between p-4 pt-0 pb-3">
           <div>
@@ -80,7 +80,7 @@ function DashboardCard({
               .filter((act) => act.variant === "default" || !act.variant)
               .map((action, i) => (
                 <Button
-                  className="-my-1 -mx-2 hover:!bg-transparent h-auto p-1 px-2 font-normal text-neutral-400 hover:text-neutral-600 dark:text-neutral-600 dark:hover:text-neutral-400"
+                  className="-my-1 -mx-2 h-auto p-1 px-2 font-normal text-neutral-400 hover:bg-transparent! hover:text-neutral-600 dark:text-neutral-600 dark:hover:text-neutral-400"
                   size="sm"
                   variant="ghost"
                   key={i}
