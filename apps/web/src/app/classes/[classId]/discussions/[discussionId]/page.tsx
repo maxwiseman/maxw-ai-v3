@@ -31,7 +31,7 @@ import type {
   CanvasDiscussionEntry,
   CanvasDiscussionView,
 } from "@/lib/canvas-types";
-import { cn, toTitleCase } from "@/lib/utils";
+import { toTitleCase } from "@/lib/utils";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -154,6 +154,7 @@ async function fetchData({
 
   if (!settings?.canvasApiKey || !settings.canvasDomain)
     return "Settings not configured";
+
   const data = (await fetch(
     `https://${settings.canvasDomain}/api/v1/courses/${classId}/discussion_topics/${discussionId}`,
     {
@@ -162,6 +163,8 @@ async function fetchData({
       },
     },
   ).then((res) => res.json())) as CanvasDiscussion;
+
+  // TODO: This sometimes just returns "require_initial_post" instead of JSON, which causes an error
   const view = (await fetch(
     `https://${settings.canvasDomain}/api/v1/courses/${classId}/discussion_topics/${discussionId}/view`,
     {

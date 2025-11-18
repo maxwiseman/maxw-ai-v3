@@ -1,11 +1,12 @@
 "use cache: private";
 
-import { IconPlus } from "@tabler/icons-react";
 import { eq } from "drizzle-orm";
+import { cacheLife } from "next/cache";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { CanvasHTML } from "@/components/canvas-html";
 import { DateDisplay } from "@/components/date-display";
+import { TodoButton } from "@/components/new-todo-button";
 import { NotAuthenticated } from "@/components/not-authenticated";
 import {
   PageHeader,
@@ -44,6 +45,7 @@ export default async function AssignmentPage({
 }: {
   params: Promise<{ classId: string; assignmentId: string }>;
 }) {
+  cacheLife("weeks");
   const authData = await auth.api.getSession({ headers: await headers() });
   if (!authData) return <NotAuthenticated />;
   const params = await paramsPromise;
@@ -69,10 +71,9 @@ export default async function AssignmentPage({
           )}
         </PageHeaderContent>
         <PageHeaderActions>
-          <Button variant="outline">
-            <IconPlus className="text-muted-foreground" />
-            Add todo
-          </Button>
+          <TodoButton
+            context={`# Assignment - ${data.name}\nDue date: ${data.due_at}\n${data.description}`}
+          />
           <Button>
             {/* <IconPlus className="text-muted-foreground" /> */}
             Submit

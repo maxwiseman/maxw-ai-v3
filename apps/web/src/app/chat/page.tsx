@@ -246,7 +246,7 @@ function StatusMessage({
   const latestToolStatus = lastPart?.type.startsWith("tool-")
     ? toolStatus[lastPart.type.replace("tool-", "")]
     : undefined;
-  if (status !== "streaming") return null;
+  if (status !== "streaming" && status !== "submitted") return null;
 
   if (
     !lastPart ||

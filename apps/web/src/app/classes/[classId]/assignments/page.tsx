@@ -12,6 +12,7 @@ import {
 } from "@tabler/icons-react";
 // import { useModulesState } from "../../modules-store";
 import { eq } from "drizzle-orm";
+import { cacheLife } from "next/cache";
 import type { Prefetch } from "next/dist/build/segment-config/app/app-segment-config";
 import { headers } from "next/headers";
 import Link from "next/link";
@@ -36,7 +37,6 @@ import { auth } from "@/lib/auth";
 import { moduleItemDetailsUrl } from "@/lib/canvas-helpers";
 import {
   type CanvasAssignment,
-  type CanvasModule,
   type CanvasModuleItem,
   CanvasModuleItemType,
 } from "@/lib/canvas-types";
@@ -64,6 +64,7 @@ export default async function ClassAssignmentsPage({
 }: {
   params: Promise<{ classId: string }>;
 }) {
+  cacheLife("max");
   const authData = await auth.api.getSession({ headers: await headers() });
   if (!authData) return <NotAuthenticated />;
 

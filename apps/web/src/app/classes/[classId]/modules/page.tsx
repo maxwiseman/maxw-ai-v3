@@ -12,6 +12,7 @@ import {
 } from "@tabler/icons-react";
 // import { useModulesState } from "../../modules-store";
 import { eq } from "drizzle-orm";
+import { cacheLife } from "next/cache";
 import type { Prefetch } from "next/dist/build/segment-config/app/app-segment-config";
 import { headers } from "next/headers";
 import Link from "next/link";
@@ -63,6 +64,7 @@ export default async function ClassModulesPage({
 }: {
   params: Promise<{ classId: string }>;
 }) {
+  cacheLife("days");
   const authData = await auth.api.getSession({ headers: await headers() });
   if (!authData) return <NotAuthenticated />;
 
