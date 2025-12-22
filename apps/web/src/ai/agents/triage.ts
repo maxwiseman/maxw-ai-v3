@@ -22,9 +22,7 @@ export const triageAgent = createAgent({
   - Manage due dates
 
 **study**: Explanations, flashcards, studying advice
-  - Explain things intuitively
   - Create flashcards/study sets
-  - Give advice for studying
 
 **general**: General queries, web search, AND compound queries
   - Greetings, thanks, casual conversation
