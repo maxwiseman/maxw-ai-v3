@@ -20,6 +20,7 @@ import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
 import type { CanvasAssignment } from "@/lib/canvas-types";
+import { CanvasLogo } from "@/components/custom-icons";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -74,9 +75,12 @@ export default async function AssignmentPage({
           <TodoButton
             context={`# Assignment - ${data.name}\nDue date: ${data.due_at}\n${data.description}`}
           />
-          <Button>
-            {/* <IconPlus className="text-muted-foreground" /> */}
-            Submit
+          <Button asChild>
+            <a target="_blank" href={data.html_url}>
+              {/* <IconPlus className="text-muted-foreground" /> */}
+              <CanvasLogo />
+              View on Canvas
+            </a>
           </Button>
         </PageHeaderActions>
       </PageHeader>

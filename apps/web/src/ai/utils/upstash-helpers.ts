@@ -16,7 +16,7 @@ const CHUNK_BUFFER_SIZE = 100;
 const RUBRIC_STRIP_THRESHOLD = 200;
 const MIN_CHUNK_SIZE = 100;
 const UPSERT_BATCH_SIZE = 100;
-const SEARCH_RESULT_LIMIT = 4;
+const SEARCH_RESULT_LIMIT = 10;
 
 // Upstash client setup
 const client = new Search({

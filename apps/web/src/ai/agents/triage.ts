@@ -21,7 +21,7 @@ export const triageAgent = createAgent({
   - Add, view or edit todos
   - Manage due dates
 
-**study**: Explanations, flashcards, studying advice
+**study**: Flashcards, study sets
   - Create flashcards/study sets
 
 **general**: General queries, web search, AND compound queries
