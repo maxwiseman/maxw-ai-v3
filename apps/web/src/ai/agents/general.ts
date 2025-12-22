@@ -4,10 +4,11 @@ import { secretaryAgent } from "./secretary";
 // Import specialists for handoffs
 import { type AppContext, createAgent, formatContextForLLM } from "./shared";
 import { studyAgent } from "./study";
+import { searchContentTool } from "../tools/canvas/search-content";
 
 export const generalAgent = createAgent({
   name: "general",
-  model: openai("gpt-5-mini"),
+  model: openai("gpt-5.2"),
   modelSettings: {
     openai: {
       reasoningEffort: "minimal",
@@ -93,6 +94,7 @@ STYLE:
 ${formatContextForLLM(ctx)}`,
   tools: (ctx: AppContext) => ({
     webSearch: createWebSearchTool(ctx),
+    searchContent: searchContentTool,
   }),
   handoffs: [secretaryAgent, studyAgent],
   matchOn: [

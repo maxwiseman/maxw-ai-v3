@@ -82,6 +82,7 @@ function CanvasImage(props: ComponentProps<"img">) {
   ) {
     return (
       <span className="mx-auto block size-max max-w-lg">
+        {/* @ts-expect-error */}
         <Image
           alt=""
           src=""

@@ -34,5 +34,11 @@
       "persistent": true
     }
   },
-  "globalEnv": ["DATABASE_URL", "AUTH_SECRET"]
+  "globalEnv": [
+    "DATABASE_URL",
+    "AUTH_SECRET",
+    "UPSTASH_SEARCH_URL",
+    "UPSTASH_SEARCH_TOKEN",
+    "NEXT_PUBLIC_UPSTASH_SEARCH_TOKEN"
+  ]
 }

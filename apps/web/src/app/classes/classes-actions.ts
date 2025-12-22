@@ -136,7 +136,7 @@ export async function getAssignment({
   const data = (await fetch(
     `https://${settings.canvasDomain}/api/v1/courses/${classId}/assignments${
       assignmentId ? `/${assignmentId}` : ""
-    }${filter !== undefined ? `?bucket=${filter}` : ""}`,
+    }${filter !== undefined ? `?per_page=100&bucket=${filter}` : "?per_page=100"}`,
     {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
@@ -146,12 +146,24 @@ export async function getAssignment({
   return data;
 }
 
+export async function getPage(args: {
+  classId: string;
+  pageId: string;
+  filter?: never;
+}): Promise<(CanvasPage | {message: "That page has been disabled for this course"})>;
+export async function getPage(args: {
+  classId: string;
+  pageId?: undefined;
+  filter?: "published" | "unpublished" | "all";
+}): Promise<(CanvasPage | {message: "That page has been disabled for this course"})[]>;
 export async function getPage({
   classId,
   pageId,
+  filter,
 }: {
   classId: string;
-  pageId: string;
+  pageId?: string;
+  filter?: "published" | "unpublished" | "all";
 }) {
   const authData = await auth.api.getSession({ headers: await headers() });
   if (!authData) return "Unauthorized" as const;
@@ -162,12 +174,15 @@ export async function getPage({
   if (!settings?.canvasApiKey || !settings.canvasDomain)
     return "Settings not configured";
   const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/pages/${pageId}`,
+    `https://${settings.canvasDomain}/api/v1/courses/${classId}/pages${
+      pageId ? `/${pageId}` : ""
+    }${filter !== undefined ? `?per_page=100&published=${filter === "published" ? "true" : filter === "unpublished" ? "false" : "all"}` : "?per_page=100"}`,
     {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
     },
-  ).then((res) => res.json())) as CanvasPage;
+  ).then((res) => res.json())) as (CanvasPage | {message: "That page has been disabled for this course"}) | (CanvasPage | {message: "That page has been disabled for this course"})[];
+  // Array.isArray(data) ? data.flatMap(i => "message" in i ? "Pages disabled" : i) : "message" in data ? "Pages disabled" : data;
   return data;
 }

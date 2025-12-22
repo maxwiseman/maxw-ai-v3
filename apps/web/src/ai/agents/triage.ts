@@ -6,7 +6,7 @@ import { studyAgent } from "./study";
 
 export const triageAgent = createAgent({
   name: "triage",
-  model: openai("gpt-5-nano"),
+  model: openai("gpt-5-mini"),
   modelSettings: {
     toolChoice: "required",
     activeTools: ["handoff_to_agent"],
@@ -20,12 +20,12 @@ export const triageAgent = createAgent({
   - Find upcoming assignments
   - Add, view or edit todos
   - Manage due dates
-  
+
 **study**: Explanations, flashcards, studying advice
   - Explain things intuitively
   - Create flashcards/study sets
   - Give advice for studying
-  
+
 **general**: General queries, web search, AND compound queries
   - Greetings, thanks, casual conversation
   - "What can you do?", "How does this work?"

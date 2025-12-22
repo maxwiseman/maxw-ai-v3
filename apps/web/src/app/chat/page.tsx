@@ -175,7 +175,7 @@ function ChatMessage({
 }: {
   msg: UIMessage<unknown, UIDataTypes, UITools>;
 }) {
-  const { artifacts } = useArtifacts();
+  const [ artifacts ] = useArtifacts();
 
   return (
     <Message className="group items-center" from={msg.role}>
@@ -211,7 +211,7 @@ function ChatMessage({
               ) : null;
             case part.type.startsWith("data-artifact"): {
               const typedPart = part as ArtifactData<unknown>;
-              const artifactData = artifacts.find(
+              const artifactData = artifacts.artifacts.find(
                 (artifact) => artifact.id === typedPart.id,
               );
               return (

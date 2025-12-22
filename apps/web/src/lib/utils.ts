@@ -199,3 +199,17 @@ export function humanReadableDate(
   // Fallback to a date format (e.g., "Apr 7, 2025")
   return format(date, fallbackFormat);
 }
+
+// biome-ignore lint/suspicious/noExplicitAny: This is fine, GLM wrote it
+export function extractKeys<T extends Record<string, any>, K extends keyof T>(
+  object: T,
+  keys: K[],
+): Pick<T, K> {
+  const result = {} as Pick<T, K>;
+  for (const key of keys) {
+    if (key in object) {
+      result[key] = object[key];
+    }
+  }
+  return result;
+}

@@ -3,10 +3,15 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
-    DATABASE_URL: z.string().url(),
+    DATABASE_URL: z.url(),
     AUTH_SECRET: z.string().min(1),
+    UPSTASH_SEARCH_URL: z.url(),
+    UPSTASH_SEARCH_TOKEN: z.string()
   },
-  client: {},
+  client: {
+    NEXT_PUBLIC_UPSTASH_SEARCH_TOKEN: z.string().optional()
+  },
+  // @ts-expect-error -- This does contain all the correct data, it's just not typed
   experimental__runtimeEnv: process.env,
   skipValidation: !process.env.DATABASE_URL,
 });
