@@ -1,10 +1,10 @@
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { searchContentTool } from "../tools/canvas/search-content";
 import { type AppContext, createAgent, formatContextForLLM } from "./shared";
 
 export const secretaryAgent = createAgent({
   name: "secretary",
-  model: openai("gemini-3-pro-preview"),
+  model: google("gemini-3-pro-preview"),
   instructions: (
     ctx: AppContext,
   ) => `You are a scheduling specialist and general assistant for a student at ${

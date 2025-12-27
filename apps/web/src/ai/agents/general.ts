@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { searchContentTool } from "../tools/canvas/search-content";
 import { createWebSearchTool } from "../tools/search";
 import { secretaryAgent } from "./secretary";
@@ -8,15 +8,8 @@ import { studyAgent } from "./study";
 
 export const generalAgent = createAgent({
   name: "general",
-  model: openai("gemini-3-pro-preview"),
-  modelSettings: {
-    openai: {
-      reasoningEffort: "minimal",
-      reasoningSummary: "auto",
-    },
-    reasoningEffort: "minimal",
-    reasoningSummary: "auto",
-  },
+  model: google("gemini-3-pro-preview"),
+  modelSettings: {},
   instructions: (
     ctx: AppContext,
   ) => `You are a general assistant and coordinator for students at ${

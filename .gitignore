@@ -4,3 +4,4 @@ node_modules
 .alchemy
 .env
 .vercel
+package-lock.json
