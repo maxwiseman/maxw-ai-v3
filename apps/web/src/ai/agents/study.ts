@@ -10,7 +10,7 @@ import { type AppContext, createAgent, formatContextForLLM } from "./shared";
 
 export const studyAgent = createAgent({
   name: "study",
-  model: openai("gpt-5.2"),
+  model: openai("gemini-3-pro"),
   modelSettings: {
     providerOptions: {
       openai: { reasoningEffort: "minimal", strictJsonSchema: true },
