@@ -4,7 +4,7 @@ import { type AppContext, createAgent, formatContextForLLM } from "./shared";
 
 export const secretaryAgent = createAgent({
   name: "secretary",
-  model: openai("gemini-3-pro"),
+  model: openai("gemini-3-pro-preview"),
   instructions: (
     ctx: AppContext,
   ) => `You are a scheduling specialist and general assistant for a student at ${

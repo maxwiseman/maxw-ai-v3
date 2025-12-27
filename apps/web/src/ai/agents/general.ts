@@ -8,7 +8,7 @@ import { studyAgent } from "./study";
 
 export const generalAgent = createAgent({
   name: "general",
-  model: openai("gemini-3-pro"),
+  model: openai("gemini-3-pro-preview"),
   modelSettings: {
     openai: {
       reasoningEffort: "minimal",
