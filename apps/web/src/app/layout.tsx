@@ -1,26 +1,25 @@
 import type { Metadata } from "next";
-// Temporarily comment out Google Fonts to fix build issues in restricted environments
-// import { EB_Garamond, Geist, Geist_Mono } from "next/font/google";
+import { EB_Garamond, Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
 import Header from "@/components/header";
 import Providers from "@/components/providers";
 import Sidebar from "@/components/sidebar";
 import "../index.css";
 
-// const geistSans = Geist({
-//   variable: "--font-geist-sans",
-//   subsets: ["latin"],
-// });
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
 
-// const geistMono = Geist_Mono({
-//   variable: "--font-geist-mono",
-//   subsets: ["latin"],
-// });
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
 
-// const garamond = EB_Garamond({
-//   variable: "--font-garamond",
-//   subsets: ["latin"],
-// });
+const garamond = EB_Garamond({
+  variable: "--font-garamond",
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
   title: "maxw-ai-v3",
@@ -39,7 +38,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body
-        className={`h-full overflow-x-hidden antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${garamond.variable} h-full overflow-x-hidden antialiased`}
       >
         <Providers>
           <div className="grid size-full grid-rows-[auto_1fr]">
