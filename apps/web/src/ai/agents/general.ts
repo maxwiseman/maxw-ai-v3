@@ -16,6 +16,11 @@ export const generalAgent = createAgent({
       },
     },
   },
+  memory: {
+    workingMemory: {
+      enabled: false, // Disable working memory for Google models - they don't support system messages mid-conversation
+    },
+  },
   instructions: (
     ctx: AppContext,
   ) => `You are a general assistant and coordinator for students at ${

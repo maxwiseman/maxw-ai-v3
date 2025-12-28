@@ -18,6 +18,11 @@ export const studyAgent = createAgent({
       },
     },
   },
+  memory: {
+    workingMemory: {
+      enabled: false, // Disable working memory for Google models - they don't support system messages mid-conversation
+    },
+  },
   instructions: (ctx: AppContext) => `You are a tutor for students at ${
     ctx.schoolName
   }.
