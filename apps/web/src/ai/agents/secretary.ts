@@ -5,6 +5,13 @@ import { type AppContext, createAgent, formatContextForLLM } from "./shared";
 export const secretaryAgent = createAgent({
   name: "secretary",
   model: google("gemini-3-pro-preview"),
+  modelSettings: {
+    providerOptions: {
+      google: {
+        useSystemInstruction: true,
+      },
+    },
+  },
   instructions: (
     ctx: AppContext,
   ) => `You are a scheduling specialist and general assistant for a student at ${

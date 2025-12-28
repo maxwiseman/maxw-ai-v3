@@ -9,7 +9,13 @@ import { studyAgent } from "./study";
 export const generalAgent = createAgent({
   name: "general",
   model: google("gemini-3-pro-preview"),
-  modelSettings: {},
+  modelSettings: {
+    providerOptions: {
+      google: {
+        useSystemInstruction: true,
+      },
+    },
+  },
   instructions: (
     ctx: AppContext,
   ) => `You are a general assistant and coordinator for students at ${

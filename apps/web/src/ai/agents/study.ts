@@ -11,7 +11,13 @@ import { type AppContext, createAgent, formatContextForLLM } from "./shared";
 export const studyAgent = createAgent({
   name: "study",
   model: google("gemini-3-pro-preview"),
-  modelSettings: {},
+  modelSettings: {
+    providerOptions: {
+      google: {
+        useSystemInstruction: true,
+      },
+    },
+  },
   instructions: (ctx: AppContext) => `You are a tutor for students at ${
     ctx.schoolName
   }.
