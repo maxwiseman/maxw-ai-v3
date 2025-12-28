@@ -169,8 +169,9 @@ Currently, this repository does not have a test suite configured. When adding te
 - `cva()`: Create variant-based component APIs (from `class-variance-authority`)
 
 ### Form Handling
-- Use TanStack React Form for form state management
-- Use Zod for schema validation with `@hookform/resolvers`
+- Use TanStack React Form for form state management (primary form library)
+- React Hook Form is used by shadcn/ui form components in `components/ui/form.tsx`
+- Use Zod for schema validation (both form libraries support Zod)
 
 ### Data Fetching
 - Use TanStack Query for server state management
