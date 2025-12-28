@@ -45,7 +45,7 @@ export default function TodoPage() {
   const addTask = useTodoList((state) => state.addTask);
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <div className="mx-auto w-full max-w-2xl px-8">
       <SidebarExtension>
         <div className="flex w-3xs flex-col gap-2 p-4">
           <Button className="justify-start shadow-none" variant="secondary">
@@ -58,7 +58,7 @@ export default function TodoPage() {
           </Button>
         </div>
       </SidebarExtension>
-      <PageHeader className="px-0">
+      <PageHeader className="px-0 pb-8">
         <PageHeaderContent>
           <PageHeaderTitle>Today</PageHeaderTitle>
           <PageHeaderDescription>
