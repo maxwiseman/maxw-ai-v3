@@ -4,24 +4,46 @@ import { IconCheck } from "@tabler/icons-react";
 import { notFound } from "next/navigation";
 import { Checkbox as CheckboxPrimitive } from "radix-ui";
 import { useState } from "react";
+import { updateCanvasIndex } from "@/ai/utils/upstash-helpers";
+import { Button } from "@/components/ui/button";
 import { useControlledState } from "@/hooks/use-controlled-state";
 import { cn } from "@/lib/utils";
-import styles from "../todo/checkbox.module.css";
-import { Button } from "@/components/ui/button";
-import { updateCanvasIndex } from "@/ai/utils/upstash-helpers";
 import { getAssignment, getPage } from "../classes/classes-actions";
+import styles from "../todo/checkbox.module.css";
 
 export default function TestPage() {
   if (process.env.NODE_ENV === "production") notFound();
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
 
   return (
     <div className="flex size-full flex-col items-center justify-center gap-24">
       <div className="scale-100">
         <AnimatedCheckbox />
         <Checkbox />
-        <Button disabled={loading} onClick={() => { setLoading(true); getAssignment({ classId: "1405965" }).then((i) => {console.log(i); setLoading(false)})}}>Get Assignments</Button>
-        <Button disabled={loading} onClick={() => { setLoading(true); updateCanvasIndex().then((i) => {console.log(i); setLoading(false)})}}>Revalidate Upstash</Button>
+        <Button
+          disabled={loading}
+          onClick={() => {
+            setLoading(true);
+            getAssignment({ classId: "1405965" }).then((i) => {
+              console.log(i);
+              setLoading(false);
+            });
+          }}
+        >
+          Get Assignments
+        </Button>
+        <Button
+          disabled={loading}
+          onClick={() => {
+            setLoading(true);
+            updateCanvasIndex().then((i) => {
+              console.log(i);
+              setLoading(false);
+            });
+          }}
+        >
+          Revalidate Upstash
+        </Button>
       </div>
     </div>
   );

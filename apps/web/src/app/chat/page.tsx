@@ -175,7 +175,7 @@ function ChatMessage({
 }: {
   msg: UIMessage<unknown, UIDataTypes, UITools>;
 }) {
-  const [ artifacts ] = useArtifacts();
+  const [artifacts] = useArtifacts();
 
   return (
     <Message className="group items-center" from={msg.role}>

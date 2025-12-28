@@ -150,12 +150,16 @@ export async function getPage(args: {
   classId: string;
   pageId: string;
   filter?: never;
-}): Promise<(CanvasPage | {message: "That page has been disabled for this course"})>;
+}): Promise<
+  CanvasPage | { message: "That page has been disabled for this course" }
+>;
 export async function getPage(args: {
   classId: string;
   pageId?: undefined;
   filter?: "published" | "unpublished" | "all";
-}): Promise<(CanvasPage | {message: "That page has been disabled for this course"})[]>;
+}): Promise<
+  (CanvasPage | { message: "That page has been disabled for this course" })[]
+>;
 export async function getPage({
   classId,
   pageId,
@@ -182,7 +186,12 @@ export async function getPage({
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
     },
-  ).then((res) => res.json())) as (CanvasPage | {message: "That page has been disabled for this course"}) | (CanvasPage | {message: "That page has been disabled for this course"})[];
+  ).then((res) => res.json())) as
+    | (CanvasPage | { message: "That page has been disabled for this course" })
+    | (
+        | CanvasPage
+        | { message: "That page has been disabled for this course" }
+      )[];
   // Array.isArray(data) ? data.flatMap(i => "message" in i ? "Pages disabled" : i) : "message" in data ? "Pages disabled" : data;
   return data;
 }

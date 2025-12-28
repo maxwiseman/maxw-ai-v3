@@ -1,10 +1,10 @@
 import { openai } from "@ai-sdk/openai";
+import { searchContentTool } from "../tools/canvas/search-content";
 import { createWebSearchTool } from "../tools/search";
 import { secretaryAgent } from "./secretary";
 // Import specialists for handoffs
 import { type AppContext, createAgent, formatContextForLLM } from "./shared";
 import { studyAgent } from "./study";
-import { searchContentTool } from "../tools/canvas/search-content";
 
 export const generalAgent = createAgent({
   name: "general",

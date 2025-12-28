@@ -2,6 +2,7 @@ import { IconBlocks, IconHome, IconPencil } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ComponentProps, use } from "react";
+import { MobileNavExtension } from "@/components/mobile-nav";
 import { SidebarExtension } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 
@@ -12,23 +13,49 @@ export function ClassSidebar({
 }) {
   const classId = use(params).classId;
 
+  const content = (
+    <div className="flex w-3xs flex-col gap-2 p-4 md:p-4">
+      <ClassSidebarButton path={{ slug: "", strict: true }} classId={classId}>
+        <IconHome className="text-muted-foreground" />
+        Home
+      </ClassSidebarButton>
+      <ClassSidebarButton path={{ slug: "/modules" }} classId={classId}>
+        <IconBlocks className="text-muted-foreground" />
+        Modules
+      </ClassSidebarButton>
+      <ClassSidebarButton path={{ slug: "/assignments" }} classId={classId}>
+        <IconPencil className="text-muted-foreground" />
+        Assignments
+      </ClassSidebarButton>
+    </div>
+  );
+
   return (
-    <SidebarExtension>
-      <div className="flex w-3xs flex-col gap-2 p-4">
-        <ClassSidebarButton path={{ slug: "", strict: true }} classId={classId}>
-          <IconHome className="text-muted-foreground" />
-          Home
-        </ClassSidebarButton>
-        <ClassSidebarButton path={{ slug: "/modules" }} classId={classId}>
-          <IconBlocks className="text-muted-foreground" />
-          Modules
-        </ClassSidebarButton>
-        <ClassSidebarButton path={{ slug: "/assignments" }} classId={classId}>
-          <IconPencil className="text-muted-foreground" />
-          Assignments
-        </ClassSidebarButton>
-      </div>
-    </SidebarExtension>
+    <>
+      {/* Desktop sidebar */}
+      <SidebarExtension>{content}</SidebarExtension>
+      {/* Mobile navigation */}
+      <MobileNavExtension>
+        <div className="flex flex-col gap-2">
+          <div className="mb-2 font-medium text-sm">Class Menu</div>
+          <ClassSidebarButton
+            path={{ slug: "", strict: true }}
+            classId={classId}
+          >
+            <IconHome className="text-muted-foreground" />
+            Home
+          </ClassSidebarButton>
+          <ClassSidebarButton path={{ slug: "/modules" }} classId={classId}>
+            <IconBlocks className="text-muted-foreground" />
+            Modules
+          </ClassSidebarButton>
+          <ClassSidebarButton path={{ slug: "/assignments" }} classId={classId}>
+            <IconPencil className="text-muted-foreground" />
+            Assignments
+          </ClassSidebarButton>
+        </div>
+      </MobileNavExtension>
+    </>
   );
 }
 
