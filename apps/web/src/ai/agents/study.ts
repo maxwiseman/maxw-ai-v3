@@ -4,16 +4,23 @@
  * Analytics & forecasting specialist with business intelligence tools
  */
 
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { createStudySetTool } from "../tools/study/flashcards";
 import { type AppContext, createAgent, formatContextForLLM } from "./shared";
 
 export const studyAgent = createAgent({
   name: "study",
-  model: openai("gpt-5.2"),
+  model: google("gemini-3-pro-preview"),
   modelSettings: {
     providerOptions: {
-      openai: { reasoningEffort: "minimal", strictJsonSchema: true },
+      google: {
+        useSystemInstruction: true,
+      },
+    },
+  },
+  memory: {
+    workingMemory: {
+      enabled: false, // Disable working memory for Google models - they don't support system messages mid-conversation
     },
   },
   instructions: (ctx: AppContext) => `You are a tutor for students at ${

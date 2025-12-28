@@ -1,10 +1,22 @@
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { searchContentTool } from "../tools/canvas/search-content";
 import { type AppContext, createAgent, formatContextForLLM } from "./shared";
 
 export const secretaryAgent = createAgent({
   name: "secretary",
-  model: openai("gpt-5.2"),
+  model: google("gemini-3-pro-preview"),
+  modelSettings: {
+    providerOptions: {
+      google: {
+        useSystemInstruction: true,
+      },
+    },
+  },
+  memory: {
+    workingMemory: {
+      enabled: false, // Disable working memory for Google models - they don't support system messages mid-conversation
+    },
+  },
   instructions: (
     ctx: AppContext,
   ) => `You are a scheduling specialist and general assistant for a student at ${
