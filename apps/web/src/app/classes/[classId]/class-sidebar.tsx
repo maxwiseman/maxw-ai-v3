@@ -14,7 +14,7 @@ export function ClassSidebar({
   const classId = use(params).classId;
 
   const content = (
-    <div className="flex w-3xs flex-col gap-2 p-4 md:p-4">
+    <div className="flex w-3xs flex-col gap-2 p-4">
       <ClassSidebarButton path={{ slug: "", strict: true }} classId={classId}>
         <IconHome className="text-muted-foreground" />
         Home

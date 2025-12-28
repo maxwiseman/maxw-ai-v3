@@ -65,6 +65,8 @@ export function MobileNavExtensionProvider({
   );
 }
 
+const MOBILE_NAV_WIDTH = "280px";
+
 export default function MobileNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -119,14 +121,18 @@ export default function MobileNav() {
         <IconMenu2 className="size-5" />
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="w-[280px] p-0">
+        <SheetContent
+          side="left"
+          className="p-0"
+          style={{ width: MOBILE_NAV_WIDTH }}
+        >
           <SheetHeader className="border-b p-4">
             <SheetTitle>Navigation</SheetTitle>
           </SheetHeader>
           <nav className="flex flex-col gap-1 p-4">
-            {navItems.map((item, index) => (
+            {navItems.map((item) => (
               <Button
-                key={index}
+                key={item.label}
                 variant={item.isActive ? "secondary" : "ghost"}
                 className="justify-start gap-3"
                 asChild
