@@ -157,10 +157,7 @@ bun check            # Run Biome check with auto-fix
 
 ## Testing
 
-Currently, this repository does not have a test suite configured. When adding tests:
-- Follow existing patterns in the ecosystem
-- Use the project's existing TypeScript configuration
-- Ensure tests can be run with Bun
+Currently, this repository does not have a test suite configured. Instead, just run a build of the appropriate app in your environment. Ignore errors relating to Google Fonts (you may not have network access to that resource, but utll work in production).
 
 ## Key Libraries and Patterns
 
