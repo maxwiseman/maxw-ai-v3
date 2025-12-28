@@ -5,6 +5,7 @@ import { cacheLife } from "next/cache";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { CanvasHTML } from "@/components/canvas-html";
+import { CanvasLogo } from "@/components/custom-icons";
 import { DateDisplay } from "@/components/date-display";
 import { TodoButton } from "@/components/new-todo-button";
 import { NotAuthenticated } from "@/components/not-authenticated";
@@ -20,7 +21,6 @@ import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
 import type { CanvasAssignment } from "@/lib/canvas-types";
-import { CanvasLogo } from "@/components/custom-icons";
 
 export const unstable_prefetch = {
   mode: "runtime",

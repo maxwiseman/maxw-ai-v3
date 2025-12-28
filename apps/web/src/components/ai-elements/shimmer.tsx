@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type MotionStyle } from "motion/react";
+import { type MotionStyle, motion } from "motion/react";
 import {
   type CSSProperties,
   type ElementType,

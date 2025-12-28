@@ -6,10 +6,10 @@ export const env = createEnv({
     DATABASE_URL: z.url(),
     AUTH_SECRET: z.string().min(1),
     UPSTASH_SEARCH_URL: z.url(),
-    UPSTASH_SEARCH_TOKEN: z.string()
+    UPSTASH_SEARCH_TOKEN: z.string(),
   },
   client: {
-    NEXT_PUBLIC_UPSTASH_SEARCH_TOKEN: z.string().optional()
+    NEXT_PUBLIC_UPSTASH_SEARCH_TOKEN: z.string().optional(),
   },
   // @ts-expect-error -- This does contain all the correct data, it's just not typed
   experimental__runtimeEnv: process.env,

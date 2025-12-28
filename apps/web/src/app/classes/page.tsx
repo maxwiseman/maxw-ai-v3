@@ -52,7 +52,7 @@ export default async function ClassesPage() {
         </PageHeaderContent>
       </PageHeader>
       {typeof data === "object" ? (
-        <div className="grid grid-cols-3 gap-4 px-8 pb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-8 pb-8">
           {data.map((course) => (
             <ClassCard key={course.id} {...course} />
           ))}

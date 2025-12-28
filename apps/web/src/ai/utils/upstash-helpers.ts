@@ -1,14 +1,14 @@
 "use server";
 
 import { Search } from "@upstash/search";
+import TurndownService from "turndown";
 import {
   getAllCanvasCourses,
   getAssignment,
   getPage,
 } from "@/app/classes/classes-actions";
-import { extractKeys } from "@/lib/utils";
 import { env } from "@/env";
-import TurndownService from "turndown";
+import { extractKeys } from "@/lib/utils";
 
 // Constants
 const MAX_DOCUMENT_SIZE = 4000;
@@ -39,7 +39,7 @@ type DocumentChunk = {
  * Converts HTML fields (description, body) to Markdown format
  */
 function convertHtmlToMarkdown(
-  content: Record<string, unknown>
+  content: Record<string, unknown>,
 ): Record<string, unknown> {
   const converted = { ...content };
 
@@ -59,7 +59,7 @@ function convertHtmlToMarkdown(
  * Identifies the largest text field in the content that can be split
  */
 function findLargeTextField(
-  content: Record<string, unknown>
+  content: Record<string, unknown>,
 ): "description" | "body" | null {
   if ("description" in content && typeof content.description === "string") {
     return "description";
@@ -74,7 +74,7 @@ function findLargeTextField(
  * Removes non-essential fields if base content is too large
  */
 function optimizeBaseContent(
-  baseContent: Record<string, unknown>
+  baseContent: Record<string, unknown>,
 ): Record<string, unknown> {
   const baseStr = JSON.stringify(baseContent);
   if (baseStr.length > MAX_DOCUMENT_SIZE - RUBRIC_STRIP_THRESHOLD) {
@@ -94,7 +94,7 @@ function optimizeBaseContent(
 function splitDocument(
   id: string,
   metadata: Record<string, unknown>,
-  content: Record<string, unknown>
+  content: Record<string, unknown>,
 ): DocumentChunk[] {
   const contentSize = JSON.stringify(content).length;
   if (contentSize < MAX_DOCUMENT_SIZE) {
@@ -104,7 +104,7 @@ function splitDocument(
   const largeField = findLargeTextField(content);
   if (!largeField) {
     console.warn(
-      `Content for ${id} exceeds size limit but no splittable text field found.`
+      `Content for ${id} exceeds size limit but no splittable text field found.`,
     );
     return [{ id, metadata, content }];
   }
@@ -155,7 +155,7 @@ async function processAssignments(course: {
 
   const validAssignments = assignments.filter(
     (item): item is Exclude<typeof item, { message?: string }> =>
-      !("message" in item)
+      !("message" in item),
   );
 
   return validAssignments.flatMap((assignment) => {
@@ -170,7 +170,7 @@ async function processAssignments(course: {
           "allowed_attempts",
           "lock_at",
           "rubric",
-        ])
+        ]),
       ),
       className: course.original_name ?? course.name,
     };
@@ -193,11 +193,11 @@ async function processPages(course: {
 
   const validPages = pagesResult.filter(
     (
-      item
+      item,
     ): item is Exclude<
       typeof item,
       { message: "That page has been disabled for this course" }
-    > => !("message" in item)
+    > => !("message" in item),
   );
 
   return validPages.flatMap((page) => {
@@ -205,7 +205,7 @@ async function processPages(course: {
     const metadata = { classId: course.id, type: "page" };
     const content = {
       ...convertHtmlToMarkdown(
-        extractKeys(page, ["body", "title", "todo_date", "updated_at"])
+        extractKeys(page, ["body", "title", "todo_date", "updated_at"]),
       ),
       className: course.original_name ?? course.name,
     };
@@ -261,7 +261,7 @@ export async function updateCanvasIndex(): Promise<DocumentChunk[] | string> {
  */
 export async function queryCanvasIndex(
   query: string,
-  classIds?: string[]
+  classIds?: string[],
 ): Promise<unknown> {
   const filter = classIds
     ? `classId IN (${classIds.map((id) => `'${id}'`).join(", ")})`

@@ -8,6 +8,7 @@ import {
 import { persistQueryClient } from "@tanstack/react-query-persist-client";
 import { Provider as ChatProvider } from "ai-sdk-tools";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { MobileNavExtensionProvider } from "./mobile-nav";
 import { SidebarExtensionProvider } from "./sidebar";
 import { ThemeProvider } from "./theme-provider";
 import { Toaster } from "./ui/sonner";
@@ -88,7 +89,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider>
         <ChatProvider>
           <NuqsAdapter>
-            <SidebarExtensionProvider>{children}</SidebarExtensionProvider>
+            <SidebarExtensionProvider>
+              <MobileNavExtensionProvider>
+                {children}
+              </MobileNavExtensionProvider>
+            </SidebarExtensionProvider>
           </NuqsAdapter>
         </ChatProvider>
       </QueryClientProvider>

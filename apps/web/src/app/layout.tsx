@@ -33,19 +33,23 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      className="h-full overflow-y-hidden overscroll-none"
+      className="h-full overflow-y-hidden overflow-x-hidden overscroll-none"
       lang="en"
       suppressHydrationWarning
     >
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${garamond.variable} h-full antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${garamond.variable} h-full overflow-x-hidden antialiased`}
       >
         <Providers>
           <div className="grid size-full grid-rows-[auto_1fr]">
-            <Header />
-            <div className="grid size-full grid-cols-[auto_1fr]">
+            <Suspense fallback={<div className="h-16" />}>
+              <Header />
+            </Suspense>
+            <div className="grid size-full md:grid-cols-[auto_1fr]">
               <Suspense fallback={<div />}>
-                <Sidebar />
+                <div className="hidden md:contents">
+                  <Sidebar />
+                </div>
               </Suspense>
               <div className="flex h-full flex-col">
                 <div className="-mt-16 h-0 grow overflow-scroll pt-16">
