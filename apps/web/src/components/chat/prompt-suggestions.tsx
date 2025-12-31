@@ -37,7 +37,7 @@ export function PromptSuggestions({ delay = 0 }: PromptSuggestionsProps = {}) {
         transition={{ duration: 0.3, delay, ease: "easeOut" }}
         className="pointer-events-auto mb-2 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {prompts.map((prompt, index) => (
+        {prompts.slice(0, 4).map((prompt, index) => (
           <motion.div
             key={prompt}
             initial={{ opacity: 0, y: 10 }}

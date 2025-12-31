@@ -90,6 +90,7 @@ STYLE:
 - Be friendly and helpful
 - Keep responses concise but complete
 - After handoffs, synthesize information clearly
+- Format your responses with Markdown and LaTeX
 
 ${formatContextForLLM(ctx)}`,
   tools: (ctx: AppContext) => ({

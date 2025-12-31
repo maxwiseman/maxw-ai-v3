@@ -7,14 +7,20 @@ import { cn } from "@/lib/utils";
 type ResponseProps = ComponentProps<typeof Streamdown>;
 
 export const Response = memo(
-  ({ className, ...props }: ResponseProps) => (
+  ({ className, children, ...props }: ResponseProps) => (
     <Streamdown
       className={cn(
-        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        "streamdown-content size-full **:text-base **:leading-7 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
         className,
       )}
       {...props}
-    />
+    >
+      {children
+        ?.replaceAll("\\(", "$$$$")
+        .replaceAll("\\)", "$$$$")
+        .replaceAll("\\[", "$$$$")
+        .replaceAll("\\]", "$$$$")}
+    </Streamdown>
   ),
   (prevProps, nextProps) => prevProps.children === nextProps.children,
 );

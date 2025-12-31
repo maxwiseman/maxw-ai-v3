@@ -228,4 +228,22 @@
     animation: scrollfade-horizontal linear;
     animation-timeline: scroll(self inline);
   }
+
+  /* Streamdown list indentation */
+  [data-streamdown="unordered-list"],
+  [data-streamdown="ordered-list"] {
+    padding-left: 1.75rem;
+  }
+
+  [data-streamdown="list-item"] {
+    padding-left: 0rem;
+  }
+
+  /* Style list markers (bullets and numbers) with muted color */
+  [data-streamdown="unordered-list"] li::marker,
+  [data-streamdown="ordered-list"] li::marker,
+  .streamdown-content ul li::marker,
+  .streamdown-content ol li::marker {
+    color: var(--muted-foreground);
+  }
 }

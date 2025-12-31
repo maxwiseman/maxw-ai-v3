@@ -21,8 +21,8 @@ export const triageAgent = createAgent({
   - Add, view or edit todos
   - Manage due dates
 
-**study**: Flashcards, study sets
-  - Create flashcards/study sets
+**study**: Flashcards, practice problems
+  - Create flashcards/practice problems
 
 **general**: General queries, web search, AND compound queries
   - Greetings, thanks, casual conversation
@@ -58,8 +58,8 @@ ${formatContextForLLM(ctx)}`,
     // timeTrackingAgent,
     // customersAgent,
     // operationsAgent,
-    secretaryAgent,
-    studyAgent,
+    // secretaryAgent,
+    // studyAgent,
     generalAgent,
   ],
   maxTurns: 1,
