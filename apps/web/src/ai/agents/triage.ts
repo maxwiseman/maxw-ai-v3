@@ -6,11 +6,11 @@ import { studyAgent } from "./study";
 
 export const triageAgent = createAgent({
   name: "triage",
-  model: openai("gpt-5-mini"),
+  model: openai("gpt-5.2"),
   modelSettings: {
     toolChoice: "required",
     activeTools: ["handoff_to_agent"],
-    providerOptions: { openai: { reasoningEffort: "minimal" } },
+    providerOptions: { openai: { reasoningEffort: "none" } },
   },
   instructions: (
     ctx: AppContext,
