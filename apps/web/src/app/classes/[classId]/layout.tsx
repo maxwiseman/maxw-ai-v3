@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { ClassSidebar } from "./class-sidebar";
+import { ClassSidebarPlaceholder } from "./class-sidebar-placeholder";
 
 export default function Layout({
   children,
@@ -12,7 +13,7 @@ export default function Layout({
 }) {
   return (
     <div>
-      <Suspense>
+      <Suspense fallback={<ClassSidebarPlaceholder />}>
         <ClassSidebar params={params} />
       </Suspense>
       {children}
