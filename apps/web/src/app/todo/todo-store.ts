@@ -74,6 +74,7 @@ const useTodoStore = create<TodoStore>()(
 export function useTodoList<T>(
   selector?: (state: TodoStore) => T,
 ): T extends undefined ? TodoStore : T {
+  // biome-ignore lint/correctness/useHookAtTopLevel: We don't expect selector to change at runtime, so this is fine
   const results = selector ? useTodoStore(selector) : useTodoStore();
 
   return results as T extends undefined ? TodoStore : T;

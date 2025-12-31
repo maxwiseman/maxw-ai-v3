@@ -1,12 +1,18 @@
 "use client";
 
-import type { Icon, IconProps } from "@tabler/icons-react";
+import { type Icon, IconPencil, type IconProps } from "@tabler/icons-react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import type {
   ComponentProps,
   ForwardRefExoticComponent,
   RefAttributes,
 } from "react";
+import { getDashboardData } from "@/app/actions/dashboard";
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { RecentClasses } from "@/components/dashboard/recent-classes";
+import { TodoSummary } from "@/components/dashboard/todo-summary";
+import { UpcomingAssignments } from "@/components/dashboard/upcoming-assignments";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,21 +25,15 @@ import { authClient } from "@/lib/auth-client";
 
 export default function Home() {
   const { data: session } = authClient.useSession();
+  const { data: dashboardData } = useQuery({
+    queryKey: ["dashboard-data"],
+    queryFn: getDashboardData,
+  });
 
   return (
     <div className="mx-auto w-full px-8 py-8">
-      <div className="mb-8">
-        <h1 className="font-medium font-serif text-4xl">
-          Afternoon,{" "}
-          <span className="text-muted-foreground">
-            {session?.user.name.split(" ")[0]}
-          </span>
-        </h1>
-        <p className="text-muted-foreground">
-          One more week left until the break
-        </p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <DashboardHeader />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <DashboardCard
           // icon={IconPencil}
           title="Upcoming Assignments"
@@ -44,6 +44,9 @@ export default function Home() {
             <strong>ToK assignment</strong> due Sunday night
           </span>
         </DashboardCard>
+        <UpcomingAssignments assignments={dashboardData?.assignments ?? []} />
+        <TodoSummary />
+        <RecentClasses courses={dashboardData?.courses ?? []} />
       </div>
     </div>
   );
@@ -72,18 +75,18 @@ function DashboardCard({
           {title}
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-4 pt-0!">{children}</CardContent>
+      <CardContent className="grow p-4 pt-0!">{children}</CardContent>
       {actions && actions.length > 0 && (
         <CardFooter className="justify-between p-4 pt-0 pb-3">
           <div>
             {actions
               .filter((act) => act.variant === "default" || !act.variant)
-              .map((action, i) => (
+              .map((action) => (
                 <Button
                   className="-my-1 -mx-2 h-auto p-1 px-2 font-normal text-neutral-400 hover:bg-transparent! hover:text-neutral-600 dark:text-neutral-600 dark:hover:text-neutral-400"
                   size="sm"
                   variant="ghost"
-                  key={i}
+                  key={JSON.stringify(action)}
                   asChild
                 >
                   <Link href={action.href}>{action.text}</Link>
