@@ -1,13 +1,9 @@
 "use client";
 
-import { type Icon, IconPencil, type IconProps } from "@tabler/icons-react";
+import { type Icon, IconPencil } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import type {
-  ComponentProps,
-  ForwardRefExoticComponent,
-  RefAttributes,
-} from "react";
+import type { ComponentProps } from "react";
 import { getDashboardData } from "@/app/actions/dashboard";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { RecentClasses } from "@/components/dashboard/recent-classes";
@@ -21,10 +17,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { authClient } from "@/lib/auth-client";
 
 export default function Home() {
-  const { data: session } = authClient.useSession();
   const { data: dashboardData } = useQuery({
     queryKey: ["dashboard-data"],
     queryFn: getDashboardData,
@@ -35,7 +29,7 @@ export default function Home() {
       <DashboardHeader />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <DashboardCard
-          // icon={IconPencil}
+          icon={IconPencil}
           title="Upcoming Assignments"
           actions={[{ text: "View todo list", href: "/todo" }]}
         >
@@ -59,7 +53,7 @@ function DashboardCard({
   title,
 }: {
   children?: React.ReactNode;
-  icon?: ForwardRefExoticComponent<IconProps & RefAttributes<Icon>>;
+  icon?: Icon;
   actions?: {
     text: string;
     variant?: "default" | "primary";
