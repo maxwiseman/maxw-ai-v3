@@ -2,7 +2,7 @@
 
 import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
-import * as z from "zod";
+import * as z from "zod/v4";
 
 export async function generateTodo(context: string) {
   const result = await generateObject({

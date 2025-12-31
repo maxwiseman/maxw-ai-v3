@@ -1,5 +1,3 @@
-/** biome-ignore-all lint/suspicious/noUnknownAtRules: Tailwind */
-/** biome-ignore-all lint/suspicious/noDuplicateSelectorsKeyframeBlock: <explanation> */
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
@@ -150,16 +148,16 @@
   @keyframes scrollfade-vertical {
     0% {
       --top-fade: 0px;
+      --bottom-fade: 3rem;
     }
-    10%,
-    100% {
+    10% {
       --top-fade: 3rem;
     }
-    0%,
     90% {
       --bottom-fade: 3rem;
     }
     100% {
+      --top-fade: 3rem;
       --bottom-fade: 0px;
     }
   }
@@ -198,16 +196,16 @@
   @keyframes scrollfade-horizontal {
     0% {
       --left-fade: 0px;
+      --right-fade: 3rem;
     }
-    10%,
-    100% {
+    10% {
       --left-fade: 3rem;
     }
-    0%,
     90% {
       --right-fade: 3rem;
     }
     100% {
+      --left-fade: 3rem;
       --right-fade: 0px;
     }
   }

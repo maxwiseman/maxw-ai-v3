@@ -1,7 +1,7 @@
 "use client";
 
 import { IconCards, IconCheckbox, IconPencil } from "@tabler/icons-react";
-import type * as z from "zod";
+import type * as z from "zod/v4";
 import {
   Flashcard,
   FlashcardBack,

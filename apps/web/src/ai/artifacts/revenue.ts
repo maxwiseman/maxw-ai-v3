@@ -1,5 +1,5 @@
 import { artifact } from "ai-sdk-tools";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 export const RevenueArtifact = artifact(
   "revenue",
@@ -41,7 +41,7 @@ export const RevenueArtifact = artifact(
         }),
       ),
     }),
-  }),
+  }) as any,
 );
 
 export type RevenueArtifact = z.infer<typeof RevenueArtifact>;

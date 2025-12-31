@@ -1,6 +1,6 @@
 import { tool } from "ai";
 import { artifact, getWriter } from "ai-sdk-tools";
-import * as z from "zod";
+import * as z from "zod/v4";
 
 export const createStudySetToolInput = z.object({
   displayMode: z.enum(["flashcards", "multiple-choice", "short-answer"]),
@@ -49,7 +49,7 @@ export const studySetArtifactData = z.object({
   ),
 });
 
-export const studySetArtifact = artifact("study-set", studySetArtifactData);
+export const studySetArtifact = artifact("study-set", studySetArtifactData as any);
 
 export const createStudySetTool = tool({
   name: "study-set",

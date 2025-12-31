@@ -11,7 +11,7 @@ import {
 import { type ArtifactData, useChat, useChatStatus } from "ai-sdk-tools";
 import { AIDevtools, useArtifacts } from "ai-sdk-tools/client";
 import { useState } from "react";
-import type z from "zod";
+import type z from "zod/v4";
 import type { createStudySetToolInput } from "@/ai/tools/study/flashcards";
 import { FlashcardToolDisplay } from "@/ai/tools/study/flashcards-ui";
 import { toolStatus } from "@/ai/tools/tool-status";
