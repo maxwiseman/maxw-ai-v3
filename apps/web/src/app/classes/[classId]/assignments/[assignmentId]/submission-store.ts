@@ -78,4 +78,3 @@ export const useSubmissionStore = create<SubmissionStore>((set) => ({
       isMaximized: false,
     }),
 }));
-

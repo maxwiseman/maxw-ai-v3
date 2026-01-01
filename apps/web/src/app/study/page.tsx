@@ -93,7 +93,7 @@ export default function StudyPage() {
       <div className="space-y-8 px-8">
         <div className="flex flex-col gap-2">
           <div className="font-medium text-lg">Continue Studying</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <StudySetCard
               numberOfQuestions={104}
               numberOfTerms={0}
@@ -144,7 +144,7 @@ export default function StudyPage() {
         </div>
         <div className="flex flex-col gap-2">
           <div className="font-medium text-lg">Explore</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <StudySetCard
               tags={["Math", "Earth and Space", "Biology"]}
               numberOfQuestions={104}

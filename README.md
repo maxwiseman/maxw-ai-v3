@@ -1,52 +1,69 @@
 # maxw-ai-v3
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Next.js, Next, and more.
+An AI-powered educational platform combining web and mobile interfaces with advanced AI agents for learning assistance, task management, and content creation.
 
 ## Features
 
-- **TypeScript** - For type safety and improved developer experience
-- **Next.js** - Full-stack React framework
-- **React Native** - Build mobile apps using React
-- **Expo** - Tools for React Native development
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **shadcn/ui** - Reusable UI components
-- **Next.js** - Full-stack React framework
-- **Bun** - Runtime environment
-- **Drizzle** - TypeScript-first ORM
-- **PostgreSQL** - Database engine
-- **Authentication** - Better-Auth
-- **Biome** - Linting and formatting
-- **Turborepo** - Optimized monorepo build system
+- **AI-Powered Chat**: Interactive AI chat with streaming responses, tool integration, and multiple specialized agents (General, Secretary, Study, Triage)
+- **Educational Dashboard**: Manage classes, assignments, todos, and study sets
+- **Study Tools**: Create and review flashcards, question sets, and educational content
+- **Canvas Workflow**: Integration with Canvas LMS
+- **Cross-Platform**: Web app (Next.js) and mobile app (React Native + Expo)
+- **Authentication**: Secure user authentication with Better-Auth
+- **Search**: Integrated search functionality with Upstash
+- **Modern Tech Stack**: TypeScript, Next.js 16, React 19, TailwindCSS, shadcn/ui, Drizzle ORM, PostgreSQL
 
 ## Getting Started
 
-First, install the dependencies:
+### Prerequisites
 
+- Bun (package manager)
+- PostgreSQL database
+- Node.js (for React Native development)
+
+### Installation
+
+1. Install dependencies:
 ```bash
 bun install
 ```
-## Database Setup
 
-This project uses PostgreSQL with Drizzle ORM.
+### Environment Setup
 
-1. Make sure you have a PostgreSQL database set up.
-2. Update your `apps/server/.env` file with your PostgreSQL connection details.
+1. Copy environment files:
+```bash
+cp apps/web/.env.example apps/web/.env
+cp apps/native/.env.example apps/native/.env
+```
 
-3. Apply the schema to your database:
+2. Configure your environment variables in `apps/web/.env`:
+   - Database connection string
+   - Authentication secrets
+   - AI API keys (OpenAI, etc.)
+   - Other service configurations
+
+### Database Setup
+
+1. Ensure PostgreSQL is running and accessible.
+2. Push the database schema:
 ```bash
 bun db:push
 ```
+3. (Optional) View your database with Drizzle Studio:
+```bash
+bun db:studio
+```
 
+### Development
 
-Then, run the development server:
-
+Start all applications:
 ```bash
 bun dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
-Use the Expo Go app to run the mobile application.
-The API is running at [http://localhost:3000](http://localhost:3000).
+Or run individually:
+- Web app: `bun dev:web` (http://localhost:3000)
+- Mobile app: `bun dev:native` (use Expo Go app)
 
 
 
@@ -59,9 +76,23 @@ The API is running at [http://localhost:3000](http://localhost:3000).
 ```
 maxw-ai-v3/
 ├── apps/
-│   ├── web/         # Frontend application (Next.js)
-│   ├── native/      # Mobile application (React Native, Expo)
-│   └── server/      # Backend API (Next)
+│   ├── web/         # Next.js web application with API routes
+│   │   ├── src/
+│   │   │   ├── ai/           # AI agents, tools, and artifacts
+│   │   │   ├── app/          # Next.js App Router pages
+│   │   │   ├── components/   # React components and UI
+│   │   │   ├── db/           # Database schema and connections
+│   │   │   ├── lib/          # Utilities and configurations
+│   │   │   └── types/        # TypeScript definitions
+│   │   └── package.json
+│   └── native/      # React Native mobile application (Expo)
+│       ├── app/              # Expo Router pages
+│       ├── components/       # Mobile components
+│       └── package.json
+├── packages/       # Shared packages (if any)
+├── biome.json      # Code formatting and linting config
+├── turbo.json      # Turborepo configuration
+└── package.json    # Root package.json with workspace scripts
 ```
 
 ## Available Scripts
@@ -69,9 +100,12 @@ maxw-ai-v3/
 - `bun dev`: Start all applications in development mode
 - `bun build`: Build all applications
 - `bun dev:web`: Start only the web application
-- `bun dev:server`: Start only the server
-- `bun check-types`: Check TypeScript types across all apps
 - `bun dev:native`: Start the React Native/Expo development server
+- `bun build:web`: Build only the web application
+- `bun build:native`: Build only the native application
+- `bun check-types`: Check TypeScript types across all apps
 - `bun db:push`: Push schema changes to database
 - `bun db:studio`: Open database studio UI
+- `bun db:generate`: Generate database migration files
+- `bun db:migrate`: Run database migrations
 - `bun check`: Run Biome formatting and linting

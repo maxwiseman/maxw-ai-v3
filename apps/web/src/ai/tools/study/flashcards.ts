@@ -49,7 +49,10 @@ export const studySetArtifactData = z.object({
   ),
 });
 
-export const studySetArtifact = artifact("study-set", studySetArtifactData as any);
+export const studySetArtifact = artifact(
+  "study-set",
+  studySetArtifactData as any,
+);
 
 export const createStudySetTool = tool({
   name: "study-set",

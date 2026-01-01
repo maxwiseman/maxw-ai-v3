@@ -33,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      className="h-full overflow-y-hidden overflow-x-hidden overscroll-none"
+      className="h-full overflow-x-hidden overflow-y-hidden overscroll-none"
       lang="en"
       suppressHydrationWarning
     >

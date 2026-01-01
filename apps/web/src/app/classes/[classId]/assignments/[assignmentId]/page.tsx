@@ -80,14 +80,15 @@ export default async function AssignmentPage({
           />
           <Button asChild>
             <a target="_blank" href={data.html_url}>
-              {/* <IconPlus className="text-muted-foreground" /> */}
               <CanvasLogo />
               View on Canvas
             </a>
           </Button>
         </PageHeaderActions>
       </PageHeader>
-      <CanvasHTML className="px-8 pb-8">{data?.description}</CanvasHTML>
+      <CanvasHTML className="min-h-96 px-8 pb-8">
+        {data?.description.length === 0 ? "No description" : data.description}
+      </CanvasHTML>
       {data.submission_types.length >= 1 && (
         <SubmissionProvider
           classId={params.classId}
