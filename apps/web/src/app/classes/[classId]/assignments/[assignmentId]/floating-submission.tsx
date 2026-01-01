@@ -3,12 +3,13 @@
 import {
   IconArrowsMaximize,
   IconArrowsMinimize,
-  IconChevronDown,
+  IconLayoutBottombarCollapse,
 } from "@tabler/icons-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { FileUploadSubmission } from "./file-upload-submission";
+import { useSubmissionStore } from "./submission-store";
 import { SubmissionTypeSelector } from "./submission-type-selector";
 import { TextEntrySubmission } from "./text-entry-submission";
 
@@ -59,21 +60,22 @@ interface SubmissionHeaderProps {
   onToggleMaximize: () => void;
   onTypeChange: () => void;
   onResizeStart: (e: React.MouseEvent) => void;
+  onDock: () => void;
 }
 
 const SubmissionHeader = memo(function SubmissionHeader({
   submissionType,
   isMaximized,
   isResizing,
-  onCollapse,
   onToggleMaximize,
   onTypeChange,
   onResizeStart,
+  onDock,
 }: SubmissionHeaderProps) {
   return (
-    <div className="relative flex items-center justify-between border-b px-4 py-3">
+    <div className="relative flex items-center justify-between border-b px-6 py-3">
       <div className="flex items-center gap-3">
-        <Button
+        {/*<Button
           onClick={(e) => {
             e.stopPropagation();
             onCollapse();
@@ -83,7 +85,7 @@ const SubmissionHeader = memo(function SubmissionHeader({
           className="h-8 w-8"
         >
           <IconChevronDown className="size-4" />
-        </Button>
+        </Button>*/}
         <span className="font-medium">Submit Assignment</span>
         {submissionType && (
           <>
@@ -105,11 +107,22 @@ const SubmissionHeader = memo(function SubmissionHeader({
         <Button
           onClick={(e) => {
             e.stopPropagation();
+            onDock();
+          }}
+          variant="ghost"
+          size="icon"
+          className="size-8 gap-2"
+        >
+          <IconLayoutBottombarCollapse className="size-4" />
+        </Button>
+        <Button
+          onClick={(e) => {
+            e.stopPropagation();
             onToggleMaximize();
           }}
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="size-8"
         >
           {isMaximized ? (
             <IconArrowsMinimize className="size-4" />
@@ -127,27 +140,34 @@ const SubmissionHeader = memo(function SubmissionHeader({
   );
 });
 
-interface AssignmentSubmissionProps {
+interface FloatingSubmissionProps {
   classId: string;
   assignmentId: string;
   submissionTypes: string[];
 }
 
-export default function AssignmentSubmission({
+export function FloatingSubmission({
   classId,
   assignmentId,
   submissionTypes,
-}: AssignmentSubmissionProps) {
-  const [expanded, setExpanded] = useState(false);
-  const [submissionType, setSubmissionType] = useState<
-    undefined | "text_entry" | "file_upload"
-  >(undefined);
-  const [height, setHeight] = useState(DEFAULT_HEIGHT);
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
+}: FloatingSubmissionProps) {
+  const submissionType = useSubmissionStore((state) => state.submissionType);
+  const setSubmissionType = useSubmissionStore(
+    (state) => state.setSubmissionType,
+  );
+  const panelHeight = useSubmissionStore((state) => state.panelHeight);
+  const setPanelHeight = useSubmissionStore((state) => state.setPanelHeight);
+  const isMaximized = useSubmissionStore((state) => state.isMaximized);
+  const setIsMaximized = useSubmissionStore((state) => state.setIsMaximized);
+  const uploadedFiles = useSubmissionStore((state) => state.uploadedFiles);
+  const isDragging = useSubmissionStore((state) => state.isDragging);
+  const addFiles = useSubmissionStore((state) => state.addFiles);
+  const removeFile = useSubmissionStore((state) => state.removeFile);
+  const setIsDragging = useSubmissionStore((state) => state.setIsDragging);
+  const setMode = useSubmissionStore((state) => state.setMode);
+  const reset = useSubmissionStore((state) => state.reset);
 
+  const [isResizing, setIsResizing] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef<number>(0);
   const startHeightRef = useRef<number>(0);
@@ -207,14 +227,14 @@ export default function AssignmentSubmission({
     // Sync state with actual DOM height
     if (panelRef.current) {
       const actualHeight = panelRef.current.offsetHeight;
-      setHeight(actualHeight);
+      setPanelHeight(actualHeight);
     }
 
     isResizingRef.current = false;
     setIsResizing(false);
     document.removeEventListener("mousemove", handleResize);
     document.removeEventListener("mouseup", handleResizeEnd);
-  }, [handleResize]);
+  }, [handleResize, setPanelHeight]);
 
   const handleResizeStart = useCallback(
     (e: React.MouseEvent) => {
@@ -233,59 +253,71 @@ export default function AssignmentSubmission({
   );
 
   const toggleMaximize = useCallback(() => {
-    setIsMaximized((prev) => {
-      if (prev) {
-        setHeight(DEFAULT_HEIGHT);
-        return false;
-      }
-      setHeight(maxHeightRef.current);
-      return true;
-    });
-  }, []);
+    if (isMaximized) {
+      setIsMaximized(false);
+      setPanelHeight(DEFAULT_HEIGHT);
+    } else {
+      setIsMaximized(true);
+      setPanelHeight(maxHeightRef.current);
+    }
+  }, [isMaximized, setIsMaximized, setPanelHeight]);
 
   const handleCollapse = useCallback(() => {
-    setExpanded(false);
     setSubmissionType(undefined);
     setIsMaximized(false);
-    setHeight(DEFAULT_HEIGHT);
-  }, []);
+    setPanelHeight(DEFAULT_HEIGHT);
+  }, [setSubmissionType, setIsMaximized, setPanelHeight]);
+
+  const handleDock = useCallback(() => {
+    setMode("inline");
+  }, [setMode]);
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files || []);
       if (files.length > 0) {
-        setUploadedFiles((prev) => [...prev, ...files]);
+        addFiles(files);
       }
     },
-    [],
+    [addFiles],
   );
 
-  const handleFileDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const files = Array.from(e.dataTransfer.files || []);
-    if (files.length > 0) {
-      setUploadedFiles((prev) => [...prev, ...files]);
-    }
-  }, []);
+  const handleFileDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsDragging(false);
+      const files = Array.from(e.dataTransfer.files || []);
+      if (files.length > 0) {
+        addFiles(files);
+      }
+    },
+    [addFiles, setIsDragging],
+  );
 
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsDragging(true);
+    },
+    [setIsDragging],
+  );
 
-  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
-
-  const handleFileRemove = useCallback((index: number) => {
-    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
-  }, []);
+  const handleDragLeave = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsDragging(false);
+    },
+    [setIsDragging],
+  );
 
   const handleTypeChange = useCallback(() => {
     setSubmissionType(undefined);
-  }, []);
+  }, [setSubmissionType]);
+
+  const handleSuccess = useCallback(() => {
+    reset();
+    setMode("inline");
+  }, [reset, setMode]);
 
   // Cleanup event listeners and animation frames
   useEffect(() => {
@@ -300,34 +332,18 @@ export default function AssignmentSubmission({
 
   const panelStyle = useMemo(
     () => ({
-      height: isMaximized ? "100vh" : `${height}px`,
+      height: isMaximized ? "100vh" : `${panelHeight}px`,
       maxHeight: isMaximized ? "100vh" : `${maxHeightRef.current}px`,
     }),
-    [isMaximized, height],
+    [isMaximized, panelHeight],
   );
 
-  // Collapsed state - just show Submit button
-  if (!expanded) {
-    return (
-      <div className="sticky bottom-0 z-40 w-full border-t bg-background shadow-lg transition-all">
-        <Button
-          onClick={() => setExpanded(true)}
-          className="w-full rounded-none"
-          size="lg"
-        >
-          Submit Assignment
-        </Button>
-      </div>
-    );
-  }
-
-  // Expanded state - show panel
   return (
     <div
       ref={panelRef}
       className={cn(
         "sticky bottom-0 z-50 flex w-full flex-col border-t bg-background shadow-2xl transition-all duration-300 ease-out",
-        isMaximized && "fixed right-0 bottom-0 h-full",
+        isMaximized && "fixed right-0 bottom-0 w-full",
         isResizing && "transition-none", // Disable transitions during resize for smooth dragging
       )}
       style={panelStyle}
@@ -340,47 +356,43 @@ export default function AssignmentSubmission({
         onToggleMaximize={toggleMaximize}
         onTypeChange={handleTypeChange}
         onResizeStart={handleResizeStart}
+        onDock={handleDock}
       />
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        {submissionType === undefined ? (
-          <SubmissionTypeSelector
-            submissionTypes={submissionTypes}
-            onSelectType={(type) => setSubmissionType(type)}
-          />
-        ) : submissionType === "text_entry" ? (
-          <TextEntrySubmission
-            classId={classId}
-            assignmentId={assignmentId}
-            onCancel={() => setSubmissionType(undefined)}
-            onSuccess={() => {
-              setExpanded(false);
-              setSubmissionType(undefined);
-            }}
-          />
-        ) : (
-          <FileUploadSubmission
-            classId={classId}
-            assignmentId={assignmentId}
-            files={uploadedFiles}
-            isDragging={isDragging}
-            onFileSelect={handleFileSelect}
-            onDrop={handleFileDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onFileRemove={handleFileRemove}
-            onCancel={() => {
-              setSubmissionType(undefined);
-              setUploadedFiles([]);
-            }}
-            onSuccess={() => {
-              setExpanded(false);
-              setSubmissionType(undefined);
-              setUploadedFiles([]);
-            }}
-          />
-        )}
+        <div className="h-max w-full p-6">
+          {submissionType === undefined ? (
+            <SubmissionTypeSelector
+              submissionTypes={submissionTypes}
+              onSelectType={(type) => setSubmissionType(type)}
+            />
+          ) : submissionType === "text_entry" ? (
+            <TextEntrySubmission
+              classId={classId}
+              assignmentId={assignmentId}
+              onCancel={() => setSubmissionType(undefined)}
+              onSuccess={handleSuccess}
+            />
+          ) : (
+            <FileUploadSubmission
+              classId={classId}
+              assignmentId={assignmentId}
+              files={uploadedFiles}
+              isDragging={isDragging}
+              onFileSelect={handleFileSelect}
+              onDrop={handleFileDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onFileRemove={removeFile}
+              onCancel={() => {
+                setSubmissionType(undefined);
+                reset();
+              }}
+              onSuccess={handleSuccess}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

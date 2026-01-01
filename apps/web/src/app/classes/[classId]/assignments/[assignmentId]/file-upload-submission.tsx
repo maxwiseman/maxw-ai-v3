@@ -1,10 +1,12 @@
 "use client";
 
 import { IconFileUpload, IconX } from "@tabler/icons-react";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { submitFileUpload } from "./submission-actions";
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -29,7 +31,12 @@ const FileItem = memo(function FileItem({ file, onRemove }: FileItemProps) {
           </p>
         </div>
       </div>
-      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onRemove}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={onRemove}
+      >
         <IconX className="size-4" />
       </Button>
     </div>
@@ -58,12 +65,13 @@ const FileUploadArea = memo(function FileUploadArea({
   const fileInputId = useMemo(() => `file-input-${Math.random()}`, []);
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: This is just a drag interaction, it's ok
     <div
       onDrop={onDrop}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       className={cn(
-        "flex min-h-[300px] flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
+        "flex min-h-75 flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors",
         files.length === 0
           ? isDragging
             ? "border-primary bg-primary/10"
@@ -130,6 +138,8 @@ const FileUploadArea = memo(function FileUploadArea({
 });
 
 interface FileUploadSubmissionProps {
+  classId: string;
+  assignmentId: string;
   files: File[];
   isDragging: boolean;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -138,9 +148,12 @@ interface FileUploadSubmissionProps {
   onDragLeave: (e: React.DragEvent<HTMLDivElement>) => void;
   onFileRemove: (index: number) => void;
   onCancel: () => void;
+  onSuccess?: () => void;
 }
 
 export function FileUploadSubmission({
+  classId,
+  assignmentId,
   files,
   isDragging,
   onFileSelect,
@@ -149,9 +162,41 @@ export function FileUploadSubmission({
   onDragLeave,
   onFileRemove,
   onCancel,
+  onSuccess,
 }: FileUploadSubmissionProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (files.length === 0) {
+      toast.error("Please select at least one file");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const result = await submitFileUpload({
+        classId,
+        assignmentId,
+        files,
+      });
+
+      if ("error" in result) {
+        toast.error(result.error);
+      } else {
+        toast.success("Assignment submitted successfully!");
+        onSuccess?.();
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to submit assignment",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <div className="flex h-full flex-col p-6">
+    <div className="flex h-full flex-col p-0">
       <div className="flex-1">
         <FileUploadArea
           files={files}
@@ -163,13 +208,17 @@ export function FileUploadSubmission({
           onFileRemove={onFileRemove}
         />
       </div>
-      <div className="mt-4 flex justify-end gap-2 border-t pt-4">
-        <Button variant="outline" onClick={onCancel}>
+      <div className="mt-6 flex justify-end gap-2 border-t pt-6">
+        <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
           Cancel
         </Button>
-        <Button disabled={files.length === 0}>Submit</Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={isSubmitting || files.length === 0}
+        >
+          {isSubmitting ? "Submitting..." : "Submit"}
+        </Button>
       </div>
     </div>
   );
 }
-
