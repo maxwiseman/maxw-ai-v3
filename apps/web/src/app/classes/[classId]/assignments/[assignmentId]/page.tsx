@@ -21,6 +21,7 @@ import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
 import type { CanvasAssignment } from "@/lib/canvas-types";
+import AssignmentSubmission from "./assignment-submission";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -85,6 +86,7 @@ export default async function AssignmentPage({
         </PageHeaderActions>
       </PageHeader>
       <CanvasHTML className="px-8 pb-8">{data?.description}</CanvasHTML>
+      <AssignmentSubmission />
     </div>
   );
 }
