@@ -1,3 +1,6 @@
+/** biome-ignore-all lint/a11y/noLabelWithoutControl: It's OK */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: It's OK */
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: It's OK */
 "use client";
 
 import NumberFlow from "@number-flow/react";
@@ -5,13 +8,11 @@ import {
   type Icon,
   IconCalendar,
   IconChevronDown,
-  IconChevronUp,
   IconFlag,
   IconList,
   IconPlus,
   IconStar,
 } from "@tabler/icons-react";
-import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -101,7 +102,7 @@ export default function TodoPage() {
               setCompletedExpanded((prev) => !prev);
             }}
             variant="ghost"
-            className="hover:!bg-transparent -mx-3 mt-16 mb-2 text-muted-foreground"
+            className="-mx-3 mt-16 mb-2 text-muted-foreground hover:bg-transparent!"
           >
             <IconChevronDown
               className={cn(
@@ -339,64 +340,59 @@ function TodoSubTaskList({
 
   if (subTasks)
     return (
-      <div className="flex flex-col divide-y [&>*]:first:pt-0">
-        {subTasks &&
-          subTasks.map((subTask, i) => (
-            <div key={subTask.id} className="flex items-center gap-2 py-2">
-              <AnimatedCheckbox
-                checked={subTask.checked}
-                onCheckedChange={(newVal) => {
-                  const newChecked =
-                    typeof newVal === "boolean" ? newVal : false;
+      <div className="flex flex-col divide-y *:first:pt-0">
+        {subTasks?.map((subTask, i) => (
+          <div key={subTask.id} className="flex items-center gap-2 py-2">
+            <AnimatedCheckbox
+              checked={subTask.checked}
+              onCheckedChange={(newVal) => {
+                const newChecked = typeof newVal === "boolean" ? newVal : false;
+                onUpdate(
+                  subTasks.map((s) =>
+                    s.id === subTask.id ? { ...s, checked: newChecked } : s,
+                  ),
+                );
+              }}
+              className="mx-0.5 size-4 border-neutral-300 shadow-none *:size-3.5 dark:border-neutral-700"
+            />
+            <input
+              className="w-full outline-none!"
+              value={subTask.title}
+              onChange={(e) => {
+                onUpdate(
+                  subTasks.map((s) =>
+                    s.id === subTask.id ? { ...s, title: e.target.value } : s,
+                  ),
+                );
+              }}
+              ref={(el) => {
+                refs.current[subTask.id] = el;
+              }}
+              placeholder="Subtask"
+              onKeyDown={(e) => {
+                if (
+                  e.key === "Enter" &&
+                  subTasks[subTasks.length - 1].title.length > 0
+                ) {
+                  const newId = crypto.randomUUID();
                   onUpdate(
-                    subTasks.map((s) =>
-                      s.id === subTask.id ? { ...s, checked: newChecked } : s,
-                    ),
+                    subTasks
+                      ? [...subTasks, { id: newId, title: "", checked: false }]
+                      : [{ id: newId, title: "", checked: false }],
                   );
-                }}
-                className="mx-[2px] size-4 border-neutral-300 shadow-none dark:border-neutral-700 [&>*]:size-3.5"
-              />
-              <input
-                className="!outline-none"
-                value={subTask.title}
-                onChange={(e) => {
-                  onUpdate(
-                    subTasks.map((s) =>
-                      s.id === subTask.id ? { ...s, title: e.target.value } : s,
-                    ),
-                  );
-                }}
-                ref={(el) => {
-                  refs.current[subTask.id] = el;
-                }}
-                placeholder="Subtask"
-                onKeyDown={(e) => {
-                  if (
-                    e.key === "Enter" &&
-                    subTasks[subTasks.length - 1].title.length > 0
-                  ) {
-                    const newId = crypto.randomUUID();
-                    onUpdate(
-                      subTasks
-                        ? [
-                            ...subTasks,
-                            { id: newId, title: "", checked: false },
-                          ]
-                        : [{ id: newId, title: "", checked: false }],
-                    );
-                    setFocused(newId);
-                  } else if (
-                    (e.key === "Delete" || e.key === "Backspace") &&
-                    (e.target as HTMLInputElement).value === ""
-                  ) {
-                    onUpdate(subTasks.filter((val) => val.id !== subTask.id));
-                    setFocused(subTasks[i - 1]?.id);
-                    e.preventDefault();
-                  }
-                }}
-              />
-            </div>
-          ))}
+                  setFocused(newId);
+                } else if (
+                  (e.key === "Delete" || e.key === "Backspace") &&
+                  (e.target as HTMLInputElement).value === ""
+                ) {
+                  onUpdate(subTasks.filter((val) => val.id !== subTask.id));
+                  setFocused(subTasks[i - 1]?.id);
+                  e.preventDefault();
+                }
+              }}
+            />
+          </div>
+        ))}
       </div>
     );
 }
@@ -429,11 +425,11 @@ function TodoChecklistButton({ taskId }: { taskId: string }) {
   return (
     <InputGroup
       className={cn(
-        "!m-0 !ring-0 !bg-transparent size-8 overflow-hidden border-0 pl-0 shadow-none outline-0 outline-border outline-solid transition-[background-color,width,outline,margin] has-hover:bg-accent dark:has-hover:bg-accent/50",
-        expanded && "dark:!bg-input/30 !mx-2 w-auto outline",
+        "m-0! size-8 overflow-hidden border-0 bg-transparent! pl-0 shadow-none outline-0 outline-border outline-solid ring-0! transition-[background-color,width,outline,margin] has-hover:bg-accent dark:has-hover:bg-accent/50",
+        expanded && "mx-2! w-auto outline dark:bg-input/30!",
       )}
     >
-      <InputGroupAddon className="!m-0 p-0">
+      <InputGroupAddon className="m-0! p-0">
         <InputGroupButton
           onClick={() => {
             setExpanded((prev) => {
@@ -454,7 +450,7 @@ function TodoChecklistButton({ taskId }: { taskId: string }) {
         ref={inputRef}
         onChange={(e) => handleChange(e.target.value)}
         value={inputValue}
-        className="!pl-0 w-24 font-normal text-sm"
+        className="w-24 pl-0! font-normal text-sm"
         placeholder="Checklist"
       />
     </InputGroup>
@@ -488,7 +484,7 @@ function TodoCalendarButton({
       <PopoverTrigger asChild>
         <Button
           className={cn(
-            "!p-2 h-8 w-8 max-w-8 justify-start gap-2 overflow-clip text-muted-foreground transition-[width,max-width]",
+            "h-8 w-8 max-w-8 justify-start gap-2 overflow-clip p-2! text-muted-foreground transition-[width,max-width]",
             date !== undefined && "w-auto max-w-max",
           )}
           size="sm"

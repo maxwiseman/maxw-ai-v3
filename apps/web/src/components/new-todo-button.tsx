@@ -2,8 +2,12 @@
 
 import { IconPlus } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
-import { generateTodo } from "@/app/actions/generate-todo";
+import { useEffect, useState } from "react";
+import {
+  type GenerateTodoInput,
+  generateTodo,
+} from "@/app/actions/generate-todo";
+import { useTodoList } from "@/app/todo/todo-store";
 import { cn } from "@/lib/utils";
 import { DatePicker } from "./date-picker";
 import { Button } from "./ui/button";
@@ -21,20 +25,58 @@ import { Field, FieldContent, FieldGroup, FieldLabel } from "./ui/field";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 
-export function TodoButton({ context }: { context: string }) {
+export function TodoButton({ name, dueDate, description }: GenerateTodoInput) {
   const [open, setOpen] = useState(false);
+  const addTask = useTodoList((state) => state.addTask);
+
+  // Form state
+  const [title, setTitle] = useState("");
+  const [notes, setNotes] = useState("");
+  const [date, setDate] = useState<Date | undefined>();
+  const [taskDueDate, setTaskDueDate] = useState<Date | undefined>();
+  const [subTasks, setSubTasks] = useState<string[]>([]);
+
   const { data, isPending, mutate } = useMutation({
     mutationFn: generateTodo,
-    mutationKey: ["todo-autofill", context],
+    mutationKey: ["todo-autofill", name],
   });
 
-  console.log(data);
+  // Update form state when generated data arrives
+  useEffect(() => {
+    if (data) {
+      setTitle(data.title);
+      // setNotes(data.notes ?? "");
+      setDate(data.date);
+      setTaskDueDate(data.dueDate);
+      setSubTasks(data.subTasks);
+    }
+  }, [data]);
+
+  const handleAdd = () => {
+    addTask({
+      title,
+      checked: false,
+      description: notes || undefined,
+      date,
+      dueDate: taskDueDate,
+      subTasks:
+        subTasks.length > 0
+          ? subTasks.map((st) => ({
+              id: crypto.randomUUID(),
+              title: st,
+              checked: false,
+            }))
+          : undefined,
+    });
+    setOpen(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         onClick={() => {
           if (data === undefined) {
-            mutate(context);
+            mutate({ name, dueDate, description });
           }
         }}
         asChild
@@ -59,7 +101,8 @@ export function TodoButton({ context }: { context: string }) {
             <FieldLabel>Title</FieldLabel>
             <FieldContent>
               <Input
-                defaultValue={data?.title}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="Type something..."
               />
             </FieldContent>
@@ -68,8 +111,9 @@ export function TodoButton({ context }: { context: string }) {
             <FieldLabel>Notes</FieldLabel>
             <FieldContent>
               <Textarea
-                className="break-all w-full max-w-full resize-y"
-                defaultValue={data?.notes ?? ""}
+                className="w-full max-w-full resize-y break-all"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
                 placeholder="Type something..."
               />
             </FieldContent>
@@ -78,16 +122,22 @@ export function TodoButton({ context }: { context: string }) {
             <Field>
               <FieldLabel>Date</FieldLabel>
               <FieldContent>
-                <DatePicker className="w-auto" mode="single" />
+                <DatePicker
+                  className="w-auto"
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                />
               </FieldContent>
             </Field>
             <Field>
               <FieldLabel>Due Date</FieldLabel>
               <FieldContent>
                 <DatePicker
-                  selected={data?.dueDate}
                   className="w-auto"
                   mode="single"
+                  selected={taskDueDate}
+                  onSelect={setTaskDueDate}
                 />
               </FieldContent>
             </Field>
@@ -97,7 +147,7 @@ export function TodoButton({ context }: { context: string }) {
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>
-          <Button>Add</Button>
+          <Button onClick={handleAdd}>Add</Button>
         </DialogFooter>
         <div
           className={cn(

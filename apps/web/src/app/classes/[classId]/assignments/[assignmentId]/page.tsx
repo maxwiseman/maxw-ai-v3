@@ -74,7 +74,9 @@ export default async function AssignmentPage({
         </PageHeaderContent>
         <PageHeaderActions>
           <TodoButton
-            context={`# Assignment - ${data.name}\nDue date: ${data.due_at}\n${data.description}`}
+            name={data.name}
+            dueDate={data.due_at}
+            description={data.description}
           />
           <Button asChild>
             <a target="_blank" href={data.html_url}>
