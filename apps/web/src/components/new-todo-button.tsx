@@ -68,7 +68,7 @@ export function TodoButton({ context }: { context: string }) {
             <FieldLabel>Notes</FieldLabel>
             <FieldContent>
               <Textarea
-                className="wrap-break-word"
+                className="break-all w-full max-w-full resize-y"
                 defaultValue={data?.notes ?? ""}
                 placeholder="Type something..."
               />
@@ -84,7 +84,11 @@ export function TodoButton({ context }: { context: string }) {
             <Field>
               <FieldLabel>Due Date</FieldLabel>
               <FieldContent>
-                <DatePicker className="w-auto" mode="single" />
+                <DatePicker
+                  selected={data?.dueDate}
+                  className="w-auto"
+                  mode="single"
+                />
               </FieldContent>
             </Field>
           </FieldGroup>

@@ -6,10 +6,10 @@ import * as z from "zod/v4";
 
 export async function generateTodo(context: string) {
   const result = await generateObject({
-    model: openai("gpt-5-nano"),
+    model: openai("gpt-5.2"),
     providerOptions: {
       openai: {
-        reasoningEffort: "low",
+        reasoningEffort: "none",
         strictSchemas: true,
       },
     },

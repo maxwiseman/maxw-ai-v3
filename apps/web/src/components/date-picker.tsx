@@ -17,7 +17,8 @@ export function DatePicker({
   className,
   ...props
 }: React.ComponentProps<typeof Calendar>) {
-  const [date, setDate] = React.useState<Date | DateRange>();
+  // @ts-expect-error -- This is fine as long as there's a mode selected
+  const [date, setDate] = React.useState<Date | DateRange>(props.selected);
 
   return (
     <Popover>
@@ -26,7 +27,7 @@ export function DatePicker({
           variant="outline"
           data-empty={!date}
           className={cn(
-            "w-[280px] justify-start text-left font-normal data-[empty=true]:text-muted-foreground",
+            "w-70 justify-start text-left font-normal data-[empty=true]:text-muted-foreground",
             className,
           )}
         >
