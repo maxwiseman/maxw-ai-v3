@@ -86,11 +86,13 @@ export default async function AssignmentPage({
         </PageHeaderActions>
       </PageHeader>
       <CanvasHTML className="px-8 pb-8">{data?.description}</CanvasHTML>
-      <SubmissionProvider
-        classId={params.classId}
-        assignmentId={params.assignmentId}
-        submissionTypes={data.submission_types}
-      />
+      {data.submission_types.length >= 1 && (
+        <SubmissionProvider
+          classId={params.classId}
+          assignmentId={params.assignmentId}
+          submissionTypes={data.submission_types}
+        />
+      )}
     </div>
   );
 }
