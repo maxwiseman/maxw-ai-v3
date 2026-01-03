@@ -61,6 +61,8 @@ export function buildAppContext(params: {
   timezone?: string;
 }): AppContext {
   const now = new Date();
+  const timezone =
+    params.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   return {
     userId: params.userId,
     fullName: params.fullName,
@@ -71,9 +73,8 @@ export function buildAppContext(params: {
     region: params.region,
     chatId: params.chatId,
     locale: params.locale || "en-US",
-    currentDateTime: now.toISOString(),
-    timezone:
-      params.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+    currentDateTime: now.toLocaleString(undefined, { timeZone: timezone }),
+    timezone,
   };
 }
 
@@ -87,7 +88,7 @@ export function buildAppContext(params: {
 export function formatContextForLLM(context: AppContext): string {
   return `
 CURRENT CONTEXT:
-- Date: ${context.currentDateTime}
+- User Date/Time (In their time zone): ${context.currentDateTime}   **ALWAYS USE THIS DATE/TIME (the other one is not adjusted for the user's time zone)**
 - Timezone: ${context.timezone}
 - School: ${context.schoolName}
 - Locale: ${context.locale}
@@ -100,6 +101,7 @@ Important:
 - If this information is correct, there's no need to save it to your working memory
 - Don't ask the user if they'd like to save information if it's already in your working memory
 - Only refer to users' classes ONLY by their friendly name. The class ID and course name are only there for tool calls and additional context. They're not to be used in conversation
+- Before answering, check for developer/engineering formats (snake_case, camelCase, IDs, UUIDs, file paths, environment variables). If present, rewrite the answer in plain language unless the user requested the technical representation.
 
 User's current classes (course name, friendly name, ID):
 ${classesToLLMKey(

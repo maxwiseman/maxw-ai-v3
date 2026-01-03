@@ -43,8 +43,6 @@ export async function POST(request: NextRequest) {
     fullName: "John Doe",
     schoolName: "Harvard University",
     classes,
-    locale: "en-US",
-    timezone: "America/New_York",
     country: location.country,
     city: location.city,
     region: location.countryRegion,

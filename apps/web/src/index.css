@@ -236,6 +236,11 @@
     padding-left: 1.75rem;
   }
 
+  [data-streamdown="ordered-list"] {
+      /* biome-ignore lint/complexity/noImportantStyles: For some reason this is needed. Dunno why 🤷🏻 */
+      list-style: decimal !important;
+  }
+
   [data-streamdown="list-item"] {
     padding-left: 0rem;
   }

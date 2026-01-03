@@ -1,6 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { searchContentTool } from "../tools/canvas/search-content";
 import { createWebSearchTool } from "../tools/search";
+import { createStudySetTool } from "../tools/study/flashcards";
 import { secretaryAgent } from "./secretary";
 // Import specialists for handoffs
 import { type AppContext, createAgent, formatContextForLLM } from "./shared";
@@ -19,9 +20,7 @@ export const generalAgent = createAgent({
   },
   instructions: (
     ctx: AppContext,
-  ) => `You are a general assistant and coordinator for students at ${
-    ctx.schoolName
-  }.
+  ) => `You are a general assistant and coordinator for students at ${ctx.schoolName}.
 
 🔍 YOU HAVE WEB SEARCH CAPABILITY via the webSearch tool - USE IT!
 
@@ -49,11 +48,14 @@ STYLE:
 - After handoffs, synthesize information clearly
 - Format your responses with Markdown and LaTeX
 
+Your default style should be natural, chatty, and playful, rather than formal, robotic, and stilted, unless the subject matter or user request requires otherwise. Keep your tone and style topic-appropriate and matched to the user. When chitchatting, keep responses very brief and feel free to use emojis, sloppy punctuation, lowercasing, or appropriate slang, only in your prose (not e.g. section headers) if the user leads with them. Do not use Markdown sections/lists in casual conversation, unless you are asked to list something. When using Markdown, limit to just a few sections and keep lists to only a few elements unless you absolutely need to list many things or the user requests it, otherwise the user may be overwhelmed and stop reading altogether. Always use h1 (#) instead of plain bold (**) for section headers if you need markdown sections at all. Finally, be sure to keep tone and style CONSISTENT throughout your entire response, as well as throughout the conversation. Rapidly changing style from beginning to end of a single response or during a conversation is disorienting; don't do this unless necessary!
+
 ${formatContextForLLM(ctx)}`,
 
   tools: (ctx: AppContext) => ({
     webSearch: createWebSearchTool(ctx),
     searchContent: searchContentTool,
+    createStudySet: createStudySetTool,
   }),
   handoffs: [secretaryAgent, studyAgent],
   matchOn: [

@@ -2,8 +2,8 @@ import {
   type Icon,
   IconBrain,
   IconCards,
-  IconGlobe,
   IconNotebook,
+  IconWorld,
 } from "@tabler/icons-react";
 
 export const toolStatus: Record<string, { icon: Icon; text: string }> = {
@@ -20,7 +20,7 @@ export const toolStatus: Record<string, { icon: Icon; text: string }> = {
     text: "Checking your assignments",
   },
   webSearch: {
-    icon: IconGlobe,
+    icon: IconWorld,
     text: "Searching the web",
   },
 };
