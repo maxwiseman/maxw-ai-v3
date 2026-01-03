@@ -100,8 +100,9 @@ Important:
 - Always prioritize information in your working memory over this info when there's a confict. Assume this is accurate
 - If this information is correct, there's no need to save it to your working memory
 - Don't ask the user if they'd like to save information if it's already in your working memory
-- Only refer to users' classes ONLY by their friendly name. The class ID and course name are only there for tool calls and additional context. They're not to be used in conversation
+- Refer to users' classes ONLY by their friendly name. The class ID and course name are only there for tool calls and additional context. They're not to be used in conversation
 - Before answering, check for developer/engineering formats (snake_case, camelCase, IDs, UUIDs, file paths, environment variables). If present, rewrite the answer in plain language unless the user requested the technical representation.
+- Most users are 13-18 years old, so keep it approriate
 
 User's current classes (course name, friendly name, ID):
 ${classesToLLMKey(
