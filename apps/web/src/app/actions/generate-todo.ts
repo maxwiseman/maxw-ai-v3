@@ -57,7 +57,9 @@ ${processedDescription}`;
   // Build dynamic prompt with available link placeholders
   const availableLinks =
     linkMap.size > 0
-      ? `\n\nAvailable link placeholders (use these instead of typing full URLs): ${[...linkMap.keys()].join(", ")}`
+      ? `\n\nAvailable link placeholders (use these instead of typing full URLs): ${[
+          ...linkMap.keys(),
+        ].join(", ")}`
       : "";
 
   const result = await generateObject({

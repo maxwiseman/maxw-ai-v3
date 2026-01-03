@@ -1,9 +1,12 @@
+import { geolocation } from "@vercel/functions";
 import { smoothStream } from "ai";
 import type { NextRequest } from "next/server";
+import { generalAgent } from "@/ai";
 import { buildAppContext } from "@/ai/agents/shared";
-import { triageAgent } from "@/ai/agents/triage";
+import { getAllCanvasCourses } from "@/app/classes/classes-actions";
 
 export async function POST(request: NextRequest) {
+  const location = geolocation(request);
   //   const ip = getClientIP(request);
   //   const { success, remaining } = await checkRateLimit(ip);
 
@@ -32,20 +35,23 @@ export async function POST(request: NextRequest) {
 
   //   const userId = `user-${ip}`;
 
+  const classesResponse = await getAllCanvasCourses();
+  const classes = typeof classesResponse === "string" ? [] : classesResponse;
+
   const appContext = buildAppContext({
     userId: "1",
     fullName: "John Doe",
     schoolName: "Harvard University",
-    classes: [],
+    classes,
     locale: "en-US",
     timezone: "America/New_York",
-    country: "US",
-    city: "Cambridge",
-    region: "Massachusetts",
+    country: location.country,
+    city: location.city,
+    region: location.countryRegion,
     chatId: id,
   });
 
-  return triageAgent.toUIMessageStream({
+  return generalAgent.toUIMessageStream({
     message,
     strategy: "auto",
     maxRounds: 5,
