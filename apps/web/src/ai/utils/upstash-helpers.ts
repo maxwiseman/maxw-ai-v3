@@ -46,9 +46,7 @@ function convertHtmlToMarkdown(
   const htmlFields = ["description", "body"] as const;
   for (const field of htmlFields) {
     if (field in converted && typeof converted[field] === "string") {
-      converted[field] = turndownService
-        .turndown(converted[field] as string)
-        .replaceAll(" ", "");
+      converted[field] = turndownService.turndown(converted[field] as string);
     }
   }
 
