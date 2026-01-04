@@ -1,5 +1,3 @@
-import type { Course } from "@/lib/canvas-types";
-
 export function classesToLLMKey(
   items: { name: string; shortName?: string; id: number }[],
 ) {

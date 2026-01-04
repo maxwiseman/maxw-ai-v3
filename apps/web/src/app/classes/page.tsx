@@ -16,8 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
-import type { Course } from "@/lib/canvas-types";
 import { toTitleCase } from "@/lib/utils";
+import type { CanvasCourse } from "@/types/canvas";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -66,7 +66,7 @@ export default async function ClassesPage() {
   );
 }
 
-function ClassCard(courseData: Course) {
+function ClassCard(courseData: CanvasCourse) {
   const teacher = courseData.teachers?.[0]?.display_name;
   return (
     <Link href={`/classes/${courseData.id}`}>
@@ -102,6 +102,6 @@ async function getAllCanvasCourses({ userId }: { userId: string }) {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
     },
-  ).then((res) => res.json())) as Course[];
+  ).then((res) => res.json())) as CanvasCourse[];
   return data;
 }

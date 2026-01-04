@@ -15,8 +15,8 @@ import {
 import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
-import type { CanvasPage, Course } from "@/lib/canvas-types";
 import { toTitleCase } from "@/lib/utils";
+import type { CanvasCourse, CanvasPage } from "@/types/canvas";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -62,7 +62,7 @@ export default async function ClassPage({
         <PageHeaderContent>
           <PageHeaderTitle>{classData.name}</PageHeaderTitle>
           <PageHeaderDescription>
-            {(classData.teachers.length ?? 0) > 0
+            {classData.teachers && (classData.teachers?.length ?? 0) > 0
               ? classData.teachers
                   .map((teacher) => toTitleCase(teacher.display_name))
                   .join(", ")
@@ -97,7 +97,7 @@ async function fetchData({
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
     },
-  ).then((res) => res.json())) as Course;
+  ).then((res) => res.json())) as CanvasCourse;
   const frontPageData = (await fetch(
     `https://${settings.canvasDomain}/api/v1/courses/${classId}/front_page`,
     {

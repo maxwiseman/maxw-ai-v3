@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
-import type { CanvasAssignment, Course } from "@/lib/canvas-types";
+import type { CanvasAssignment, CanvasCourse } from "@/types/canvas";
 
 export async function getDashboardData() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -28,7 +28,7 @@ export async function getDashboardData() {
     const coursesPromise = fetch(
       `https://${settings.canvasDomain}/api/v1/courses?enrollment_state=active&per_page=6&include[]=teachers&order_by=activity`,
       { headers: headersInit },
-    ).then((res) => res.json() as Promise<Course[]>);
+    ).then((res) => res.json() as Promise<CanvasCourse[]>);
 
     // Fetch upcoming assignments (using user todo list for relevance)
     // /api/v1/users/self/todo

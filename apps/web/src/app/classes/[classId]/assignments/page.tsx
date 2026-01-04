@@ -24,7 +24,7 @@ import {
 import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
-import type { CanvasAssignment } from "@/lib/canvas-types";
+import type { CanvasAssignment } from "@/types/canvas";
 
 export const unstable_prefetch: Prefetch = {
   mode: "runtime",

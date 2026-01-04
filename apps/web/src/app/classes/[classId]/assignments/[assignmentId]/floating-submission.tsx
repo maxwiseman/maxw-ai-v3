@@ -8,6 +8,7 @@ import {
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { CanvasAssignment } from "@/types/canvas";
 import { FileUploadSubmission } from "./file-upload-submission";
 import { useSubmissionStore } from "./submission-store";
 import { SubmissionTypeSelector } from "./submission-type-selector";
@@ -143,7 +144,7 @@ const SubmissionHeader = memo(function SubmissionHeader({
 interface FloatingSubmissionProps {
   classId: string;
   assignmentId: string;
-  submissionTypes: string[];
+  submissionTypes: CanvasAssignment["submission_types"];
 }
 
 export function FloatingSubmission({

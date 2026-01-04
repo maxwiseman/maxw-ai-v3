@@ -2,6 +2,7 @@
 
 import { IconLayoutBottombarExpand } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
+import type { CanvasAssignment } from "@/types/canvas";
 import { FileUploadSubmission } from "./file-upload-submission";
 import { useSubmissionStore } from "./submission-store";
 import { SubmissionTypeSelector } from "./submission-type-selector";
@@ -10,7 +11,7 @@ import { TextEntrySubmission } from "./text-entry-submission";
 interface InlineSubmissionProps {
   classId: string;
   assignmentId: string;
-  submissionTypes: string[];
+  submissionTypes: CanvasAssignment["submission_types"];
 }
 
 export function InlineSubmission({

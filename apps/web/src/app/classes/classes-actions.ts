@@ -7,10 +7,10 @@ import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
 import type {
   CanvasAssignment,
+  CanvasCourse,
   CanvasModule,
   CanvasPage,
-  Course,
-} from "@/lib/canvas-types";
+} from "@/types/canvas";
 
 export async function getAllCanvasCourses() {
   const authData = await auth.api.getSession({ headers: await headers() });
@@ -28,7 +28,7 @@ export async function getAllCanvasCourses() {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
     },
-  ).then((res) => res.json())) as Course[];
+  ).then((res) => res.json())) as CanvasCourse[];
   return data;
 }
 
@@ -48,7 +48,7 @@ export async function getCanvasCourse({ classId }: { classId: string }) {
         Authorization: `Bearer ${settings.canvasApiKey}`,
       },
     },
-  ).then((res) => res.json())) as Course;
+  ).then((res) => res.json())) as CanvasCourse;
   return data;
 }
 

@@ -3,9 +3,9 @@
 import { IconBooks } from "@tabler/icons-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Course } from "@/lib/canvas-types";
+import type { CanvasCourse } from "@/types/canvas";
 
-export function RecentClasses({ courses }: { courses: Course[] }) {
+export function RecentClasses({ courses }: { courses: CanvasCourse[] }) {
   return (
     <Card className="flex h-full flex-col gap-2 p-0">
       <CardHeader className="block p-4 pb-0">

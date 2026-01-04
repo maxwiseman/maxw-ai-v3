@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { openai } from "@ai-sdk/openai";
 import { InMemoryProvider } from "@ai-sdk-tools/memory/in-memory";
 import { Agent, type AgentConfig } from "ai-sdk-tools";
-import type { Course } from "@/lib/canvas-types";
+import type { CanvasCourse } from "@/types/canvas";
 import { classesToLLMKey } from "../utils/canvas-llm-helpers";
 
 // Load memory template from markdown file
@@ -32,7 +32,7 @@ export interface AppContext {
   userId: string;
   fullName: string;
   schoolName: string;
-  classes: Course[];
+  classes: CanvasCourse[];
   locale: string;
   currentDateTime: string;
   country?: string;
@@ -52,7 +52,7 @@ export function buildAppContext(params: {
   userId: string;
   fullName: string;
   schoolName: string;
-  classes: Course[];
+  classes: CanvasCourse[];
   country?: string;
   city?: string;
   region?: string;

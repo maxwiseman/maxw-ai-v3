@@ -1,5 +1,6 @@
 "use client";
 
+import type { CanvasAssignment } from "@/types/canvas";
 import { FloatingSubmission } from "./floating-submission";
 import { InlineSubmission } from "./inline-submission";
 import { useSubmissionStore } from "./submission-store";
@@ -7,7 +8,7 @@ import { useSubmissionStore } from "./submission-store";
 interface SubmissionProviderProps {
   classId: string;
   assignmentId: string;
-  submissionTypes: string[];
+  submissionTypes: CanvasAssignment["submission_types"];
 }
 
 export function SubmissionProvider({

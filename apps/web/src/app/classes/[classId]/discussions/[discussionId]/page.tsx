@@ -26,12 +26,12 @@ import {
 import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
+import { toTitleCase } from "@/lib/utils";
 import type {
   CanvasDiscussion,
   CanvasDiscussionEntry,
   CanvasDiscussionView,
-} from "@/lib/canvas-types";
-import { toTitleCase } from "@/lib/utils";
+} from "@/types/canvas";
 
 export const unstable_prefetch = {
   mode: "runtime",

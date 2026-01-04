@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
-import type { CanvasPage } from "@/lib/canvas-types";
+import type { CanvasPage } from "@/types/canvas";
 
 export const unstable_prefetch = {
   mode: "runtime",

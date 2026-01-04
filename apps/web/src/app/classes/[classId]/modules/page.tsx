@@ -35,11 +35,11 @@ import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
 import { moduleItemDetailsUrl } from "@/lib/canvas-helpers";
-import {
-  type CanvasModule,
-  type CanvasModuleItem,
+import type {
+  CanvasModule,
+  CanvasModuleItem,
   CanvasModuleItemType,
-} from "@/lib/canvas-types";
+} from "@/types/canvas";
 
 export const unstable_prefetch: Prefetch = {
   mode: "runtime",
@@ -104,7 +104,7 @@ export default async function ClassModulesPage({
                 {module.name}
               </AccordionTrigger>
               <AccordionContent className="divide-y pb-1">
-                {module.items.map((item) => (
+                {module.items?.map((item) => (
                   <ModuleItem
                     key={item.id}
                     item={item}
@@ -120,12 +120,12 @@ export default async function ClassModulesPage({
 }
 
 const moduleItemIcons: Partial<Record<CanvasModuleItemType, Icon>> = {
-  [CanvasModuleItemType.Assignment]: IconNotebook,
-  [CanvasModuleItemType.File]: IconFile,
-  [CanvasModuleItemType.Page]: IconFileDescription,
-  [CanvasModuleItemType.Quiz]: IconChecklist,
-  [CanvasModuleItemType.Discussion]: IconMessage,
-  [CanvasModuleItemType.ExternalUrl]: IconLink,
+  Assignment: IconNotebook,
+  File: IconFile,
+  Page: IconFileDescription,
+  Quiz: IconChecklist,
+  Discussion: IconMessage,
+  ExternalUrl: IconLink,
 };
 
 function ModuleItem({
@@ -140,7 +140,7 @@ function ModuleItem({
   console.log(item);
   if (classId === undefined) return;
 
-  if (item.type === CanvasModuleItemType.SubHeader)
+  if (item.type === "SubHeader")
     return (
       <div className="flex items-center gap-2 py-4 font-medium">
         {item.title}
@@ -156,9 +156,7 @@ function ModuleItem({
       }
       className="group ml-8 flex items-center gap-2 py-4 hover:underline"
       key={item.id}
-      target={
-        item.type === CanvasModuleItemType.ExternalUrl ? "_blank" : undefined
-      }
+      target={item.type === "ExternalUrl" ? "_blank" : undefined}
     >
       <Icon className="size-5 text-muted-foreground" />
       <div>

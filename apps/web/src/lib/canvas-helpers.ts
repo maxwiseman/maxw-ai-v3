@@ -1,20 +1,16 @@
-import {
-  type CanvasModuleItem,
-  CanvasModuleItemType,
-} from "@/lib/canvas-types";
+import type { CanvasModuleItem } from "@/types/canvas";
 
 export function moduleItemDetailsUrl(classId: string, item: CanvasModuleItem) {
   if (!item) return;
-  if (item.type === CanvasModuleItemType.Assignment)
+  if (item.type === "Assignment")
     return `/classes/${classId}/assignments/${item.content_id}`;
-  if (item.type === CanvasModuleItemType.File)
+  if (item.type === "File")
     return `/classes/${classId}/files/${item.content_id}`;
-  if (item.type === CanvasModuleItemType.Page)
-    return `/classes/${classId}/pages/${item.page_url}`;
-  if (item.type === CanvasModuleItemType.Quiz)
+  if (item.type === "Page") return `/classes/${classId}/pages/${item.page_url}`;
+  if (item.type === "Quiz")
     return `/classes/${classId}/quizzes/${item.content_id}`;
-  if (item.type === CanvasModuleItemType.Discussion)
+  if (item.type === "Discussion")
     return `/classes/${classId}/discussions/${item.content_id}`;
-  if (item.type === CanvasModuleItemType.ExternalUrl) return item.external_url;
+  if (item.type === "ExternalUrl") return item.external_url;
   return item.html_url;
 }
