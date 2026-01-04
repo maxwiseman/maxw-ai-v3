@@ -4,6 +4,7 @@ import ws from "ws";
 import { env } from "../env";
 import * as authSchema from "./schema/auth";
 import * as schema from "./schema/schema";
+import * as todoSchema from "./schema/todo";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -13,5 +14,5 @@ neonConfig.webSocketConstructor = ws;
 const sql = neon(env.DATABASE_URL ?? process.env.DATABASE_URL);
 export const db = drizzle({
   client: sql,
-  schema: { ...authSchema, ...schema },
+  schema: { ...authSchema, ...schema, ...todoSchema },
 });
