@@ -178,7 +178,7 @@ export function FloatingSubmission({
 
   // Update max height on window resize (throttled)
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
     const updateMaxHeight = () => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
@@ -365,7 +365,7 @@ export function FloatingSubmission({
         <div className="h-max w-full p-6">
           {submissionType === undefined ? (
             <SubmissionTypeSelector
-              submissionTypes={submissionTypes}
+              submissionTypes={[...submissionTypes]}
               onSelectType={(type) => setSubmissionType(type)}
             />
           ) : submissionType === "text_entry" ? (
