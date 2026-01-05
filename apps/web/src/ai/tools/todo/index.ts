@@ -1,14 +1,14 @@
 import { tool } from "ai";
 import { and, desc, eq, gte, lt, or } from "drizzle-orm";
+import { headers } from "next/headers";
 import * as z from "zod/v4";
 import type { AppContext } from "@/ai/agents/shared";
 import { db } from "@/db";
 import { type NewTodo, type TodoSubTask, todo } from "@/db/schema/todo";
+import { auth } from "@/lib/auth";
 
 // Factory function to create todo tools with context
 export function createTodoTools(ctx: AppContext) {
-  const userId = ctx.userId;
-
   function normalizeDateInput(value: string): Date {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) {
@@ -77,7 +77,8 @@ export function createTodoTools(ctx: AppContext) {
         }
       }),
     execute: async (input) => {
-      if (!userId) return { error: "User not authenticated" };
+      const session = await auth.api.getSession({ headers: await headers() });
+      if (!session?.user) return { error: "User not authenticated" };
 
       const subTasks: TodoSubTask[] | undefined = input.subTasks?.map(
         (title) => ({
@@ -87,10 +88,12 @@ export function createTodoTools(ctx: AppContext) {
         }),
       );
 
+      console.log("Input", input);
+
       const [created] = await db
         .insert(todo)
         .values({
-          userId,
+          userId: session.user.id,
           title: input.title,
           description: input.description,
           dateType: input.dateType ?? "anytime",
@@ -186,7 +189,8 @@ export function createTodoTools(ctx: AppContext) {
         }
       }),
     execute: async (input) => {
-      if (!userId) return { error: "User not authenticated" };
+      const session = await auth.api.getSession({ headers: await headers() });
+      if (!session?.user) return { error: "User not authenticated" };
 
       const updateData: Partial<NewTodo> = {};
 
@@ -230,7 +234,7 @@ export function createTodoTools(ctx: AppContext) {
         const [existing] = await db
           .select({ scheduledDate: todo.scheduledDate })
           .from(todo)
-          .where(and(eq(todo.id, input.id), eq(todo.userId, userId)))
+          .where(and(eq(todo.id, input.id), eq(todo.userId, session.user.id)))
           .limit(1);
 
         if (!existing) return { error: "Todo not found or access denied" };
@@ -246,7 +250,7 @@ export function createTodoTools(ctx: AppContext) {
       const [updated] = await db
         .update(todo)
         .set(updateData)
-        .where(and(eq(todo.id, input.id), eq(todo.userId, userId)))
+        .where(and(eq(todo.id, input.id), eq(todo.userId, session.user.id)))
         .returning();
 
       if (!updated) return { error: "Todo not found or access denied" };
@@ -272,11 +276,12 @@ export function createTodoTools(ctx: AppContext) {
       id: z.string().describe("The todo ID to delete"),
     }),
     execute: async (input) => {
-      if (!userId) return { error: "User not authenticated" };
+      const session = await auth.api.getSession({ headers: await headers() });
+      if (!session?.user) return { error: "User not authenticated" };
 
       const result = await db
         .delete(todo)
-        .where(and(eq(todo.id, input.id), eq(todo.userId, userId)))
+        .where(and(eq(todo.id, input.id), eq(todo.userId, session.user.id)))
         .returning();
 
       if (result.length === 0)
@@ -305,7 +310,8 @@ export function createTodoTools(ctx: AppContext) {
         .describe("Maximum number of todos to return. Default 20."),
     }),
     execute: async (input) => {
-      if (!userId) return { error: "User not authenticated" };
+      const session = await auth.api.getSession({ headers: await headers() });
+      if (!session?.user) return { error: "User not authenticated" };
 
       const view = input.view ?? "all";
       const limit = input.limit ?? 20;
@@ -343,7 +349,7 @@ export function createTodoTools(ctx: AppContext) {
             .from(todo)
             .where(
               and(
-                eq(todo.userId, userId),
+                eq(todo.userId, session.user.id),
                 input.includeCompleted ? undefined : eq(todo.checked, false),
                 or(
                   and(
@@ -368,7 +374,7 @@ export function createTodoTools(ctx: AppContext) {
             .from(todo)
             .where(
               and(
-                eq(todo.userId, userId),
+                eq(todo.userId, session.user.id),
                 input.includeCompleted ? undefined : eq(todo.checked, false),
                 or(
                   eq(todo.dateType, "calendar"),
@@ -387,7 +393,7 @@ export function createTodoTools(ctx: AppContext) {
             .from(todo)
             .where(
               and(
-                eq(todo.userId, userId),
+                eq(todo.userId, session.user.id),
                 input.includeCompleted ? undefined : eq(todo.checked, false),
                 eq(todo.dateType, "anytime"),
               ),
@@ -402,7 +408,7 @@ export function createTodoTools(ctx: AppContext) {
             .from(todo)
             .where(
               and(
-                eq(todo.userId, userId),
+                eq(todo.userId, session.user.id),
                 input.includeCompleted ? undefined : eq(todo.checked, false),
                 eq(todo.dateType, "someday"),
               ),
@@ -418,7 +424,7 @@ export function createTodoTools(ctx: AppContext) {
             .from(todo)
             .where(
               and(
-                eq(todo.userId, userId),
+                eq(todo.userId, session.user.id),
                 eq(todo.checked, false),
                 lt(todo.dueDate, startOfToday),
               ),
@@ -434,7 +440,7 @@ export function createTodoTools(ctx: AppContext) {
             .from(todo)
             .where(
               and(
-                eq(todo.userId, userId),
+                eq(todo.userId, session.user.id),
                 input.includeCompleted ? undefined : eq(todo.checked, false),
               ),
             )
