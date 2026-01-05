@@ -43,6 +43,25 @@ function hydrateTodosDates(todos: Todo[]): Todo[] {
   return todos.map(hydrateTodoDates);
 }
 
+function mergeServerTodosWithPending(serverTodos: Todo[]): Todo[] {
+  if (pendingTodos.size === 0) return serverTodos;
+
+  const serverIds = new Set(serverTodos.map((t) => t.id));
+
+  // Get pending todos that aren't on the server yet
+  const pendingNotOnServer: Todo[] = [];
+  for (const [id, todo] of pendingTodos) {
+    if (!serverIds.has(id)) {
+      pendingNotOnServer.push(todo);
+    }
+  }
+
+  if (pendingNotOnServer.length === 0) return serverTodos;
+
+  // Keep the server ordering, then append pending items that aren't on the server yet.
+  return [...serverTodos, ...pendingNotOnServer];
+}
+
 function mergeUpdate(
   prev: Partial<Omit<NewTodo, "id" | "userId" | "createdAt" | "updatedAt">>,
   next: Partial<Omit<NewTodo, "id" | "userId" | "createdAt" | "updatedAt">>,
@@ -59,8 +78,8 @@ function getDebounceMsForUpdate(
   return 300;
 }
 
-// Track todos that haven't been saved to DB yet
-const pendingTodos = new Set<string>();
+// Track todos that haven't been saved to DB yet - store full Todo objects
+const pendingTodos = new Map<string, Todo>();
 
 // Debounce timers per todo ID
 const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -98,7 +117,10 @@ export function useTodos() {
   return useQuery({
     queryKey: TODOS_QUERY_KEY,
     queryFn: getAllTodosExceptLogbook,
-    select: (todos) => hydrateTodosDates(todos),
+    select: (serverTodos) => {
+      const hydratedServer = hydrateTodosDates(serverTodos);
+      return mergeServerTodosWithPending(hydratedServer);
+    },
     staleTime: 0,
   });
 }
@@ -152,29 +174,30 @@ export function useCreateTodo() {
       const resolvedDateType =
         input?.dateType ?? input?.defaultDateType ?? "anytime";
 
-      // Mark as pending by default (will be cleared if/when DB insert succeeds)
-      pendingTodos.add(id);
+      // Create the pending todo object
+      const todoForCache: Todo = {
+        id,
+        userId: "pending", // Placeholder, will be replaced by server
+        title: input?.title ?? "",
+        description: input?.description ?? null,
+        checked: input?.checked ?? false,
+        dateType: resolvedDateType,
+        scheduledDate: input?.scheduledDate ?? null,
+        dueDate: input?.dueDate ?? null,
+        subTasks: input?.subTasks ?? null,
+        canvasContentType: input?.canvasContentType ?? null,
+        canvasContentId: input?.canvasContentId ?? null,
+        canvasClassId: input?.canvasClassId ?? null,
+        completedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      // Store in pending map (will be cleared if/when DB insert succeeds)
+      pendingTodos.set(id, todoForCache);
 
       // Optimistically add to cache
       queryClient.setQueryData<Todo[]>(TODOS_QUERY_KEY, (old = []) => {
-        // Using placeholder since userId will be set by server response
-        const todoForCache: Todo = {
-          id,
-          userId: "pending", // Placeholder, will be replaced by server
-          title: input?.title ?? "",
-          description: input?.description ?? null,
-          checked: input?.checked ?? false,
-          dateType: resolvedDateType,
-          scheduledDate: input?.scheduledDate ?? null,
-          dueDate: input?.dueDate ?? null,
-          subTasks: input?.subTasks ?? null,
-          canvasContentType: input?.canvasContentType ?? null,
-          canvasContentId: input?.canvasContentId ?? null,
-          canvasClassId: input?.canvasClassId ?? null,
-          completedAt: null,
-          createdAt: now,
-          updatedAt: now,
-        };
         return [...old, todoForCache];
       });
 
@@ -236,6 +259,18 @@ export function useUpdateTodo() {
       >,
     ) => {
       const isPending = pendingTodos.has(id);
+
+      // Update the pending todo object if it exists
+      if (isPending) {
+        const pendingTodo = pendingTodos.get(id);
+        if (pendingTodo) {
+          pendingTodos.set(id, {
+            ...pendingTodo,
+            ...input,
+            updatedAt: new Date(),
+          });
+        }
+      }
 
       // Get current todo from cache to merge with
       const currentTodos =
