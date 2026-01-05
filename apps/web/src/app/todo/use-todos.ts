@@ -17,20 +17,15 @@ const pendingTodos = new Set<string>();
 // Debounce timers per todo ID
 const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-// Track what state we're syncing for each todo to prevent race conditions
-// Maps todo ID to a snapshot of the state when sync was initiated
-const syncSnapshots = new Map<
+// Track ongoing sync operations per todo ID to prevent race conditions
+// Maps todo ID to the currently executing sync promise
+const syncPromises = new Map<string, Promise<void>>();
+
+// Track pending updates that should be applied after current sync completes
+// Maps todo ID to the most recent update parameters
+const pendingUpdates = new Map<
   string,
-  {
-    title: string;
-    description: string | null;
-    checked: boolean;
-    dateType: "calendar" | "calendarEvening" | "anytime" | "someday" | null;
-    scheduledDate: Date | null;
-    dueDate: Date | null;
-    subTasks: TodoSubTask[] | null;
-    updatedAt: Date;
-  }
+  Partial<Omit<NewTodo, "id" | "userId" | "createdAt" | "updatedAt">>
 >();
 
 // Query keys
@@ -122,100 +117,122 @@ export function useUpdateTodo() {
         Omit<NewTodo, "id" | "userId" | "createdAt" | "updatedAt">
       >,
     ) => {
-      const isPending = pendingTodos.has(id);
-
-      // Get current todo from cache to merge with
-      const currentTodos =
-        queryClient.getQueryData<Todo[]>(TODOS_QUERY_KEY) ?? [];
-      const currentTodo = currentTodos.find((t) => t.id === id);
-
-      if (!currentTodo) return;
-
-      // Capture snapshot of current state before syncing
-      const snapshot = {
-        title: currentTodo.title ?? "",
-        description: currentTodo.description,
-        checked: currentTodo.checked,
-        dateType: currentTodo.dateType,
-        scheduledDate: currentTodo.scheduledDate,
-        dueDate: currentTodo.dueDate,
-        subTasks: currentTodo.subTasks,
-        updatedAt: currentTodo.updatedAt,
-      };
-      syncSnapshots.set(id, snapshot);
-
-      if (isPending) {
-        // First update for a pending todo - create it in DB
-        const created = await createTodo(input);
-        if (created) {
-          // Remove from pending set
-          pendingTodos.delete(id);
-          // Only update cache if it hasn't changed since we sent the request
-          queryClient.setQueryData<Todo[]>(TODOS_QUERY_KEY, (old = []) => {
-            const current = old.find((t) => t.id === id);
-            const savedSnapshot = syncSnapshots.get(id);
-            syncSnapshots.delete(id);
-
-            // If cache has been updated since we sent the request, skip this update
-            if (
-              current &&
-              savedSnapshot &&
-              (current.title !== savedSnapshot.title ||
-                current.description !== savedSnapshot.description ||
-                current.checked !== savedSnapshot.checked ||
-                current.dateType !== savedSnapshot.dateType ||
-                (current.scheduledDate?.getTime() ?? null) !==
-                  (savedSnapshot.scheduledDate?.getTime() ?? null) ||
-                (current.dueDate?.getTime() ?? null) !==
-                  (savedSnapshot.dueDate?.getTime() ?? null) ||
-                JSON.stringify(current.subTasks) !==
-                  JSON.stringify(savedSnapshot.subTasks))
-            ) {
-              return old; // Cache is newer, don't overwrite
-            }
-
-            return old.map((t) => (t.id === id ? created : t));
-          });
-        } else {
-          // Creation failed (e.g., authentication failure) - clean up pending todo
-          pendingTodos.delete(id);
-          syncSnapshots.delete(id);
-          queryClient.setQueryData<Todo[]>(TODOS_QUERY_KEY, (old = []) =>
-            old.filter((t) => t.id !== id),
-          );
-        }
-      } else {
-        // Update existing todo
-        const updated = await updateTodo(id, input);
-        if (updated) {
-          // Only update cache if it hasn't changed since we sent the request
-          queryClient.setQueryData<Todo[]>(TODOS_QUERY_KEY, (old = []) => {
-            const current = old.find((t) => t.id === id);
-            const savedSnapshot = syncSnapshots.get(id);
-            syncSnapshots.delete(id);
-
-            // If cache has been updated since we sent the request, skip this update
-            if (
-              current &&
-              savedSnapshot &&
-              (current.title !== savedSnapshot.title ||
-                current.description !== savedSnapshot.description ||
-                current.checked !== savedSnapshot.checked ||
-                current.dateType !== savedSnapshot.dateType ||
-                (current.scheduledDate?.getTime() ?? null) !==
-                  (savedSnapshot.scheduledDate?.getTime() ?? null) ||
-                (current.dueDate?.getTime() ?? null) !==
-                  (savedSnapshot.dueDate?.getTime() ?? null) ||
-                JSON.stringify(current.subTasks) !==
-                  JSON.stringify(savedSnapshot.subTasks))
-            ) {
-              return old; // Cache is newer, don't overwrite
-            }
-
-            return old.map((t) => (t.id === id ? updated : t));
-          });
-        }
+      // If there's already a sync in progress for this todo, queue this update
+      const existingSync = syncPromises.get(id);
+      if (existingSync) {
+        // Store this update to be processed after the current sync completes
+        pendingUpdates.set(id, input);
+        // Wait for the existing sync to complete, which will pick up our update
+        await existingSync;
+        return;
       }
+
+      // Create a promise for this sync operation
+      const syncPromise = (async () => {
+        try {
+          const isPending = pendingTodos.has(id);
+
+          // Get current todo from cache to merge with
+          const currentTodos =
+            queryClient.getQueryData<Todo[]>(TODOS_QUERY_KEY) ?? [];
+          const currentTodo = currentTodos.find((t) => t.id === id);
+
+          if (!currentTodo) return;
+
+          // Capture snapshot of current state before syncing
+          const snapshot = {
+            title: currentTodo.title ?? "",
+            description: currentTodo.description,
+            checked: currentTodo.checked,
+            dateType: currentTodo.dateType,
+            scheduledDate: currentTodo.scheduledDate,
+            dueDate: currentTodo.dueDate,
+            subTasks: currentTodo.subTasks,
+            updatedAt: currentTodo.updatedAt,
+          };
+
+          if (isPending) {
+            // First update for a pending todo - create it in DB
+            const created = await createTodo(input);
+            if (created) {
+              // Remove from pending set
+              pendingTodos.delete(id);
+              // Only update cache if it hasn't changed since we sent the request
+              queryClient.setQueryData<Todo[]>(TODOS_QUERY_KEY, (old = []) => {
+                const current = old.find((t) => t.id === id);
+
+                // If cache has been updated since we sent the request, skip this update
+                if (
+                  current &&
+                  (current.title !== snapshot.title ||
+                    current.description !== snapshot.description ||
+                    current.checked !== snapshot.checked ||
+                    current.dateType !== snapshot.dateType ||
+                    (current.scheduledDate?.getTime() ?? null) !==
+                      (snapshot.scheduledDate?.getTime() ?? null) ||
+                    (current.dueDate?.getTime() ?? null) !==
+                      (snapshot.dueDate?.getTime() ?? null) ||
+                    JSON.stringify(current.subTasks) !==
+                      JSON.stringify(snapshot.subTasks))
+                ) {
+                  return old; // Cache is newer, don't overwrite
+                }
+
+                return old.map((t) => (t.id === id ? created : t));
+              });
+            } else {
+              // Creation failed (e.g., authentication failure) - clean up pending todo
+              pendingTodos.delete(id);
+              queryClient.setQueryData<Todo[]>(TODOS_QUERY_KEY, (old = []) =>
+                old.filter((t) => t.id !== id),
+              );
+            }
+          } else {
+            // Update existing todo
+            const updated = await updateTodo(id, input);
+            if (updated) {
+              // Only update cache if it hasn't changed since we sent the request
+              queryClient.setQueryData<Todo[]>(TODOS_QUERY_KEY, (old = []) => {
+                const current = old.find((t) => t.id === id);
+
+                // If cache has been updated since we sent the request, skip this update
+                if (
+                  current &&
+                  (current.title !== snapshot.title ||
+                    current.description !== snapshot.description ||
+                    current.checked !== snapshot.checked ||
+                    current.dateType !== snapshot.dateType ||
+                    (current.scheduledDate?.getTime() ?? null) !==
+                      (snapshot.scheduledDate?.getTime() ?? null) ||
+                    (current.dueDate?.getTime() ?? null) !==
+                      (snapshot.dueDate?.getTime() ?? null) ||
+                    JSON.stringify(current.subTasks) !==
+                      JSON.stringify(snapshot.subTasks))
+                ) {
+                  return old; // Cache is newer, don't overwrite
+                }
+
+                return old.map((t) => (t.id === id ? updated : t));
+              });
+            }
+          }
+        } finally {
+          // Clean up: remove the sync promise
+          syncPromises.delete(id);
+
+          // Check if there's a pending update that arrived while we were syncing
+          const pendingInput = pendingUpdates.get(id);
+          if (pendingInput) {
+            // Recursively sync the pending update
+            pendingUpdates.delete(id);
+            await syncToDb(id, pendingInput);
+          }
+        }
+      })();
+
+      // Store the promise so other calls can wait for it
+      syncPromises.set(id, syncPromise);
+      await syncPromise;
     },
     [queryClient],
   );
