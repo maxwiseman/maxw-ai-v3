@@ -13,7 +13,7 @@ import {
 } from "@tabler/icons-react";
 import { isAfter, isBefore, isDate, isSameDay, startOfDay } from "date-fns";
 import { parseAsStringEnum, useQueryState } from "nuqs";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   PageHeader,
   PageHeaderContent,
@@ -103,24 +103,19 @@ export default function TodoPage() {
 
   const filteredTodos = filterTodos(todos, tab);
 
-  // If you edit a todo such that it belongs in a different tab, automatically
-  // switch tabs so the item doesn't "disappear" while you're working on it.
-  useEffect(() => {
-    if (!expanded) return;
-
-    const expandedTodo = todos.find((t) => t.id === expanded);
-    if (!expandedTodo) return;
-
-    // Don't auto-switch tabs while the expanded todo is still pending (newly created).
-    // During initial sync, some fields (and sometimes even identity) can transition,
-    // and switching tabs here can make the todo "disappear" mid-edit.
-    if (expandedTodo.userId === "pending") return;
-
-    const nextTab = classifyTodo(expandedTodo);
-    if (nextTab !== tab) {
-      setTab(nextTab);
-    }
-  }, [expanded, todos, tab, setTab]);
+  const updateTabForTodo = (
+    todo: Pick<
+      Todo,
+      | "id"
+      | "checked"
+      | "completedAt"
+      | "dateType"
+      | "scheduledDate"
+      | "dueDate"
+    >,
+  ) => {
+    setTab(classifyTodo(todo as Todo));
+  };
 
   return (
     <div className="mx-auto w-full max-w-2xl px-8">
@@ -176,6 +171,7 @@ export default function TodoPage() {
                     if (state) setExpanded(todo.id);
                     else setExpanded(undefined);
                   }}
+                  updateTab={updateTabForTodo}
                   id={todo.id}
                 />
               ))}
@@ -229,6 +225,7 @@ export default function TodoPage() {
                     if (state) setExpanded(todo.id);
                     else setExpanded(undefined);
                   }}
+                  updateTab={updateTabForTodo}
                   id={todo.id}
                 />
               ))}

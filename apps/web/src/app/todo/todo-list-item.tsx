@@ -18,11 +18,23 @@ import { useTodos, useUpdateTodo } from "./use-todos";
 export function TodoListItem({
   expanded = false,
   onExpandChange = () => null,
+  updateTab,
   id,
   ...props
 }: React.ComponentProps<"div"> & {
   expanded?: boolean;
   onExpandChange?: (state: boolean) => void;
+  updateTab?: (
+    next: Pick<
+      Todo,
+      | "id"
+      | "checked"
+      | "completedAt"
+      | "dateType"
+      | "scheduledDate"
+      | "dueDate"
+    >,
+  ) => void;
   id: string;
 }) {
   const { data: todos = [] } = useTodos();
@@ -171,13 +183,30 @@ export function TodoListItem({
               scheduledDate={todo.scheduledDate}
               onValueChange={(dateType, scheduledDate) => {
                 updateTodo(id, { dateType, scheduledDate });
+                updateTab?.({
+                  id,
+                  checked: todo.checked,
+                  completedAt: todo.completedAt,
+                  dateType,
+                  scheduledDate,
+                  dueDate: todo.dueDate,
+                });
               }}
               icon={IconCalendar}
             />
             <TodoCalendarButton
               value={todo.dueDate ?? undefined}
               onValueChange={(newDate) => {
-                updateTodo(id, { dueDate: newDate ?? null });
+                const dueDate = newDate ?? null;
+                updateTodo(id, { dueDate });
+                updateTab?.({
+                  id,
+                  checked: todo.checked,
+                  completedAt: todo.completedAt,
+                  dateType: todo.dateType,
+                  scheduledDate: todo.scheduledDate,
+                  dueDate,
+                });
               }}
               icon={IconFlag}
             />

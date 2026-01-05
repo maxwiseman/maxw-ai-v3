@@ -99,6 +99,7 @@ export function useTodos() {
     queryKey: TODOS_QUERY_KEY,
     queryFn: getAllTodosExceptLogbook,
     select: (todos) => hydrateTodosDates(todos),
+    staleTime: 0,
   });
 }
 

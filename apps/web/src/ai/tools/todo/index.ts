@@ -26,10 +26,7 @@ export function createTodoTools(ctx: AppContext) {
     inputSchema: z
       .object({
         title: z.string().describe("The todo title"),
-        description: z
-          .string()
-          .optional()
-          .describe("Optional notes/description for the todo"),
+        notes: z.string().optional().describe("Optional notes for the todo"),
         dateType: z
           .enum(["calendar", "calendarEvening", "anytime", "someday"])
           .optional()
@@ -95,7 +92,7 @@ export function createTodoTools(ctx: AppContext) {
         .values({
           userId: session.user.id,
           title: input.title,
-          description: input.description,
+          description: input.notes,
           dateType: input.dateType ?? "anytime",
           scheduledDate: input.scheduledDate
             ? normalizeDateInput(input.scheduledDate)
@@ -130,7 +127,7 @@ export function createTodoTools(ctx: AppContext) {
       .object({
         id: z.string().describe("The todo ID to update"),
         title: z.string().optional().describe("New title for the todo"),
-        description: z.string().optional().describe("New description/notes"),
+        notes: z.string().optional().describe("New notes"),
         checked: z
           .boolean()
           .optional()
@@ -195,8 +192,7 @@ export function createTodoTools(ctx: AppContext) {
       const updateData: Partial<NewTodo> = {};
 
       if (input.title !== undefined) updateData.title = input.title;
-      if (input.description !== undefined)
-        updateData.description = input.description;
+      if (input.notes !== undefined) updateData.description = input.notes;
 
       if (input.checked !== undefined) {
         updateData.checked = input.checked;
