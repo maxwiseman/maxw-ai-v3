@@ -102,6 +102,7 @@ export default function TodoPage() {
   const selectedTab = tabs[tab];
 
   const filteredTodos = filterTodos(todos, tab);
+  const todoCount = filteredTodos.filter((item) => !item.checked).length;
 
   const updateTabForTodo = (
     todo: Pick<
@@ -149,8 +150,8 @@ export default function TodoPage() {
             {/* @ts-expect-error */}
             {selectedTab.description ?? (
               <NumberFlow
-                value={filteredTodos.filter((item) => !item.checked).length}
-                suffix=" tasks"
+                value={todoCount}
+                suffix={todoCount > 1 ? " tasks" : " task"}
               />
             )}
           </PageHeaderDescription>
