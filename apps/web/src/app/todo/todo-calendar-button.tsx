@@ -8,6 +8,7 @@ import {
   IconStack2,
   IconStar,
 } from "@tabler/icons-react";
+import { isDate } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -40,6 +41,7 @@ const quickPicks = {
 } as const satisfies Record<DateType, { icon: Icon; label: string }>;
 
 function isSameLocalDay(a: Date, b: Date): boolean {
+  if (!isDate(a) || !isDate(b)) return false;
   return (
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&

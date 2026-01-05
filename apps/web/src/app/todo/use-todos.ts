@@ -11,6 +11,38 @@ import {
   updateTodo,
 } from "./todo-actions";
 
+function toDateOrNull(value: unknown): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+
+  // React Query persistence (localStorage) restores Dates as strings.
+  if (typeof value === "string") {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed;
+  }
+
+  return null;
+}
+
+function hydrateTodoDates(t: Todo): Todo {
+  const createdAt = toDateOrNull(t.createdAt);
+  const updatedAt = toDateOrNull(t.updatedAt);
+
+  return {
+    ...t,
+    scheduledDate: toDateOrNull(t.scheduledDate),
+    dueDate: toDateOrNull(t.dueDate),
+    completedAt: toDateOrNull(t.completedAt),
+    createdAt: createdAt ?? new Date(),
+    updatedAt: updatedAt ?? new Date(),
+  };
+}
+
+function hydrateTodosDates(todos: Todo[]): Todo[] {
+  return todos.map(hydrateTodoDates);
+}
+
 // Track todos that haven't been saved to DB yet
 const pendingTodos = new Set<string>();
 
@@ -44,6 +76,7 @@ export function useTodos() {
   return useQuery({
     queryKey: TODOS_QUERY_KEY,
     queryFn: getAllTodosExceptLogbook,
+    select: (todos) => hydrateTodosDates(todos),
   });
 }
 
@@ -57,6 +90,7 @@ export function useLogbook(limit?: number) {
       const [, , queryLimit] = queryKey;
       return getLogbookTodos(queryLimit);
     },
+    select: (todos) => hydrateTodosDates(todos),
   });
 }
 
@@ -71,13 +105,22 @@ export function useCreateTodo() {
     (
       input?: Partial<
         Omit<NewTodo, "id" | "userId" | "createdAt" | "updatedAt">
-      >,
+      > & {
+        /**
+         * If `dateType` isn't explicitly provided, this will be used as the default.
+         * Useful for creating a todo from a specific tab (e.g. Today/Upcoming/Someday).
+         */
+        defaultDateType?: NonNullable<NewTodo["dateType"]>;
+      },
     ) => {
       const id = crypto.randomUUID();
       const now = new Date();
 
       // Mark as pending
       pendingTodos.add(id);
+
+      const resolvedDateType =
+        input?.dateType ?? input?.defaultDateType ?? "anytime";
 
       // Optimistically add to cache
       queryClient.setQueryData<Todo[]>(TODOS_QUERY_KEY, (old = []) => {
@@ -88,7 +131,7 @@ export function useCreateTodo() {
           title: input?.title ?? "",
           description: input?.description ?? null,
           checked: input?.checked ?? false,
-          dateType: input?.dateType ?? "anytime",
+          dateType: resolvedDateType,
           scheduledDate: input?.scheduledDate ?? null,
           dueDate: input?.dueDate ?? null,
           subTasks: input?.subTasks ?? null,
@@ -145,8 +188,27 @@ export function useUpdateTodo() {
       syncSnapshots.set(id, snapshot);
 
       if (isPending) {
-        // First update for a pending todo - create it in DB
-        const created = await createTodo(input);
+        // First update for a pending todo - create it in DB.
+        // Important:
+        // - pass the client-generated `id` so it stays stable (prevents UI collapse/un-expand on sync)
+        // - send the *current full todo state* (not just the incremental patch), otherwise defaults like
+        //   dateType/scheduledDate can be lost and the item can "jump" tabs after the first edit.
+        const createPayload: Omit<NewTodo, "userId" | "createdAt" | "updatedAt"> = {
+          id,
+          title: currentTodo.title,
+          description: currentTodo.description,
+          checked: currentTodo.checked,
+          dateType: currentTodo.dateType,
+          scheduledDate: currentTodo.scheduledDate,
+          dueDate: currentTodo.dueDate,
+          subTasks: currentTodo.subTasks,
+          canvasContentType: currentTodo.canvasContentType,
+          canvasContentId: currentTodo.canvasContentId,
+          canvasClassId: currentTodo.canvasClassId,
+          completedAt: currentTodo.completedAt,
+        };
+
+        const created = await createTodo(createPayload);
         if (created) {
           // Remove from pending set
           pendingTodos.delete(id);

@@ -40,15 +40,29 @@ export function TodoListItem({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (todo) {
-      setLocalChecked(todo.checked);
-      setLocalTask({
-        title: todo.title,
+    if (!todo) return;
+
+    // Avoid update loops when `todo` is a new object each render (e.g. cache hydration).
+    // Only sync local state when the underlying fields actually change.
+    setLocalChecked((prev) => (prev === todo.checked ? prev : todo.checked));
+    setLocalTask((prev) => {
+      const next: LocalTask = {
+        title: todo.title ?? "",
         description: todo.description ?? null,
         subTasks: todo.subTasks ?? null,
-      });
-    }
-  }, [todo]);
+      };
+
+      if (
+        prev.title === next.title &&
+        prev.description === next.description &&
+        JSON.stringify(prev.subTasks) === JSON.stringify(next.subTasks)
+      ) {
+        return prev;
+      }
+
+      return next;
+    });
+  }, [todo?.checked, todo?.title, todo?.description, todo?.subTasks]);
 
   useEffect(() => {
     if (expanded && todo?.checked) {

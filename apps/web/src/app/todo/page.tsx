@@ -11,6 +11,7 @@ import {
   IconStack2,
   IconStar,
 } from "@tabler/icons-react";
+import { isAfter, isBefore, isDate, isSameDay, startOfDay } from "date-fns";
 import { parseAsStringEnum, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 import {
@@ -62,6 +63,40 @@ export default function TodoPage() {
   );
   const [completedExpanded, setCompletedExpanded] = useState(false);
   const [expanded, setExpanded] = useState<string | undefined>();
+
+  const defaultDateTypeForTab:
+    | "calendar"
+    | "calendarEvening"
+    | "anytime"
+    | "someday"
+    | undefined =
+    tab === "today"
+      ? "calendar"
+      : tab === "upcoming"
+        ? "calendar"
+        : tab === "someday"
+          ? "someday"
+          : tab === "anytime"
+            ? "anytime"
+            : undefined;
+
+  const defaultScheduledDateForTab = (() => {
+    if (tab === "today") {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+
+    if (tab === "upcoming") {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() + 1);
+      return d;
+    }
+
+    return undefined;
+  })();
+
   const { data: todos = [], isPending } = useTodos();
   const createTodo = useCreateTodo();
   const selectedTab = tabs[tab];
@@ -75,6 +110,11 @@ export default function TodoPage() {
 
     const expandedTodo = todos.find((t) => t.id === expanded);
     if (!expandedTodo) return;
+
+    // Don't auto-switch tabs while the expanded todo is still pending (newly created).
+    // During initial sync, some fields (and sometimes even identity) can transition,
+    // and switching tabs here can make the todo "disappear" mid-edit.
+    if (expandedTodo.userId === "pending") return;
 
     const nextTab = classifyTodo(expandedTodo);
     if (nextTab !== tab) {
@@ -143,7 +183,11 @@ export default function TodoPage() {
               className="-mx-3 justify-start p-0 text-muted-foreground hover:text-muted-foreground"
               variant="ghost"
               onClick={() => {
-                createTodo();
+                const id = createTodo({
+                  defaultDateType: defaultDateTypeForTab,
+                  scheduledDate: defaultScheduledDateForTab,
+                });
+                setExpanded(id);
               }}
             >
               <IconPlus className="mx-0.5 size-5" />
@@ -196,27 +240,23 @@ export default function TodoPage() {
 }
 
 function isToday(date: Date | null): boolean {
-  if (!date) return false;
-  const today = new Date();
-  return (
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate()
-  );
+  if (!isDate(date)) return false;
+  return isSameDay(date, new Date());
 }
 
 function isFuture(date: Date | null): boolean {
-  if (!date) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return date.getTime() >= today.getTime();
+  if (!isDate(date)) return false;
+
+  // "Upcoming" should mean strictly after today (not today, not past).
+  // This matches classifyTodo usage (today-or-past handled separately).
+  return isAfter(date, startOfDay(new Date()));
 }
 
 function isPast(date: Date | null): boolean {
-  if (!date) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return date.getTime() < today.getTime();
+  if (!isDate(date)) return false;
+
+  // "Past" means before the start of today (i.e. overdue).
+  return isBefore(date, startOfDay(new Date()));
 }
 
 function filterTodos(todos: Todo[], tab: keyof typeof tabs) {

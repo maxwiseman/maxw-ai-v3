@@ -14,7 +14,7 @@ async function getAuthenticatedUserId(): Promise<string | null> {
 
 // CRUD Operations
 export async function createTodo(
-  input: Omit<NewTodo, "id" | "userId" | "createdAt" | "updatedAt">,
+  input: Omit<NewTodo, "userId" | "createdAt" | "updatedAt">,
 ): Promise<Todo | null> {
   const userId = await getAuthenticatedUserId();
   if (!userId) return null;
