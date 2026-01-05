@@ -6,6 +6,7 @@ import {
   QueryClientProvider as RQQueryClientProvider,
 } from "@tanstack/react-query";
 import { persistQueryClient } from "@tanstack/react-query-persist-client";
+import { Analytics } from "@vercel/analytics/next";
 import { Provider as ChatProvider } from "ai-sdk-tools";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { MobileNavExtensionProvider } from "./mobile-nav";
@@ -92,6 +93,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             <SidebarExtensionProvider>
               <MobileNavExtensionProvider>
                 {children}
+                <Analytics />
               </MobileNavExtensionProvider>
             </SidebarExtensionProvider>
           </NuqsAdapter>
