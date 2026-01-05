@@ -121,8 +121,10 @@ export function useUpdateTodo() {
       const existingSync = syncPromises.get(id);
       if (existingSync) {
         // Store this update to be processed after the current sync completes
+        // Note: If multiple updates arrive, only the latest one is kept (Map.set overwrites)
         pendingUpdates.set(id, input);
-        // Wait for the existing sync to complete, which will pick up our update
+        // Wait for the existing sync to complete
+        // The existing sync's finally block will pick up and process our update
         await existingSync;
         return;
       }
@@ -227,10 +229,14 @@ export function useUpdateTodo() {
           if (pendingInput) {
             // Clear the pending update and recursively sync it
             pendingUpdates.delete(id);
-            // Note: This recursive call is safe because:
-            // 1. Each call processes exactly one queued update
-            // 2. New updates just overwrite the queue entry, they don't add to the call stack
-            // 3. Failed syncs don't automatically retry
+            // Note: This recursive call is safe from stack overflow because:
+            // 1. Each call processes exactly one queued update (not accumulative)
+            // 2. Multiple rapid updates just overwrite the queue entry (Map.set)
+            // 3. The call stack depth equals the number of times an update arrived
+            //    during an active sync, not total updates. In practice, syncs complete
+            //    much faster than users can type, so depth stays minimal (typically 1-2).
+            // 4. If updates do arrive faster than syncs complete, this serialization
+            //    is still preferable to concurrent DB operations causing data corruption.
             await syncToDb(id, pendingInput);
           }
         }
