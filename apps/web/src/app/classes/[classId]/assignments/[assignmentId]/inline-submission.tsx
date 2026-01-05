@@ -92,7 +92,7 @@ export function InlineSubmission({
 
       {submissionType === undefined ? (
         <SubmissionTypeSelector
-          submissionTypes={[...submissionTypes]}
+          submissionTypes={submissionTypes}
           onSelectType={(type) => setSubmissionType(type)}
         />
       ) : submissionType === "text_entry" ? (

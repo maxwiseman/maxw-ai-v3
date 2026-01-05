@@ -48,13 +48,13 @@ export function TodoListItem({
         subTasks: todo.subTasks ?? null,
       });
     }
-  }, [todo?.checked, todo?.title, todo?.description, todo?.subTasks]);
+  }, [todo]);
 
   useEffect(() => {
     if (expanded && todo?.checked) {
       onExpandChange(false);
     }
-  }, [todo?.checked, expanded, onExpandChange]);
+  }, [todo, expanded, onExpandChange]);
 
   if (!todo) return null;
 

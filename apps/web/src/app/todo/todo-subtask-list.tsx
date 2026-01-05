@@ -20,7 +20,7 @@ export function TodoSubTaskList({
 
   useEffect(() => {
     if (subTasks && subTasks?.length > 0)
-      refs.current[subTasks.findLast(() => true)!.id]?.focus();
+      refs.current[subTasks[subTasks.length - 1]!.id]?.focus();
   }, [subTasks?.length]);
 
   if (subTasks)
@@ -81,4 +81,3 @@ export function TodoSubTaskList({
       </div>
     );
 }
-

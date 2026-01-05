@@ -1,6 +1,6 @@
 "use client";
 
-import { type Icon } from "@tabler/icons-react";
+import type { Icon } from "@tabler/icons-react";
 import Link from "next/link";
 import type { ComponentProps } from "react";
 import { Button } from "@/components/ui/button";
@@ -46,12 +46,12 @@ export function DashboardCard({
           <div>
             {actions
               .filter((act) => act.variant === "default" || !act.variant)
-              .map((action) => (
+              .map((action, index) => (
                 <Button
                   className="-my-1 -mx-2 h-auto p-1 px-2 font-normal text-neutral-400 hover:bg-transparent! hover:text-neutral-600 dark:text-neutral-600 dark:hover:text-neutral-400"
                   size="sm"
                   variant="ghost"
-                  key={JSON.stringify(action)}
+                  key={`${action.text}-${index}`}
                   asChild
                 >
                   <Link href={action.href}>{action.text}</Link>
@@ -63,4 +63,3 @@ export function DashboardCard({
     </Card>
   );
 }
-

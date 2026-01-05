@@ -15,7 +15,7 @@ import {
 const pendingTodos = new Set<string>();
 
 // Debounce timers per todo ID
-const debounceTimers = new Map<string, NodeJS.Timeout>();
+const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 // Track what state we're syncing for each todo to prevent race conditions
 // Maps todo ID to a snapshot of the state when sync was initiated

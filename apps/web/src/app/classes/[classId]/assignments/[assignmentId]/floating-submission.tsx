@@ -365,7 +365,7 @@ export function FloatingSubmission({
         <div className="h-max w-full p-6">
           {submissionType === undefined ? (
             <SubmissionTypeSelector
-              submissionTypes={[...submissionTypes]}
+              submissionTypes={submissionTypes}
               onSelectType={(type) => setSubmissionType(type)}
             />
           ) : submissionType === "text_entry" ? (

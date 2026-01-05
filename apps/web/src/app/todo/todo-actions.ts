@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, gte, isNull, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lt, or } from "drizzle-orm";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { type NewTodo, type Todo, todo } from "@/db/schema/todo";
@@ -83,7 +83,10 @@ export async function getTodayTodos(): Promise<Todo[]> {
         or(
           // Calendar/calendarEvening with scheduledDate today
           and(
-            or(eq(todo.dateType, "calendar"), eq(todo.dateType, "calendarEvening")),
+            or(
+              eq(todo.dateType, "calendar"),
+              eq(todo.dateType, "calendarEvening"),
+            ),
             gte(todo.scheduledDate, today),
             lt(todo.scheduledDate, tomorrow),
           ),

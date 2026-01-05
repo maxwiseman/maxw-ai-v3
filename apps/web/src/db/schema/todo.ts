@@ -41,7 +41,7 @@ export const todo = pgTable("todo", {
     .references(() => user.id, { onDelete: "cascade" }),
 
   // Core fields
-  title: text("title"),
+  title: text("title").notNull().default(""),
   description: text("description"),
   checked: boolean("checked").default(false).notNull(),
 
