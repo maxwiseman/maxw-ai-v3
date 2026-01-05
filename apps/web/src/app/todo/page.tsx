@@ -179,8 +179,8 @@ export default function TodoPage() {
             <Button
               className="-mx-3 justify-start p-0 text-muted-foreground hover:text-muted-foreground"
               variant="ghost"
-              onClick={() => {
-                const id = createTodo({
+              onClick={async () => {
+                const id = await createTodo({
                   defaultDateType: defaultDateTypeForTab,
                   scheduledDate: defaultScheduledDateForTab,
                 });
