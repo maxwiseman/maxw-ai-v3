@@ -81,10 +81,14 @@ export async function getTodayTodos(): Promise<Todo[]> {
         eq(todo.userId, userId),
         eq(todo.checked, false),
         or(
-          eq(todo.when, "today"),
-          eq(todo.when, "evening"),
-          and(gte(todo.scheduledDate, today), lt(todo.scheduledDate, tomorrow)),
-          lt(todo.dueDate, tomorrow), // overdue items
+          // Calendar/calendarEvening with scheduledDate today
+          and(
+            or(eq(todo.dateType, "calendar"), eq(todo.dateType, "calendarEvening")),
+            gte(todo.scheduledDate, today),
+            lt(todo.scheduledDate, tomorrow),
+          ),
+          // Overdue items (due before tomorrow)
+          lt(todo.dueDate, tomorrow),
         ),
       ),
     )
@@ -122,8 +126,7 @@ export async function getAnytimeTodos(): Promise<Todo[]> {
       and(
         eq(todo.userId, userId),
         eq(todo.checked, false),
-        eq(todo.when, "anytime"),
-        isNull(todo.scheduledDate),
+        eq(todo.dateType, "anytime"),
       ),
     )
     .orderBy(desc(todo.createdAt));
@@ -140,7 +143,7 @@ export async function getSomedayTodos(): Promise<Todo[]> {
       and(
         eq(todo.userId, userId),
         eq(todo.checked, false),
-        eq(todo.when, "someday"),
+        eq(todo.dateType, "someday"),
       ),
     )
     .orderBy(desc(todo.createdAt));

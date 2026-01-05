@@ -19,16 +19,16 @@ export function createTodoTools(ctx: AppContext) {
         .string()
         .optional()
         .describe("Optional notes/description for the todo"),
-      when: z
-        .enum(["today", "evening", "anytime", "someday"])
+      dateType: z
+        .enum(["calendar", "calendarEvening", "anytime", "someday"])
         .optional()
         .describe(
-          "When to show this todo: today, evening, anytime (default), or someday",
+          "Date type for scheduling: calendar (specific date), calendarEvening (specific date, evening), anytime (default, no specific date), or someday (deferred)",
         ),
       scheduledDate: z
         .string()
         .optional()
-        .describe("ISO date string for when to work on this task"),
+        .describe("ISO date string for when to work on this task (required for calendar/calendarEvening dateType)"),
       dueDate: z
         .string()
         .optional()
@@ -67,7 +67,7 @@ export function createTodoTools(ctx: AppContext) {
           userId,
           title: input.title,
           description: input.description,
-          when: input.when ?? "anytime",
+          dateType: input.dateType ?? "anytime",
           scheduledDate: input.scheduledDate
             ? new Date(input.scheduledDate)
             : null,
@@ -84,7 +84,7 @@ export function createTodoTools(ctx: AppContext) {
         todo: {
           id: created.id,
           title: created.title,
-          when: created.when,
+          dateType: created.dateType,
           dueDate: created.dueDate?.toISOString(),
           subTaskCount: subTasks?.length ?? 0,
         },
@@ -104,10 +104,10 @@ export function createTodoTools(ctx: AppContext) {
         .boolean()
         .optional()
         .describe("Mark as complete (true) or incomplete (false)"),
-      when: z
-        .enum(["today", "evening", "anytime", "someday"])
+      dateType: z
+        .enum(["calendar", "calendarEvening", "anytime", "someday"])
         .optional()
-        .describe("Change when to show this todo"),
+        .describe("Change the date type for scheduling"),
       scheduledDate: z
         .string()
         .optional()
@@ -128,7 +128,7 @@ export function createTodoTools(ctx: AppContext) {
         updateData.checked = input.checked;
         updateData.completedAt = input.checked ? new Date() : null;
       }
-      if (input.when !== undefined) updateData.when = input.when;
+      if (input.dateType !== undefined) updateData.dateType = input.dateType;
       if (input.scheduledDate !== undefined)
         updateData.scheduledDate = new Date(input.scheduledDate);
       if (input.dueDate !== undefined)
@@ -148,7 +148,7 @@ export function createTodoTools(ctx: AppContext) {
           id: updated.id,
           title: updated.title,
           checked: updated.checked,
-          when: updated.when,
+          dateType: updated.dateType,
         },
       };
     },
@@ -215,12 +215,13 @@ export function createTodoTools(ctx: AppContext) {
                 eq(todo.userId, userId),
                 input.includeCompleted ? undefined : eq(todo.checked, false),
                 or(
-                  eq(todo.when, "today"),
-                  eq(todo.when, "evening"),
+                  // Calendar/calendarEvening with scheduledDate today
                   and(
+                    or(eq(todo.dateType, "calendar"), eq(todo.dateType, "calendarEvening")),
                     gte(todo.scheduledDate, today),
                     lt(todo.scheduledDate, tomorrow),
                   ),
+                  // Overdue items
                   lt(todo.dueDate, tomorrow),
                 ),
               ),
@@ -252,8 +253,7 @@ export function createTodoTools(ctx: AppContext) {
               and(
                 eq(todo.userId, userId),
                 input.includeCompleted ? undefined : eq(todo.checked, false),
-                eq(todo.when, "anytime"),
-                isNull(todo.scheduledDate),
+                eq(todo.dateType, "anytime"),
               ),
             )
             .orderBy(desc(todo.createdAt))
@@ -268,7 +268,7 @@ export function createTodoTools(ctx: AppContext) {
               and(
                 eq(todo.userId, userId),
                 input.includeCompleted ? undefined : eq(todo.checked, false),
-                eq(todo.when, "someday"),
+                eq(todo.dateType, "someday"),
               ),
             )
             .orderBy(desc(todo.createdAt))
@@ -311,7 +311,7 @@ export function createTodoTools(ctx: AppContext) {
           id: t.id,
           title: t.title,
           checked: t.checked,
-          when: t.when,
+          dateType: t.dateType,
           dueDate: t.dueDate?.toISOString(),
           scheduledDate: t.scheduledDate?.toISOString(),
           subTasksCount: t.subTasks?.length ?? 0,

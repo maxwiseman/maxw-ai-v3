@@ -10,10 +10,10 @@ import {
 } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 
-// Things 3 style "when" enum
-export const todoWhenEnum = pgEnum("todo_when", [
-  "today",
-  "evening",
+// Date type enum for scheduling
+export const dateTypeEnum = pgEnum("date_type", [
+  "calendar",
+  "calendarEvening",
   "anytime",
   "someday",
 ]);
@@ -24,7 +24,6 @@ export const canvasContentTypeEnum = pgEnum("canvas_content_type", [
   "page",
   "quiz",
   "discussion",
-  "module_item",
 ]);
 
 // Subtask type for JSONB storage
@@ -42,13 +41,13 @@ export const todo = pgTable("todo", {
     .references(() => user.id, { onDelete: "cascade" }),
 
   // Core fields
-  title: text("title").notNull(),
+  title: text("title"),
   description: text("description"),
   checked: boolean("checked").default(false).notNull(),
 
-  // Things 3 style scheduling
-  when: todoWhenEnum("when").default("anytime"),
-  scheduledDate: timestamp("scheduled_date"), // when to work on it
+  // Scheduling
+  dateType: dateTypeEnum("date_type").default("anytime"),
+  scheduledDate: timestamp("scheduled_date"), // when to work on it (for calendar/calendarEvening)
   dueDate: timestamp("due_date"), // deadline
 
   // Subtasks as JSONB
@@ -60,8 +59,8 @@ export const todo = pgTable("todo", {
   canvasClassId: integer("canvas_class_id"),
 
   // Organization (Things 3 style)
-  area: text("area"),
-  project: text("project"),
+  // area: text("area"),
+  // project: text("project"),
 
   // Metadata
   completedAt: timestamp("completed_at"),
