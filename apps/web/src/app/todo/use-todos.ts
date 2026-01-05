@@ -217,14 +217,20 @@ export function useUpdateTodo() {
             }
           }
         } finally {
-          // Clean up: remove the sync promise
+          // Clean up: remove the sync promise first
+          // This allows new updates to start fresh sync operations
           syncPromises.delete(id);
 
           // Check if there's a pending update that arrived while we were syncing
+          // Any update queued after this point will start a new sync operation
           const pendingInput = pendingUpdates.get(id);
           if (pendingInput) {
-            // Recursively sync the pending update
+            // Clear the pending update and recursively sync it
             pendingUpdates.delete(id);
+            // Note: This recursive call is safe because:
+            // 1. Each call processes exactly one queued update
+            // 2. New updates just overwrite the queue entry, they don't add to the call stack
+            // 3. Failed syncs don't automatically retry
             await syncToDb(id, pendingInput);
           }
         }
