@@ -43,11 +43,33 @@ function hydrateTodosDates(todos: Todo[]): Todo[] {
   return todos.map(hydrateTodoDates);
 }
 
+function mergeUpdate(
+  prev: Partial<Omit<NewTodo, "id" | "userId" | "createdAt" | "updatedAt">>,
+  next: Partial<Omit<NewTodo, "id" | "userId" | "createdAt" | "updatedAt">>,
+) {
+  return { ...prev, ...next };
+}
+
+function getDebounceMsForUpdate(
+  input: Partial<Omit<NewTodo, "id" | "userId" | "createdAt" | "updatedAt">>,
+) {
+  // Typing is the highest-frequency operation. Give it a slightly longer debounce
+  // to reduce the likelihood of overlapping syncs under network latency.
+  if (input.title !== undefined || input.description !== undefined) return 750;
+  return 300;
+}
+
 // Track todos that haven't been saved to DB yet
 const pendingTodos = new Set<string>();
 
 // Debounce timers per todo ID
 const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+// Coalesce updates per todo ID so rapid successive changes become a single payload.
+const debouncedUpdates = new Map<
+  string,
+  Partial<Omit<NewTodo, "id" | "userId" | "createdAt" | "updatedAt">>
+>();
 
 // Track what state we're syncing for each todo to prevent race conditions
 // Maps todo ID to a snapshot of the state when sync was initiated
@@ -193,7 +215,10 @@ export function useUpdateTodo() {
         // - pass the client-generated `id` so it stays stable (prevents UI collapse/un-expand on sync)
         // - send the *current full todo state* (not just the incremental patch), otherwise defaults like
         //   dateType/scheduledDate can be lost and the item can "jump" tabs after the first edit.
-        const createPayload: Omit<NewTodo, "userId" | "createdAt" | "updatedAt"> = {
+        const createPayload: Omit<
+          NewTodo,
+          "userId" | "createdAt" | "updatedAt"
+        > = {
           id,
           title: currentTodo.title,
           description: currentTodo.description,
@@ -309,16 +334,23 @@ export function useUpdateTodo() {
         return old.map((t) => (t.id === id ? updatedTodo : t));
       });
 
-      // Debounce DB sync
+      // Debounce DB sync (coalesced per-todo)
       const existingTimer = debounceTimers.get(id);
       if (existingTimer) {
         clearTimeout(existingTimer);
       }
 
+      const existingUpdate = debouncedUpdates.get(id) ?? {};
+      debouncedUpdates.set(id, mergeUpdate(existingUpdate, input));
+
+      const debounceMs = getDebounceMsForUpdate(input);
+
       const timer = setTimeout(() => {
-        syncToDb(id, input);
+        const merged = debouncedUpdates.get(id) ?? input;
+        debouncedUpdates.delete(id);
+        syncToDb(id, merged);
         debounceTimers.delete(id);
-      }, 300);
+      }, debounceMs);
 
       debounceTimers.set(id, timer);
     },
