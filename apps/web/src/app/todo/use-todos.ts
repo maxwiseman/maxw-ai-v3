@@ -176,6 +176,13 @@ export function useUpdateTodo() {
 
             return old.map((t) => (t.id === id ? created : t));
           });
+        } else {
+          // Creation failed (e.g., authentication failure) - clean up pending todo
+          pendingTodos.delete(id);
+          syncSnapshots.delete(id);
+          queryClient.setQueryData<Todo[]>(TODOS_QUERY_KEY, (old = []) =>
+            old.filter((t) => t.id !== id),
+          );
         }
       } else {
         // Update existing todo
