@@ -37,7 +37,7 @@ export function TodoListItem({
     description: todo?.description ?? null,
     subTasks: todo?.subTasks ?? null,
   });
-  const timerRef = useRef<NodeJS.Timeout>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (todo) {
