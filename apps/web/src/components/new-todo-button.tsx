@@ -23,11 +23,19 @@ import {
 } from "./ui/dialog";
 import { Field, FieldContent, FieldGroup, FieldLabel } from "./ui/field";
 import { Input } from "./ui/input";
+import { Spinner } from "./ui/spinner";
 import { Textarea } from "./ui/textarea";
 
-export function TodoButton({ name, dueDate, description }: GenerateTodoInput) {
+export function TodoButton({
+  name,
+  dueDate,
+  description,
+  assignmentId,
+  classId,
+}: GenerateTodoInput & { assignmentId: number; classId: number }) {
   const [open, setOpen] = useState(false);
   const createTodo = useCreateTodo();
+  const [submitting, setSubmitting] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -53,7 +61,9 @@ export function TodoButton({ name, dueDate, description }: GenerateTodoInput) {
   }, [data]);
 
   const handleAdd = () => {
+    setSubmitting(true);
     createTodo({
+      insertIntoDb: true,
       title,
       description: notes || null,
       scheduledDate: date ?? null,
@@ -66,6 +76,11 @@ export function TodoButton({ name, dueDate, description }: GenerateTodoInput) {
               checked: false,
             }))
           : null,
+      canvasContentType: "assignment",
+      canvasClassId: classId,
+      canvasContentId: assignmentId,
+    }).then(() => {
+      setSubmitting(false);
     });
     setOpen(false);
   };
@@ -81,7 +96,11 @@ export function TodoButton({ name, dueDate, description }: GenerateTodoInput) {
         asChild
       >
         <Button variant="outline">
-          <IconPlus className="text-muted-foreground" />
+          {submitting ? (
+            <Spinner className="text-muted-foreground" />
+          ) : (
+            <IconPlus className="text-muted-foreground" />
+          )}
           Add todo
         </Button>
       </DialogTrigger>

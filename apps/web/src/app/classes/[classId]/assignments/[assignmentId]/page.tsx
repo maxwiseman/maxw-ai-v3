@@ -42,6 +42,35 @@ export const unstable_prefetch = {
   ],
 };
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ classId: string; assignmentId: string }>;
+}) {
+  const awaitedParams = await params;
+  const authData = await auth.api.getSession({ headers: await headers() });
+  if (!authData)
+    return {
+      title: "Assignment Not Found",
+    };
+  const data = await fetchData({
+    userId: authData.user.id,
+    classId: awaitedParams.classId,
+    assignmentId: awaitedParams.assignmentId,
+  });
+  if (typeof data === "string") {
+    return {
+      title: "Assignment Not Found",
+    };
+  }
+  return {
+    title: data?.name,
+    description: data?.description
+      ? data.description.replace(/<[^>]+>/g, "").slice(0, 160)
+      : "No description",
+  };
+}
+
 export default async function AssignmentPage({
   params: paramsPromise,
 }: {
@@ -76,7 +105,9 @@ export default async function AssignmentPage({
           <TodoButton
             name={data.name}
             dueDate={data.due_at}
-            description={data.description}
+            description={data.description ?? "No description"}
+            assignmentId={data.id}
+            classId={Number(params.classId)}
           />
           <Button asChild>
             <a target="_blank" href={data.html_url}>
@@ -87,7 +118,7 @@ export default async function AssignmentPage({
         </PageHeaderActions>
       </PageHeader>
       <CanvasHTML className="min-h-96 px-8 pb-8">
-        {data?.description.length === 0 ? "No description" : data.description}
+        {data?.description?.length === 0 ? "No description" : data.description}
       </CanvasHTML>
       {data.submission_types.length >= 1 && (
         <SubmissionProvider

@@ -118,7 +118,7 @@ export interface CanvasAssignment {
   readonly id: AssignmentId;
   readonly course_id: CourseId;
   readonly name: string;
-  readonly description: string;
+  readonly description?: string;
   readonly due_at: string | null;
   readonly lock_at: string | null;
   readonly unlock_at: string | null;

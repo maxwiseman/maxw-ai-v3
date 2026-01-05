@@ -12,6 +12,7 @@ import {
 } from "@tabler/icons-react";
 // import { useModulesState } from "../../modules-store";
 import { eq } from "drizzle-orm";
+import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
 import type { Prefetch } from "next/dist/build/segment-config/app/app-segment-config";
 import { headers } from "next/headers";
@@ -57,6 +58,10 @@ export const unstable_prefetch: Prefetch = {
       ],
     },
   ],
+};
+
+export const metadata: Metadata = {
+  title: "Modules",
 };
 
 export default async function ClassModulesPage({

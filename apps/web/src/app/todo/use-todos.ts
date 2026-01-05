@@ -118,14 +118,18 @@ export function useLogbook(limit?: number) {
 }
 
 /**
- * Hook to create a new todo locally (optimistic)
- * Returns a function that creates a todo and returns its ID
+ * Hook to create a new todo.
+ *
+ * Default behavior: cache-only (optimistic), marked as "pending" until later edits sync it.
+ * Optional behavior: immediately insert into DB (still updates cache first).
+ *
+ * Returns a function that creates a todo and returns its ID.
  */
 export function useCreateTodo() {
   const queryClient = useQueryClient();
 
   return useCallback(
-    (
+    async (
       input?: Partial<
         Omit<NewTodo, "id" | "userId" | "createdAt" | "updatedAt">
       > & {
@@ -134,20 +138,26 @@ export function useCreateTodo() {
          * Useful for creating a todo from a specific tab (e.g. Today/Upcoming/Someday).
          */
         defaultDateType?: NonNullable<NewTodo["dateType"]>;
+
+        /**
+         * If true, create the todo in the DB immediately.
+         * Defaults to false (cache-only).
+         */
+        insertIntoDb?: boolean;
       },
     ) => {
       const id = crypto.randomUUID();
       const now = new Date();
 
-      // Mark as pending
-      pendingTodos.add(id);
-
       const resolvedDateType =
         input?.dateType ?? input?.defaultDateType ?? "anytime";
 
+      // Mark as pending by default (will be cleared if/when DB insert succeeds)
+      pendingTodos.add(id);
+
       // Optimistically add to cache
       queryClient.setQueryData<Todo[]>(TODOS_QUERY_KEY, (old = []) => {
-        // Using type assertion since userId will be set by server response
+        // Using placeholder since userId will be set by server response
         const todoForCache: Todo = {
           id,
           userId: "pending", // Placeholder, will be replaced by server
@@ -167,6 +177,43 @@ export function useCreateTodo() {
         };
         return [...old, todoForCache];
       });
+
+      if (input?.insertIntoDb) {
+        const createPayload: Omit<
+          NewTodo,
+          "userId" | "createdAt" | "updatedAt"
+        > = {
+          id,
+          title: input?.title ?? "",
+          description: input?.description ?? null,
+          checked: input?.checked ?? false,
+          dateType: resolvedDateType,
+          scheduledDate: input?.scheduledDate ?? null,
+          dueDate: input?.dueDate ?? null,
+          subTasks: input?.subTasks ?? null,
+          canvasContentType: input?.canvasContentType ?? null,
+          canvasContentId: input?.canvasContentId ?? null,
+          canvasClassId: input?.canvasClassId ?? null,
+          completedAt: null,
+        };
+
+        const created = await createTodo(createPayload);
+
+        if (created) {
+          pendingTodos.delete(id);
+
+          // Replace cache item with server result (preserving client-generated ID)
+          queryClient.setQueryData<Todo[]>(TODOS_QUERY_KEY, (old = []) =>
+            old.map((t) => (t.id === id ? created : t)),
+          );
+        } else {
+          // If creation failed, remove the optimistic item so we don't get stuck in "pending"
+          pendingTodos.delete(id);
+          queryClient.setQueryData<Todo[]>(TODOS_QUERY_KEY, (old = []) =>
+            old.filter((t) => t.id !== id),
+          );
+        }
+      }
 
       return id;
     },
