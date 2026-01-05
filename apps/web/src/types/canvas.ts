@@ -127,6 +127,7 @@ export interface CanvasAssignment {
   readonly submission_types: ReadonlyArray<CanvasSubmissionType>;
   readonly assignment_group_id: number;
   readonly assignment_group?: CanvasAssignmentGroup;
+  readonly allowed_attempts?: number;
   readonly rubric?: CanvasRubric[];
   readonly rubric_settings?: CanvasRubricSettings;
   readonly allowed_extensions?: string[];
@@ -489,6 +490,7 @@ export interface CanvasPage {
   body: string;
   created_at: string;
   updated_at: string;
+  todo_date?: string;
   published: boolean;
   front_page: boolean;
   locked_for_user: boolean;
