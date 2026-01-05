@@ -7,7 +7,7 @@ import {
   type GenerateTodoInput,
   generateTodo,
 } from "@/app/actions/generate-todo";
-import { useTodoList } from "@/app/todo/todo-store";
+import { useCreateTodo } from "@/app/todo/use-todos";
 import { cn } from "@/lib/utils";
 import { DatePicker } from "./date-picker";
 import { Button } from "./ui/button";
@@ -27,7 +27,7 @@ import { Textarea } from "./ui/textarea";
 
 export function TodoButton({ name, dueDate, description }: GenerateTodoInput) {
   const [open, setOpen] = useState(false);
-  const addTask = useTodoList((state) => state.addTask);
+  const createTodo = useCreateTodo();
 
   // Form state
   const [title, setTitle] = useState("");
@@ -53,12 +53,11 @@ export function TodoButton({ name, dueDate, description }: GenerateTodoInput) {
   }, [data]);
 
   const handleAdd = () => {
-    addTask({
+    createTodo({
       title,
-      checked: false,
-      description: notes || undefined,
-      date,
-      dueDate: taskDueDate,
+      description: notes || null,
+      scheduledDate: date ?? null,
+      dueDate: taskDueDate ?? null,
       subTasks:
         subTasks.length > 0
           ? subTasks.map((st) => ({
@@ -66,7 +65,7 @@ export function TodoButton({ name, dueDate, description }: GenerateTodoInput) {
               title: st,
               checked: false,
             }))
-          : undefined,
+          : null,
     });
     setOpen(false);
   };

@@ -2,6 +2,7 @@ import { openai } from "@ai-sdk/openai";
 import { searchContentTool } from "../tools/canvas/search-content";
 import { createWebSearchTool } from "../tools/search";
 import { createStudySetTool } from "../tools/study/flashcards";
+import { createTodoTools } from "../tools/todo";
 import { secretaryAgent } from "./secretary";
 // Import specialists for handoffs
 import { type AppContext, createAgent, formatContextForLLM } from "./shared";
@@ -56,6 +57,7 @@ ${formatContextForLLM(ctx)}`,
     webSearch: createWebSearchTool(ctx),
     searchContent: searchContentTool,
     createStudySet: createStudySetTool,
+    ...createTodoTools(ctx),
   }),
   handoffs: [secretaryAgent, studyAgent],
   matchOn: [

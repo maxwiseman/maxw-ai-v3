@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 interface SubmissionTypeSelectorProps {
   onSelectType: (type: "text_entry" | "file_upload") => void;
-  submissionTypes: string[];
+  submissionTypes: readonly string[];
 }
 
 export function SubmissionTypeSelector({

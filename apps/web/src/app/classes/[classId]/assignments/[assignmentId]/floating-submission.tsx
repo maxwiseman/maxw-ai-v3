@@ -178,7 +178,7 @@ export function FloatingSubmission({
 
   // Update max height on window resize (throttled)
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
     const updateMaxHeight = () => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
