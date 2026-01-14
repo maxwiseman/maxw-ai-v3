@@ -1,9 +1,8 @@
-"use cache: private";
+"use client";
 
-import { eq } from "drizzle-orm";
-import { cacheLife } from "next/cache";
-import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+export const dynamic = "force-static";
+
+import { useParams } from "next/navigation";
 import { CanvasHTML } from "@/components/canvas-html";
 import { NotAuthenticated } from "@/components/not-authenticated";
 import {
@@ -12,49 +11,52 @@ import {
   PageHeaderDescription,
   PageHeaderTitle,
 } from "@/components/page-header";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
-import { auth } from "@/lib/auth";
+import { Skeleton } from "@/components/ui/skeleton";
+import { authClient } from "@/lib/auth-client";
 import { toTitleCase } from "@/lib/utils";
-import type { CanvasCourse, CanvasPage } from "@/types/canvas";
+import { useClassWithFrontPage } from "../use-classes";
 
-export const unstable_prefetch = {
-  mode: "runtime",
-  samples: [
-    {
-      cookies: [
-        {
-          name: "better-auth.session_token",
-          value:
-            "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D",
-        },
-      ],
-    },
-  ],
-};
+export default function ClassPage() {
+  const params = useParams<{ classId: string }>();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const { classData, frontPageData, isLoading, isError } =
+    useClassWithFrontPage(params.classId);
 
-export default async function ClassPage({
-  params: paramsPromise,
-}: {
-  params: Promise<{ classId: string }>;
-}) {
-  cacheLife("max");
-  const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) return <NotAuthenticated />;
-  const params = await paramsPromise;
+  if (sessionPending) {
+    return <ClassPageSkeleton />;
+  }
 
-  const data = await fetchData({ ...params, userId: authData.user.id });
-  if (typeof data === "string") notFound();
-  const { frontPageData, classData } = data;
-  // const { data, isPending } = useQuery({
-  //   queryFn: () => getCanvasCourse(params),
-  //   queryKey: ["canvas-course", params.classId],
-  // });
-  // const { data: frontPageData } = useQuery({
-  //   queryFn: () => getFrontPage(params),
-  //   queryKey: ["canvas-course", params.classId, "frontpage"],
-  //   enabled: typeof data === "object" && data.default_view === "wiki",
-  // });
+  if (!session?.user) {
+    return <NotAuthenticated />;
+  }
+
+  if (isLoading) {
+    return <ClassPageSkeleton />;
+  }
+
+  if (
+    isError ||
+    typeof classData === "string" ||
+    typeof frontPageData === "string"
+  ) {
+    return (
+      <div className="grid size-full max-h-96 place-items-center text-muted-foreground">
+        {typeof classData === "string"
+          ? classData
+          : typeof frontPageData === "string"
+            ? frontPageData
+            : "Error loading class"}
+      </div>
+    );
+  }
+
+  if (!classData) {
+    return (
+      <div className="grid size-full max-h-96 place-items-center text-muted-foreground">
+        Class not found
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -70,41 +72,27 @@ export default async function ClassPage({
           </PageHeaderDescription>
         </PageHeaderContent>
       </PageHeader>
-      {typeof frontPageData === "object" && (
+      {typeof frontPageData === "object" && frontPageData?.body && (
         <CanvasHTML className="px-8">{frontPageData.body}</CanvasHTML>
       )}
     </div>
   );
 }
 
-async function fetchData({
-  classId,
-  userId,
-}: {
-  classId: string;
-  userId: string;
-}) {
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, userId) })
-  )?.settings;
-
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured";
-  const classData = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}?include[]=teachers`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasCourse;
-  const frontPageData = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/front_page`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasPage;
-  return { classData, frontPageData };
+function ClassPageSkeleton() {
+  return (
+    <div>
+      <PageHeader>
+        <PageHeaderContent>
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="mt-2 h-5 w-40" />
+        </PageHeaderContent>
+      </PageHeader>
+      <div className="space-y-4 px-8 pb-8">
+        <Skeleton className="h-4 w-full max-w-2xl" />
+        <Skeleton className="h-4 w-full max-w-xl" />
+        <Skeleton className="h-4 w-full max-w-lg" />
+      </div>
+    </div>
+  );
 }

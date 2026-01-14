@@ -1,10 +1,9 @@
-"use cache: private";
+"use client";
+
+export const dynamic = "force-static";
 
 import { IconPlus } from "@tabler/icons-react";
-import { eq } from "drizzle-orm";
-import { cacheLife } from "next/cache";
-import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { useParams } from "next/navigation";
 import { CanvasHTML } from "@/components/canvas-html";
 import { NotAuthenticated } from "@/components/not-authenticated";
 import {
@@ -14,41 +13,42 @@ import {
   PageHeaderTitle,
 } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
-import { auth } from "@/lib/auth";
-import type { CanvasPage } from "@/types/canvas";
+import { Skeleton } from "@/components/ui/skeleton";
+import { authClient } from "@/lib/auth-client";
+import { usePage } from "../../../use-classes";
 
-export const unstable_prefetch = {
-  mode: "runtime",
-  samples: [
-    {
-      params: {
-        classId: "1234567",
-        pageId: "1234567",
-      },
-      cookies: [
-        {
-          name: "better-auth.session_token",
-          value:
-            "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D",
-        },
-      ],
-    },
-  ],
-};
+export default function PagePage() {
+  const params = useParams<{ classId: string; pageId: string }>();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const { data, isLoading, isError } = usePage(params.classId, params.pageId);
 
-export default async function AssignmentPage({
-  params: paramsPromise,
-}: {
-  params: Promise<{ classId: string; pageId: string }>;
-}) {
-  cacheLife("weeks");
-  const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) return <NotAuthenticated />;
-  const params = await paramsPromise;
-  const data = await fetchData({ userId: authData.user.id, ...params });
-  if (typeof data === "string") notFound();
+  if (sessionPending) {
+    return <PageSkeleton />;
+  }
+
+  if (!session?.user) {
+    return <NotAuthenticated />;
+  }
+
+  if (isLoading) {
+    return <PageSkeleton />;
+  }
+
+  if (isError || typeof data === "string") {
+    return (
+      <div className="grid size-full max-h-96 place-items-center text-muted-foreground">
+        {typeof data === "string" ? data : "Error loading page"}
+      </div>
+    );
+  }
+
+  if (!data || "message" in data) {
+    return (
+      <div className="grid size-full max-h-96 place-items-center text-muted-foreground">
+        {data && "message" in data ? data.message : "Page not found"}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -68,28 +68,23 @@ export default async function AssignmentPage({
   );
 }
 
-async function fetchData({
-  classId,
-  pageId,
-  userId,
-}: {
-  classId: string;
-  pageId: string;
-  userId: string;
-}) {
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, userId) })
-  )?.settings;
-
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured";
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/pages/${pageId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasPage;
-  return data;
+function PageSkeleton() {
+  return (
+    <div>
+      <PageHeader className="flex-wrap">
+        <PageHeaderContent>
+          <Skeleton className="h-10 w-64" />
+        </PageHeaderContent>
+        <PageHeaderActions>
+          <Skeleton className="h-9 w-24" />
+        </PageHeaderActions>
+      </PageHeader>
+      <div className="space-y-4 px-8 pb-8">
+        <Skeleton className="h-4 w-full max-w-2xl" />
+        <Skeleton className="h-4 w-full max-w-xl" />
+        <Skeleton className="h-4 w-full max-w-lg" />
+        <Skeleton className="h-4 w-full max-w-md" />
+      </div>
+    </div>
+  );
 }

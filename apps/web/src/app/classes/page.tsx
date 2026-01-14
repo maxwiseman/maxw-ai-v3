@@ -1,8 +1,5 @@
-"use cache: private";
+"use client";
 
-import { eq } from "drizzle-orm";
-import { cacheLife } from "next/cache";
-import { headers } from "next/headers";
 import Link from "next/link";
 import { NotAuthenticated } from "@/components/not-authenticated";
 import {
@@ -13,33 +10,23 @@ import {
 } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
-import { auth } from "@/lib/auth";
+import { Skeleton } from "@/components/ui/skeleton";
+import { authClient } from "@/lib/auth-client";
 import { toTitleCase } from "@/lib/utils";
 import type { CanvasCourse } from "@/types/canvas";
+import { useCanvasCourses } from "./use-classes";
 
-export const unstable_prefetch = {
-  mode: "runtime",
-  samples: [
-    {
-      cookies: [
-        {
-          name: "better-auth.session_token",
-          value:
-            "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D",
-        },
-      ],
-    },
-  ],
-};
+export default function ClassesPage() {
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const { data, isLoading, isError } = useCanvasCourses();
 
-export default async function ClassesPage() {
-  cacheLife("max");
-  const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData?.user) return <NotAuthenticated />;
+  if (sessionPending) {
+    return <ClassesLoadingSkeleton />;
+  }
 
-  const data = await getAllCanvasCourses({ userId: authData.user.id });
+  if (!session?.user) {
+    return <NotAuthenticated />;
+  }
 
   return (
     <div>
@@ -51,15 +38,17 @@ export default async function ClassesPage() {
           </PageHeaderDescription>
         </PageHeaderContent>
       </PageHeader>
-      {typeof data === "object" ? (
-        <div className="grid grid-cols-1 gap-4 px-8 pb-8 sm:grid-cols-2 lg:grid-cols-3">
-          {data.map((course) => (
-            <ClassCard key={course.id} {...course} />
-          ))}
+      {isLoading ? (
+        <ClassesGridSkeleton />
+      ) : isError || typeof data === "string" ? (
+        <div className="grid size-full max-h-96 place-items-center text-muted-foreground">
+          {typeof data === "string" ? data : "Error loading classes"}
         </div>
       ) : (
-        <div className="grid size-full max-h-96 place-items-center text-muted-foreground">
-          Error
+        <div className="grid grid-cols-1 gap-4 px-8 pb-8 sm:grid-cols-2 lg:grid-cols-3">
+          {data?.map((course) => (
+            <ClassCard key={course.id} {...course} />
+          ))}
         </div>
       )}
     </div>
@@ -88,20 +77,38 @@ function ClassCard(courseData: CanvasCourse) {
   );
 }
 
-async function getAllCanvasCourses({ userId }: { userId: string }) {
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, userId) })
-  )?.settings;
+function ClassesLoadingSkeleton() {
+  return (
+    <div>
+      <PageHeader>
+        <PageHeaderContent>
+          <PageHeaderTitle>Your Classes</PageHeaderTitle>
+          <PageHeaderDescription>
+            Get your work done, or have it done for you
+          </PageHeaderDescription>
+        </PageHeaderContent>
+      </PageHeader>
+      <ClassesGridSkeleton />
+    </div>
+  );
+}
 
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured";
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses?enrollment_state=active&per_page=50&include[]=teachers`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasCourse[];
-  return data;
+function ClassesGridSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-4 px-8 pb-8 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={`skeleton-${i}`}
+          className="flex h-auto flex-col items-start gap-0 rounded-md border bg-background p-0"
+        >
+          <div className="block w-full p-4 pb-0">
+            <Skeleton className="h-6 w-3/4" />
+          </div>
+          <div className="w-full p-4 pt-2">
+            <Skeleton className="h-5 w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }

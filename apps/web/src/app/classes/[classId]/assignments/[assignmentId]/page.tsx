@@ -1,9 +1,8 @@
-"use cache: private";
+"use client";
 
-import { eq } from "drizzle-orm";
-import { cacheLife } from "next/cache";
-import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+export const dynamic = "force-static";
+
+import { useParams } from "next/navigation";
 import { CanvasHTML } from "@/components/canvas-html";
 import { CanvasLogo } from "@/components/custom-icons";
 import { DateDisplay } from "@/components/date-display";
@@ -17,71 +16,46 @@ import {
   PageHeaderTitle,
 } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
-import { auth } from "@/lib/auth";
-import type { CanvasAssignment } from "@/types/canvas";
+import { Skeleton } from "@/components/ui/skeleton";
+import { authClient } from "@/lib/auth-client";
+import { useAssignment } from "../../../use-classes";
 import { SubmissionProvider } from "./submission-provider";
 
-export const unstable_prefetch = {
-  mode: "runtime",
-  samples: [
-    {
-      params: {
-        classId: "1234567",
-        assignmentId: "1234567",
-      },
-      cookies: [
-        {
-          name: "better-auth.session_token",
-          value:
-            "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D",
-        },
-      ],
-    },
-  ],
-};
+export default function AssignmentPage() {
+  const params = useParams<{ classId: string; assignmentId: string }>();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const { data, isLoading, isError } = useAssignment(
+    params.classId,
+    params.assignmentId,
+  );
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ classId: string; assignmentId: string }>;
-}) {
-  const awaitedParams = await params;
-  const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData)
-    return {
-      title: "Assignment Not Found",
-    };
-  const data = await fetchData({
-    userId: authData.user.id,
-    classId: awaitedParams.classId,
-    assignmentId: awaitedParams.assignmentId,
-  });
-  if (typeof data === "string") {
-    return {
-      title: "Assignment Not Found",
-    };
+  if (sessionPending) {
+    return <AssignmentPageSkeleton />;
   }
-  return {
-    title: data?.name,
-    description: data?.description
-      ? data.description.replace(/<[^>]+>/g, "").slice(0, 160)
-      : "No description",
-  };
-}
 
-export default async function AssignmentPage({
-  params: paramsPromise,
-}: {
-  params: Promise<{ classId: string; assignmentId: string }>;
-}) {
-  cacheLife("weeks");
-  const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) return <NotAuthenticated />;
-  const params = await paramsPromise;
-  const data = await fetchData({ userId: authData.user.id, ...params });
-  if (typeof data === "string") notFound();
+  if (!session?.user) {
+    return <NotAuthenticated />;
+  }
+
+  if (isLoading) {
+    return <AssignmentPageSkeleton />;
+  }
+
+  if (isError || typeof data === "string") {
+    return (
+      <div className="grid size-full max-h-96 place-items-center text-muted-foreground">
+        {typeof data === "string" ? data : "Error loading assignment"}
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="grid size-full max-h-96 place-items-center text-muted-foreground">
+        Assignment not found
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -90,10 +64,6 @@ export default async function AssignmentPage({
           <PageHeaderTitle>{data?.name}</PageHeaderTitle>
           {data?.due_at && (
             <PageHeaderDescription className="text-lg">
-              {/*{new Date(data?.due_at).toLocaleString("en-us", {
-                timeStyle: "short",
-                dateStyle: "medium",
-              })}*/}
               <DateDisplay
                 date={data?.due_at}
                 options={{ timeStyle: "short", dateStyle: "medium" }}
@@ -131,37 +101,25 @@ export default async function AssignmentPage({
   );
 }
 
-async function fetchData({
-  classId,
-  assignmentId,
-  userId,
-  filter,
-}: {
-  classId: string;
-  assignmentId?: string;
-  userId: string;
-  filter?:
-    | "past"
-    | "overdue"
-    | "undated"
-    | "ungraded"
-    | "unsubmitted"
-    | "upcoming"
-    | "future";
-}) {
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, userId) })
-  )?.settings;
-
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured";
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/assignments/${assignmentId}${filter !== undefined ? `?bucket=${filter}` : ""}`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasAssignment;
-  return data;
+function AssignmentPageSkeleton() {
+  return (
+    <div>
+      <PageHeader className="flex-wrap">
+        <PageHeaderContent>
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="mt-2 h-6 w-32" />
+        </PageHeaderContent>
+        <PageHeaderActions>
+          <Skeleton className="h-9 w-24" />
+          <Skeleton className="h-9 w-36" />
+        </PageHeaderActions>
+      </PageHeader>
+      <div className="min-h-96 space-y-4 px-8 pb-8">
+        <Skeleton className="h-4 w-full max-w-2xl" />
+        <Skeleton className="h-4 w-full max-w-xl" />
+        <Skeleton className="h-4 w-full max-w-lg" />
+        <Skeleton className="h-4 w-full max-w-md" />
+      </div>
+    </div>
+  );
 }

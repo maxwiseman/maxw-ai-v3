@@ -1,4 +1,6 @@
-"use cache: private";
+"use client";
+
+export const dynamic = "force-static";
 
 import {
   type Icon,
@@ -10,14 +12,8 @@ import {
   IconMessage,
   IconNotebook,
 } from "@tabler/icons-react";
-// import { useModulesState } from "../../modules-store";
-import { eq } from "drizzle-orm";
-import type { Metadata } from "next";
-import { cacheLife } from "next/cache";
-import type { Prefetch } from "next/dist/build/segment-config/app/app-segment-config";
-import { headers } from "next/headers";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { useParams } from "next/navigation";
 import type { ComponentProps } from "react";
 import { DateDisplay } from "@/components/date-display";
 import { NotAuthenticated } from "@/components/not-authenticated";
@@ -32,55 +28,36 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
-import { auth } from "@/lib/auth";
+import { Skeleton } from "@/components/ui/skeleton";
+import { authClient } from "@/lib/auth-client";
 import { moduleItemDetailsUrl } from "@/lib/canvas-helpers";
-import type {
-  CanvasModule,
-  CanvasModuleItem,
-  CanvasModuleItemType,
-} from "@/types/canvas";
+import type { CanvasModuleItem, CanvasModuleItemType } from "@/types/canvas";
+import { useClassModules } from "../../use-classes";
 
-export const unstable_prefetch: Prefetch = {
-  mode: "runtime",
-  samples: [
-    {
-      params: {
-        classId: "1234567",
-      },
-      cookies: [
-        {
-          name: "better-auth.session_token",
-          value:
-            "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D",
-        },
-      ],
-    },
-  ],
-};
+export default function ClassModulesPage() {
+  const params = useParams<{ classId: string }>();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const { data, isLoading, isError } = useClassModules(params.classId);
 
-export const metadata: Metadata = {
-  title: "Modules",
-};
+  if (sessionPending) {
+    return <ModulesPageSkeleton />;
+  }
 
-export default async function ClassModulesPage({
-  params: paramsPromise,
-}: {
-  params: Promise<{ classId: string }>;
-}) {
-  cacheLife("days");
-  const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) return <NotAuthenticated />;
+  if (!session?.user) {
+    return <NotAuthenticated />;
+  }
 
-  const params = await paramsPromise;
-  // const { modulesByClass, setModulesByClass } = useModulesState();
-  const data = await fetchData({
-    userId: authData.user.id,
-    classId: params.classId,
-  });
+  if (isLoading) {
+    return <ModulesPageSkeleton />;
+  }
 
-  if (typeof data === "string") notFound();
+  if (isError || typeof data === "string") {
+    return (
+      <div className="grid size-full max-h-96 place-items-center text-muted-foreground">
+        {typeof data === "string" ? data : "Error loading modules"}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -89,15 +66,7 @@ export default async function ClassModulesPage({
           <PageHeaderTitle>Modules</PageHeaderTitle>
         </PageHeaderContent>
       </PageHeader>
-      <Accordion
-        // defaultValue={modulesByClass[params.classId]}
-        // onValueChange={(newVal) =>
-        //   setModulesByClass({ [params.classId]: newVal })
-        // }
-        className="space-y-2 px-8 pb-8"
-        collapsible
-        type="single"
-      >
+      <Accordion className="space-y-2 px-8 pb-8" collapsible type="single">
         {typeof data === "object" &&
           data?.map((module) => (
             <AccordionItem
@@ -142,7 +111,6 @@ function ModuleItem({
 }) {
   const Icon = moduleItemIcons[item.type] ?? IconFileDots;
 
-  console.log(item);
   if (classId === undefined) return;
 
   if (item.type === "SubHeader")
@@ -178,26 +146,24 @@ function ModuleItem({
   );
 }
 
-async function fetchData({
-  classId,
-  userId,
-}: {
-  classId: string;
-  userId: string;
-}) {
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, userId) })
-  )?.settings;
-
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured" as const;
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/modules?include[]=items&include[]=content_details`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasModule[];
-  return data;
+function ModulesPageSkeleton() {
+  return (
+    <div>
+      <PageHeader>
+        <PageHeaderContent>
+          <PageHeaderTitle>Modules</PageHeaderTitle>
+        </PageHeaderContent>
+      </PageHeader>
+      <div className="space-y-2 px-8 pb-8">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={`skeleton-${i}`}
+            className="rounded-md border bg-background px-4 py-3"
+          >
+            <Skeleton className="h-6 w-48" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

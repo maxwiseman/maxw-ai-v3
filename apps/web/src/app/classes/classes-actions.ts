@@ -8,6 +8,8 @@ import { auth } from "@/lib/auth";
 import type {
   CanvasAssignment,
   CanvasCourse,
+  CanvasDiscussion,
+  CanvasDiscussionView,
   CanvasModule,
   CanvasPage,
 } from "@/types/canvas";
@@ -82,7 +84,7 @@ export async function getClassModules({ classId }: { classId: string }) {
   if (!settings?.canvasApiKey || !settings.canvasDomain)
     return "Settings not configured" as const;
   const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/modules?include[]=items`,
+    `https://${settings.canvasDomain}/api/v1/courses/${classId}/modules?include[]=items&include[]=content_details`,
     {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
@@ -136,7 +138,7 @@ export async function getAssignment({
   const data = (await fetch(
     `https://${settings.canvasDomain}/api/v1/courses/${classId}/assignments${
       assignmentId ? `/${assignmentId}` : ""
-    }${filter !== undefined ? `?per_page=100&bucket=${filter}` : "?per_page=100"}`,
+    }${filter !== undefined ? `?per_page=100&bucket=${filter}&order_by=due_at` : "?per_page=100&order_by=due_at"}`,
     {
       headers: {
         Authorization: `Bearer ${settings.canvasApiKey}`,
@@ -194,4 +196,41 @@ export async function getPage({
       )[];
   // Array.isArray(data) ? data.flatMap(i => "message" in i ? "Pages disabled" : i) : "message" in data ? "Pages disabled" : data;
   return data;
+}
+
+export async function getDiscussion({
+  classId,
+  discussionId,
+}: {
+  classId: string;
+  discussionId: string;
+}) {
+  const authData = await auth.api.getSession({ headers: await headers() });
+  if (!authData) return "Unauthorized" as const;
+  const settings = (
+    await db.query.user.findFirst({ where: eq(user.id, authData.user.id) })
+  )?.settings;
+
+  if (!settings?.canvasApiKey || !settings.canvasDomain)
+    return "Settings not configured" as const;
+
+  const data = (await fetch(
+    `https://${settings.canvasDomain}/api/v1/courses/${classId}/discussion_topics/${discussionId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${settings.canvasApiKey}`,
+      },
+    },
+  ).then((res) => res.json())) as CanvasDiscussion;
+
+  const view = (await fetch(
+    `https://${settings.canvasDomain}/api/v1/courses/${classId}/discussion_topics/${discussionId}/view`,
+    {
+      headers: {
+        Authorization: `Bearer ${settings.canvasApiKey}`,
+      },
+    },
+  ).then((res) => res.json())) as CanvasDiscussionView;
+
+  return { ...data, ...view };
 }

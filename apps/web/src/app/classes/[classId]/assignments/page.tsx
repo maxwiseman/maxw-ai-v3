@@ -1,13 +1,10 @@
-"use cache: private";
+"use client";
+
+export const dynamic = "force-static";
 
 import { IconNotebook } from "@tabler/icons-react";
-// import { useModulesState } from "../../modules-store";
-import { eq } from "drizzle-orm";
-import { cacheLife } from "next/cache";
-import type { Prefetch } from "next/dist/build/segment-config/app/app-segment-config";
-import { headers } from "next/headers";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { useParams } from "next/navigation";
 import { DateDisplay } from "@/components/date-display";
 import { NotAuthenticated } from "@/components/not-authenticated";
 import {
@@ -21,48 +18,34 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
-import { auth } from "@/lib/auth";
-import type { CanvasAssignment } from "@/types/canvas";
+import { Skeleton } from "@/components/ui/skeleton";
+import { authClient } from "@/lib/auth-client";
+import { useClassAssignments } from "../../use-classes";
 
-export const unstable_prefetch: Prefetch = {
-  mode: "runtime",
-  samples: [
-    {
-      params: {
-        classId: "1234567",
-      },
-      cookies: [
-        {
-          name: "better-auth.session_token",
-          value:
-            "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D",
-        },
-      ],
-    },
-  ],
-};
+export default function ClassAssignmentsPage() {
+  const params = useParams<{ classId: string }>();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const { data, isLoading, isError } = useClassAssignments(params.classId);
 
-export default async function ClassAssignmentsPage({
-  params: paramsPromise,
-}: {
-  params: Promise<{ classId: string }>;
-}) {
-  cacheLife("max");
-  const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) return <NotAuthenticated />;
+  if (sessionPending) {
+    return <AssignmentsPageSkeleton />;
+  }
 
-  const params = await paramsPromise;
-  // const { modulesByClass, setModulesByClass } = useModulesState();
-  const data = await fetchData({
-    userId: authData.user.id,
-    classId: params.classId,
-  });
+  if (!session?.user) {
+    return <NotAuthenticated />;
+  }
 
-  if (typeof data === "string") notFound();
+  if (isLoading) {
+    return <AssignmentsPageSkeleton />;
+  }
 
-  console.log(data);
+  if (isError || typeof data === "string") {
+    return (
+      <div className="grid size-full max-h-96 place-items-center text-muted-foreground">
+        {typeof data === "string" ? data : "Error loading assignments"}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -72,10 +55,6 @@ export default async function ClassAssignmentsPage({
         </PageHeaderContent>
       </PageHeader>
       <Accordion
-        // defaultValue={modulesByClass[params.classId]}
-        // onValueChange={(newVal) =>
-        //   setModulesByClass({ [params.classId]: newVal })
-        // }
         className="space-y-2 px-8 pb-8"
         type="multiple"
         defaultValue={["upcoming", "past", "undated"]}
@@ -89,7 +68,7 @@ export default async function ClassAssignmentsPage({
           </AccordionTrigger>
           <AccordionContent className="divide-y pb-1">
             {data
-              .filter(
+              ?.filter(
                 (a) =>
                   a.due_at &&
                   new Date(a.due_at).getDate() >= new Date().getDate(),
@@ -124,7 +103,7 @@ export default async function ClassAssignmentsPage({
           </AccordionTrigger>
           <AccordionContent className="divide-y pb-1">
             {data
-              .filter(
+              ?.filter(
                 (a) =>
                   a.due_at &&
                   new Date(a.due_at).getDate() <= new Date().getDate(),
@@ -159,7 +138,7 @@ export default async function ClassAssignmentsPage({
           </AccordionTrigger>
           <AccordionContent className="divide-y pb-1">
             {data
-              .filter((a) => !a.due_at)
+              ?.filter((a) => !a.due_at)
               .map((assignment) => (
                 <Link
                   href={`/classes/${params.classId}/assignments/${assignment.id}`}
@@ -177,26 +156,24 @@ export default async function ClassAssignmentsPage({
   );
 }
 
-async function fetchData({
-  classId,
-  userId,
-}: {
-  classId: string;
-  userId: string;
-}) {
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, userId) })
-  )?.settings;
-
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured" as const;
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/assignments?order_by=due_at`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasAssignment[];
-  return data;
+function AssignmentsPageSkeleton() {
+  return (
+    <div>
+      <PageHeader>
+        <PageHeaderContent>
+          <PageHeaderTitle>Assignments</PageHeaderTitle>
+        </PageHeaderContent>
+      </PageHeader>
+      <div className="space-y-2 px-8 pb-8">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div
+            key={`skeleton-${i}`}
+            className="rounded-md border bg-background px-4 py-3"
+          >
+            <Skeleton className="h-6 w-48" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

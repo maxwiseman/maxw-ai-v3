@@ -1,9 +1,9 @@
-"use cache: private";
+"use client";
+
+export const dynamic = "force-static";
 
 import { IconPlus, IconUser } from "@tabler/icons-react";
-import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { useParams } from "next/navigation";
 import { CanvasHTML } from "@/components/canvas-html";
 import { DateDisplay } from "@/components/date-display";
 import { NotAuthenticated } from "@/components/not-authenticated";
@@ -23,45 +23,50 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
-import { auth } from "@/lib/auth";
+import { Skeleton } from "@/components/ui/skeleton";
+import { authClient } from "@/lib/auth-client";
 import { toTitleCase } from "@/lib/utils";
 import type {
-  CanvasDiscussion,
   CanvasDiscussionEntry,
   CanvasDiscussionView,
 } from "@/types/canvas";
+import { useDiscussion } from "../../../use-classes";
 
-export const unstable_prefetch = {
-  mode: "runtime",
-  samples: [
-    {
-      params: {
-        classId: "1234567",
-        discussionId: "1234567",
-      },
-      cookies: [
-        {
-          name: "better-auth.session_token",
-          value:
-            "y8YE2cBNaOADiF2ttYvpgt8ElyAOGBXl.DAolkZhTDI8C4%2Bw0UbJQj7MrjxyXSOYkNzuWWLtOpck%3D",
-        },
-      ],
-    },
-  ],
-};
+export default function DiscussionPage() {
+  const params = useParams<{ classId: string; discussionId: string }>();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const { data, isLoading, isError } = useDiscussion(
+    params.classId,
+    params.discussionId,
+  );
 
-export default async function DiscussionPage({
-  params: paramsPromise,
-}: {
-  params: Promise<{ classId: string; discussionId: string }>;
-}) {
-  const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) return <NotAuthenticated />;
-  const params = await paramsPromise;
-  const data = await fetchData({ userId: authData.user.id, ...params });
-  if (typeof data === "string") notFound();
+  if (sessionPending) {
+    return <DiscussionPageSkeleton />;
+  }
+
+  if (!session?.user) {
+    return <NotAuthenticated />;
+  }
+
+  if (isLoading) {
+    return <DiscussionPageSkeleton />;
+  }
+
+  if (isError || typeof data === "string") {
+    return (
+      <div className="grid size-full max-h-96 place-items-center text-muted-foreground">
+        {typeof data === "string" ? data : "Error loading discussion"}
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="grid size-full max-h-96 place-items-center text-muted-foreground">
+        Discussion not found
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -83,15 +88,12 @@ export default async function DiscussionPage({
             <IconPlus className="text-muted-foreground" />
             Add todo
           </Button>
-          <Button>
-            {/* <IconPlus className="text-muted-foreground" /> */}
-            Submit
-          </Button>
+          <Button>Submit</Button>
         </PageHeaderActions>
       </PageHeader>
       <CanvasHTML className="px-8 pb-8">{data.message}</CanvasHTML>
       <div className="space-y-16 px-8 pb-8">
-        {data.view.reverse().map((entry) => (
+        {data.view?.reverse().map((entry) => (
           <DiscussionEntry
             key={entry.id}
             participants={data.participants}
@@ -110,7 +112,7 @@ function DiscussionEntry({
   participants: CanvasDiscussionView["participants"];
   entry: CanvasDiscussionEntry;
 }) {
-  const user = participants.find((p) => p.id === entry.user_id);
+  const user = participants?.find((p) => p.id === entry.user_id);
   return (
     <Card className="mx-auto max-w-3xl" key={entry.id}>
       <CardHeader className="flex items-center gap-4">
@@ -139,39 +141,40 @@ function DiscussionEntry({
   );
 }
 
-async function fetchData({
-  classId,
-  discussionId,
-  userId,
-}: {
-  classId: string;
-  discussionId: string;
-  userId: string;
-}) {
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, userId) })
-  )?.settings;
-
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured";
-
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/discussion_topics/${discussionId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasDiscussion;
-
-  // TODO: This sometimes just returns "require_initial_post" instead of JSON, which causes an error
-  const view = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/discussion_topics/${discussionId}/view`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasDiscussionView;
-  return { ...data, ...view };
+function DiscussionPageSkeleton() {
+  return (
+    <div>
+      <PageHeader className="flex-wrap">
+        <PageHeaderContent>
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="mt-2 h-6 w-32" />
+        </PageHeaderContent>
+        <PageHeaderActions>
+          <Skeleton className="h-9 w-24" />
+          <Skeleton className="h-9 w-20" />
+        </PageHeaderActions>
+      </PageHeader>
+      <div className="space-y-4 px-8 pb-8">
+        <Skeleton className="h-4 w-full max-w-2xl" />
+        <Skeleton className="h-4 w-full max-w-xl" />
+      </div>
+      <div className="space-y-16 px-8 pb-8">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <Card key={`skeleton-${i}`} className="mx-auto max-w-3xl">
+            <CardHeader className="flex items-center gap-4">
+              <Skeleton className="size-10 rounded-full" />
+              <div>
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="mt-1 h-4 w-24" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="mt-2 h-4 w-3/4" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
 }
