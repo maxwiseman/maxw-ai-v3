@@ -151,6 +151,14 @@ async function processAssignments(course: {
     classId: course.id.toString(),
   });
 
+  // Handle error responses
+  if (typeof assignments === "string") {
+    console.warn(
+      `Failed to fetch assignments for ${course.name}: ${assignments}`,
+    );
+    return [];
+  }
+
   const validAssignments = assignments.filter(
     (item): item is Exclude<typeof item, { message?: string }> =>
       !("message" in item),
@@ -257,10 +265,7 @@ export async function updateCanvasIndex(): Promise<DocumentChunk[] | string> {
 /**
  * Queries the Canvas search index with optional class filtering
  */
-export async function queryCanvasIndex(
-  query: string,
-  classIds?: string[],
-): Promise<unknown> {
+export async function queryCanvasIndex(query: string, classIds?: string[]) {
   const filter = classIds
     ? `classId IN (${classIds.map((id) => `'${id}'`).join(", ")})`
     : undefined;

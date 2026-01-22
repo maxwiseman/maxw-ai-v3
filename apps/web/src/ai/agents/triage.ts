@@ -1,4 +1,11 @@
+/**
+ * LEGACY TRIAGE AGENT - CURRENTLY DISABLED
+ * This agent is not in use. The general agent handles routing directly.
+ * Kept for reference only.
+ */
+
 import { openai } from "@ai-sdk/openai";
+// @ts-expect-error - Legacy code, disabled
 import { generalAgent } from "./general";
 import { secretaryAgent } from "./secretary";
 import { type AppContext, createAgent, formatContextForLLM } from "./shared";

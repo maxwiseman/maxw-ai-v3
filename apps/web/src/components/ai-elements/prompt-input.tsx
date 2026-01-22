@@ -675,6 +675,7 @@ export const PromptInput = ({
   );
 
   const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
+    console.log("PromptInput handleSubmit fired");
     event.preventDefault();
 
     const form = event.currentTarget;
@@ -684,6 +685,13 @@ export const PromptInput = ({
           const formData = new FormData(form);
           return (formData.get("message") as string) || "";
         })();
+
+    console.log(
+      "PromptInput text value:",
+      text,
+      "usingProvider:",
+      usingProvider,
+    );
 
     // Reset form immediately after capturing text to avoid race condition
     // where user input during async blob conversion would be lost

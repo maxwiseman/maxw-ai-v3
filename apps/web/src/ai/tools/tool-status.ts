@@ -2,6 +2,7 @@ import {
   type Icon,
   IconBrain,
   IconCards,
+  IconCode,
   IconListCheck,
   IconListDetails,
   IconListSearch,
@@ -11,9 +12,9 @@ import {
 } from "@tabler/icons-react";
 
 export const toolStatus: Record<string, { icon: Icon; text: string }> = {
-  updateWorkingMemory: {
+  memory: {
     icon: IconBrain,
-    text: "Updating memory",
+    text: "Remembering",
   },
   createStudySet: {
     icon: IconCards,
@@ -23,9 +24,17 @@ export const toolStatus: Record<string, { icon: Icon; text: string }> = {
     icon: IconNotebook,
     text: "Checking your assignments",
   },
-  webSearch: {
+  getClassAssignments: {
+    icon: IconNotebook,
+    text: "Listing your assignments",
+  },
+  web_search: {
     icon: IconWorld,
     text: "Searching the web",
+  },
+  code_execution: {
+    icon: IconCode,
+    text: "Writing code",
   },
   createTodo: {
     icon: IconListDetails,
@@ -39,7 +48,7 @@ export const toolStatus: Record<string, { icon: Icon; text: string }> = {
     icon: IconPlaylistX,
     text: "Deleting todo item",
   },
-  listTodos: {
+  getTodos: {
     icon: IconListSearch,
     text: "Listing todo items",
   },
