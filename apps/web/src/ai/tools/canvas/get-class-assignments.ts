@@ -101,6 +101,7 @@ export const getClassAssignmentsTool = tool({
   providerOptions: {
     anthropic: {
       allowedCallers: ["code_execution_20250825"],
+      cacheControl: { type: "ephemeral" },
     },
   },
 });

@@ -7,6 +7,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import type { CanvasCourse } from "@/types/canvas";
 import { getClassAssignmentsTool } from "../tools/canvas/get-class-assignments";
 import { searchContentTool } from "../tools/canvas/search-content";
+// import { invokeLLMTool } from "../tools/llm/invoke-llm";
 import { createStudySetTool } from "../tools/study/flashcards";
 import {
   createTodoTool,
@@ -93,8 +94,8 @@ export function buildSystemPrompt(ctx: AgentContext): string {
    - Only callable from code_execution (programmatic tool calling)
 
 9. **createStudySet**: Create flashcards for studying
-   - Currently simplified (to be enhanced later)
-   - Each item has term and definition
+    - Currently simplified (to be enhanced later)
+    - Each item has term and definition
 
 10. **memory**: Store and retrieve important information about the user
     - Use to remember user preferences, facts, goals, etc.
@@ -107,39 +108,47 @@ When you need to call multiple tools or process large results, write Python code
 
 \`\`\`python
 import json
+import asyncio
 
-# Example: Get assignments from all classes and create todos for upcoming ones
+# Example: Get assignments and classify priority in parallel using invokeLLM
 result = await getClassAssignments({})  # Fetch from all classes
 assignments = json.loads(result)
 
-from datetime import datetime, timezone, timedelta
-now = datetime.now(timezone.utc)
-week_from_now = now + timedelta(days=7)
-
-# Filter upcoming assignments
-upcoming = [a for a in assignments 
-            if a.get('due_at') and 
-            now <= datetime.fromisoformat(a['due_at'].replace('Z', '+00:00')) <= week_from_now]
-
-# Create todos for each
-for assignment in upcoming:
-    await createTodo({
-        "title": f"Complete {assignment['name']}",
-        "dueDate": assignment['due_at'],
-        "canvasContentType": "assignment",
-        "canvasContentId": assignment['id'],
-        "canvasClassId": int(assignment['_classId'])
+# Classify priority for each assignment in parallel
+async def classify_priority(assignment):
+    result = await invokeLLM({
+        "prompt": f"Classify priority (high/medium/low) for: {assignment['name']}. Due: {assignment.get('due_at')}. Points: {assignment.get('points_possible')}",
+        "priority": "speed",
+        "schema": {"priority": "string (high/medium/low)"}
     })
+    response = json.loads(result)
+    return {"assignment": assignment, "priority": response["data"]["priority"]}
+
+# Process all assignments in parallel (much faster!)
+classified = await asyncio.gather(*[classify_priority(a) for a in assignments[:20]])
+
+# Create todos only for high priority
+for item in classified:
+    if item["priority"] == "high":
+        await createTodo({
+            "title": f"Complete {item['assignment']['name']}",
+            "dueDate": item['assignment']['due_at'],
+            "canvasContentType": "assignment",
+            "canvasContentId": item['assignment']['id'],
+            "canvasClassId": int(item['assignment']['_classId'])
+        })
 \`\`\`
 
 Benefits:
 - **Reduced latency**: No round trips to model between tool calls
 - **Token savings**: Process/filter data in Python before adding to context
 - **Conditional logic**: Make decisions based on intermediate results
+- **Parallel processing**: Use invokeLLM for batch classification/extraction
 
-📖 **SKILLS AVAILABLE**: 
+📖 **SKILLS AVAILABLE**:
 - **canvas-assignments**: Detailed documentation on Canvas assignment data structure, fields, date handling, and common patterns
 - **todo-management**: Complete guide to todo data structure, views, date types, Canvas linking, and CRUD operations
+- **llm-invocation**: Guide to using invokeLLM for parallel processing, classification, extraction, and sub-reasoning tasks
 - Reference skills when working with their respective data
 
 📚 USER'S CLASSES:
@@ -218,6 +227,9 @@ export function getGeneralAgentTools(ctx: AgentContext): Record<string, any> {
     createTodo: createTodoTool,
     updateTodo: updateTodoTool,
     deleteTodo: deleteTodoTool,
+
+    // LLM invocation for sub-tasks (programmatic calling only)
+    // invokeLLM: invokeLLMTool,
 
     // Study set creation
     createStudySet: createStudySetTool,

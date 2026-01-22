@@ -8,7 +8,7 @@ import { type NewTodo, type TodoSubTask, todo } from "@/db/schema/todo";
 import { auth } from "@/lib/auth";
 
 // Factory function to create todo tools with context
-export function createTodoTools(ctx: AppContext) {
+export function createTodoTools(_ctx: AppContext) {
   function normalizeDateInput(value: string): Date {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) {
@@ -428,8 +428,6 @@ export function createTodoTools(ctx: AppContext) {
             .orderBy(todo.dueDate)
             .limit(limit);
           break;
-
-        case "all":
         default:
           results = await db
             .select()

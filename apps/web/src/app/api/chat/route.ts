@@ -1,5 +1,3 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import {
   type AnthropicProviderOptions,
   anthropic,
@@ -10,7 +8,6 @@ import {
   convertToModelMessages,
   type ModelMessage,
   smoothStream,
-  streamText,
   ToolLoopAgent,
   type UIMessage,
 } from "ai";
@@ -115,24 +112,83 @@ export async function POST(request: NextRequest) {
           { type: "anthropic" as const, skillId: "docx" },
           { type: "anthropic" as const, skillId: "xlsx" },
           { type: "anthropic" as const, skillId: "pdf" },
-          { type: "custom" as const, skillId: "skill_01VmZ8Be2T5orYF7i1YiBUTv" },
-          { type: "custom" as const, skillId: "skill_01KxC6EtBShVCeb2jVEs7gXW" },
+          {
+            type: "custom" as const,
+            skillId: "skill_01VmZ8Be2T5orYF7i1YiBUTv",
+          },
+          {
+            type: "custom" as const,
+            skillId: "skill_01KxC6EtBShVCeb2jVEs7gXW",
+          },
         ],
       },
     } satisfies AnthropicProviderOptions,
   };
 
   try {
+    // Convert UI messages to model messages
+    const modelMessages = await convertToModelMessages(messages);
+
+    // Add cache control breakpoints to optimize token usage
+    // 1. Cache system prompt (biggest win - always the same)
+    const systemPromptWithCache: ModelMessage = {
+      role: "system",
+      content: buildSystemPrompt(context),
+      providerOptions: {
+        anthropic: { cacheControl: { type: "ephemeral" } },
+      },
+    };
+
+    // 2. Add cache breakpoint to conversation history (after a few messages)
+    // This caches the conversation history up to a certain point
+    const messagesWithCache = modelMessages.map((msg, idx) => {
+      // Cache at a breakpoint ~4 messages before the end
+      // This allows recent messages to remain uncached (they change each turn)
+      if (idx === Math.max(0, modelMessages.length - 4)) {
+        return {
+          ...msg,
+          providerOptions: {
+            anthropic: { cacheControl: { type: "ephemeral" } },
+          },
+        };
+      }
+      return msg;
+    });
+
     const agent = new ToolLoopAgent({
       model: anthropic("claude-sonnet-4-5"),
-      instructions: buildSystemPrompt(context),
+      instructions: systemPromptWithCache,
       tools,
       providerOptions: providerOptions,
       prepareStep: forwardAnthropicContainerIdFromLastStep,
+      onFinish: ({ steps }) => {
+        // Log cache performance metrics from the last step
+        const lastStep = steps[steps.length - 1];
+        const metadata = lastStep?.providerMetadata?.anthropic;
+        if (metadata) {
+          console.log("=== Cache Performance Metrics ===");
+          console.log(
+            "Cache creation tokens:",
+            metadata.cacheCreationInputTokens ?? 0,
+          );
+          console.log("Cache read tokens:", metadata.cacheReadInputTokens ?? 0);
+          console.log("Total input tokens:", lastStep.usage?.inputTokens ?? 0);
+
+          const cacheReadTokens = Number(metadata.cacheReadInputTokens ?? 0);
+          const totalInputTokens = Number(lastStep.usage?.inputTokens ?? 0);
+          console.log(
+            "Cache hit rate:",
+            totalInputTokens > 0
+              ? `${Math.round((cacheReadTokens / totalInputTokens) * 100)}%`
+              : "N/A",
+          );
+          console.log("Steps completed:", steps.length);
+        }
+      },
     });
 
     const result = await agent.stream({
-      messages: await convertToModelMessages(messages),
+      messages: messagesWithCache,
       experimental_transform: smoothStream({ chunking: "word" }),
     });
 

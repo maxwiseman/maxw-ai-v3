@@ -407,4 +407,3 @@ export async function executeMemoryCommand(
     return `Error: ${error instanceof Error ? error.message : String(error)}`;
   }
 }
-
