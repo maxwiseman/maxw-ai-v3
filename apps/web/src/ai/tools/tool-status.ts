@@ -9,6 +9,7 @@ import {
   IconNotebook,
   IconPlaylistX,
   IconWorld,
+  IconWorldDownload,
 } from "@tabler/icons-react";
 
 export const toolStatus: Record<string, { icon: Icon; text: string }> = {
@@ -31,6 +32,10 @@ export const toolStatus: Record<string, { icon: Icon; text: string }> = {
   web_search: {
     icon: IconWorld,
     text: "Searching the web",
+  },
+  web_fetch: {
+    icon: IconWorldDownload,
+    text: "Fetching webpage",
   },
   code_execution: {
     icon: IconCode,
