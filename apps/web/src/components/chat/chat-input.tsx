@@ -25,6 +25,7 @@ import {
   PromptInputSubmit,
   PromptInputToolbar,
   PromptInputTools,
+  usePromptInputController,
 } from "@/components/ai-elements/prompt-input";
 
 export interface ChatInputMessage extends PromptInputMessage {
@@ -33,8 +34,8 @@ export interface ChatInputMessage extends PromptInputMessage {
 }
 
 interface ChatInputProps {
-  text: string;
-  setText: (text: string) => void;
+  text?: string;
+  setText?: (text: string) => void;
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
   useWebSearch: boolean;
   setUseWebSearch: (value: boolean) => void;
@@ -51,7 +52,6 @@ interface ChatInputProps {
 }
 
 function ChatInputInner({
-  text,
   setText,
   textareaRef,
   useWebSearch,
@@ -61,12 +61,17 @@ function ChatInputInner({
   hasMessages,
   rateLimit,
   selection,
-}: ChatInputProps & {
+}: Omit<ChatInputProps, "text"> & {
   selection: CommandSelection;
 }) {
   const { clearPills } = useCommandActions();
+  const controller = usePromptInputController();
 
   const handleSubmit = (message: PromptInputMessage) => {
+    console.log("ChatInput handleSubmit:", message);
+    console.log("Controller value:", controller.textInput.value);
+    console.log("Status:", status);
+
     // Merge message with command selection
     onSubmit({
       ...message,
@@ -90,9 +95,12 @@ function ChatInputInner({
           {(attachment) => <PromptInputAttachment data={attachment} />}
         </PromptInputAttachments>
         <PromptCommandsTextarea
-          onChange={(event) => setText(event.target.value)}
+          onChange={(event) => {
+            controller.textInput.setInput(event.target.value);
+            if (setText) setText(event.target.value);
+          }}
           ref={textareaRef}
-          value={text}
+          value={controller.textInput.value}
           placeholder={
             rateLimit?.code === "RATE_LIMIT_EXCEEDED"
               ? "Rate limit exceeded. Please try again tomorrow."
@@ -114,7 +122,10 @@ function ChatInputInner({
             </PromptInputActionMenuContent>
           </PromptInputActionMenu>
           <PromptInputSpeechButton
-            onTranscriptionChange={setText}
+            onTranscriptionChange={(text) => {
+              controller.textInput.setInput(text);
+              if (setText) setText(text);
+            }}
             textareaRef={textareaRef}
           />
           <PromptInputButton
@@ -127,11 +138,22 @@ function ChatInputInner({
         </PromptInputTools>
         <PromptInputSubmit
           disabled={
-            (!text.trim() && !status) ||
+            (!controller.textInput.value.trim() && !status) ||
             status === "streaming" ||
             rateLimit?.code === "RATE_LIMIT_EXCEEDED"
           }
           status={status}
+          onClick={() => {
+            console.log("Submit button clicked");
+            console.log("Text value:", controller.textInput.value);
+            console.log("Status:", status);
+            console.log(
+              "Disabled:",
+              (!controller.textInput.value.trim() && !status) ||
+                status === "streaming" ||
+                rateLimit?.code === "RATE_LIMIT_EXCEEDED",
+            );
+          }}
         />
       </PromptInputToolbar>
     </PromptInput>
@@ -168,7 +190,6 @@ export function ChatInput({
     <div className={className}>
       <PromptCommands metadata={metadata} onSelectionChange={setSelection}>
         <ChatInputInner
-          text={text}
           setText={setText}
           textareaRef={textareaRef}
           useWebSearch={useWebSearch}

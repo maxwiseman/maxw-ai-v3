@@ -89,7 +89,7 @@ export const getToolMessage = (toolName: string | null) => {
     webSearch: "Searching the web...",
 
     // Memory tools
-    updateWorkingMemory: "Updating memory...",
+    memory: "Updating memory...",
   };
 
   return toolMessages[toolName];

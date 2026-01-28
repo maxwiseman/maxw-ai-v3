@@ -1,10 +1,9 @@
 "use client";
-import { IconSearch } from "@tabler/icons-react";
 import Link from "next/link";
 import { Logo } from "./logo";
 import MobileNav from "./mobile-nav";
+import { SearchCommand } from "./search-command";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import UserMenu from "./user-menu";
 
 export default function Header() {
@@ -23,13 +22,7 @@ export default function Header() {
           <div className="md:hidden">
             <MobileNav />
           </div>
-          <div className="relative hidden sm:block">
-            <Input
-              placeholder="Find anything..."
-              className="w-xs border-0 bg-transparent! pl-9 shadow-none"
-            />
-            <IconSearch className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-muted-foreground" />
-          </div>
+          <SearchCommand />
         </div>
         <div className="flex items-center gap-2">
           <UserMenu />

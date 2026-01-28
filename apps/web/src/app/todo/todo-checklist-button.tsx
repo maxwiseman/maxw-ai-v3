@@ -70,4 +70,3 @@ export function TodoChecklistButton({ taskId }: { taskId: string }) {
     </InputGroup>
   );
 }
-

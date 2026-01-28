@@ -121,10 +121,10 @@ function DiscussionEntry({
           </AvatarFallback>
         </Avatar>
         <div>
-          <CardTitle className="text-lg">
+          <CardTitle className="font-normal text-md">
             {toTitleCase(user?.display_name ?? "")}
           </CardTitle>
-          <CardDescription className="text-base">
+          <CardDescription className="">
             <DateDisplay
               date={entry.created_at}
               options={{ dateStyle: "medium", timeStyle: "short" }}

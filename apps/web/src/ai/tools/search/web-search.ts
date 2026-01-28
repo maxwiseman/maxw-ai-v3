@@ -1,9 +1,8 @@
-import { openai } from "@ai-sdk/openai";
+import { anthropic } from "@ai-sdk/anthropic";
 import type { AppContext } from "@/ai/agents/shared";
 
 export function createWebSearchTool(context: AppContext) {
-  return openai.tools.webSearch({
-    searchContextSize: "medium",
+  return anthropic.tools.webSearch_20250305({
     userLocation: {
       type: "approximate",
       city: context.city,

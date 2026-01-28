@@ -2,12 +2,16 @@
 
 import { IconBooks } from "@tabler/icons-react";
 import Link from "next/link";
-import { DashboardCard } from "./dashboard-card";
 import type { CanvasCourse } from "@/types/canvas";
+import { DashboardCard } from "./dashboard-card";
 
 export function RecentClasses({ courses }: { courses: CanvasCourse[] }) {
   return (
-    <DashboardCard icon={IconBooks} title="Recent Classes" contentClassName="pt-2">
+    <DashboardCard
+      icon={IconBooks}
+      title="Recent Classes"
+      contentClassName="pt-2"
+    >
       {courses.length > 0 ? (
         <div className="grid grid-cols-2 gap-3">
           {courses.slice(0, 4).map((course) => (
@@ -28,9 +32,7 @@ export function RecentClasses({ courses }: { courses: CanvasCourse[] }) {
           ))}
         </div>
       ) : (
-        <span className="text-muted-foreground text-sm">
-          No classes found.
-        </span>
+        <span className="text-muted-foreground text-sm">No classes found.</span>
       )}
     </DashboardCard>
   );

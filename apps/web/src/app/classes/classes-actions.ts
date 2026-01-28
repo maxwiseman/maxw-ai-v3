@@ -108,7 +108,7 @@ export async function getAssignment(args: {
     | "unsubmitted"
     | "upcoming"
     | "future";
-}): Promise<CanvasAssignment[]>;
+}): Promise<CanvasAssignment[] | "Settings not configured" | "Unauthorized">;
 export async function getAssignment({
   classId,
   assignmentId,

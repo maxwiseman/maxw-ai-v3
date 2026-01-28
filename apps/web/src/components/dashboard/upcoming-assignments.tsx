@@ -4,8 +4,8 @@ import { IconSchool } from "@tabler/icons-react";
 import Link from "next/link";
 import type { ComponentProps } from "react";
 import type { CanvasTodoItem } from "@/app/actions/dashboard";
-import { DashboardCard } from "./dashboard-card";
 import { humanReadableDate } from "@/lib/utils";
+import { DashboardCard } from "./dashboard-card";
 
 export function UpcomingAssignments({
   assignments,

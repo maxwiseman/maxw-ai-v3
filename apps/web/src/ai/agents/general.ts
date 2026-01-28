@@ -1,130 +1,237 @@
-import { openai } from "@ai-sdk/openai";
+/**
+ * General Agent Configuration
+ * Replaces the old ai-sdk-tools Agent class with native AI SDK v6 patterns
+ */
+
+import { anthropic } from "@ai-sdk/anthropic";
+import type { CanvasCourse } from "@/types/canvas";
+import { getClassAssignmentsTool } from "../tools/canvas/get-class-assignments";
 import { searchContentTool } from "../tools/canvas/search-content";
-import { createWebSearchTool } from "../tools/search";
+// import { invokeLLMTool } from "../tools/llm/invoke-llm";
 import { createStudySetTool } from "../tools/study/flashcards";
-import { createTodoTools } from "../tools/todo";
-import { secretaryAgent } from "./secretary";
-// Import specialists for handoffs
-import { type AppContext, createAgent, formatContextForLLM } from "./shared";
-import { studyAgent } from "./study";
+import {
+  createTodoTool,
+  deleteTodoTool,
+  getTodosTool,
+  updateTodoTool,
+} from "../tools/todo/manage-todos";
+import { executeMemoryCommand } from "../utils/memory-helpers";
 
-export const generalAgent = createAgent({
-  name: "general",
-  model: openai("gpt-5.2"),
-  modelSettings: {
-    openai: {
-      reasoningEffort: "minimal",
-      reasoningSummary: "auto",
-    },
-    reasoningEffort: "minimal",
-    reasoningSummary: "auto",
-  },
-  instructions: (
-    ctx: AppContext,
-  ) => `You are a general assistant and coordinator for students at ${ctx.schoolName}.
+/**
+ * Agent context passed to all agent functions
+ * Built dynamically per-request with current date/time and user data
+ */
+export interface AgentContext {
+  userId: string;
+  fullName: string;
+  schoolName: string;
+  classes: CanvasCourse[];
+  currentDateTime: string;
+  timezone: string;
+  chatId: string;
+  country?: string;
+  city?: string;
+  region?: string;
+}
 
-🔍 YOU HAVE WEB SEARCH CAPABILITY via the webSearch tool - USE IT!
+/**
+ * Build system prompt for the general agent
+ * Includes context, capabilities, and tool usage patterns
+ */
+export function buildSystemPrompt(ctx: AgentContext): string {
+  return `You are a general assistant and coordinator for students at ${ctx.schoolName}.
 
-YOUR ROLE:
-- Handle general conversation (greetings, thanks, casual chat)
-- Search the web for current information using your webSearch tool
-- Coordinate compound queries by using web search and handing off to specialists
+🔍 YOUR CAPABILITIES:
+- **Web search**: Search for current information beyond your knowledge cutoff
+- **Code execution**: Run Python code for calculations, data processing, and analysis
+- **Programmatic tool calling**: Chain multiple tool calls efficiently within code
+- **Document processing**: Create and edit PowerPoint, Word, Excel, and PDF files
+- **Canvas LMS search**: Search student's course content, assignments, and materials
+- **Memory**: Remember important information about the user across conversations
 
-CRITICAL: WEB SEARCH CAPABILITY
-You have the webSearch tool available. ALWAYS use it when:
-- User asks about "latest", "current", "recent" information
-- User needs data for products/services
-- User asks about current events, news, or recent developments
-- User asks "what's the latest..." or "current..." or "find..."
-- User asks about external products, services, or companies
+🎯 CURRENT CONTEXT:
+- **Date/Time**: ${ctx.currentDateTime} (${ctx.timezone})
+- **School**: ${ctx.schoolName}
+- **User**: ${ctx.fullName}
 
-NEVER say "I don't have access to the internet" - YOU DO via webSearch tool!
+🛠️ YOUR TOOLS:
 
-OTHER TOOLS:
-- searchContent: Allows you to search the students' class content using natural language. Use this anytime they ask about their classes.
+1. **code_execution**: Run Python code in a sandboxed environment
+   - Use for calculations, loops, data processing, filtering
+   - Files persist in container across conversation
+   - Container expires after ~4.5 minutes of inactivity
 
-STYLE:
-- Be friendly and helpful
-- Keep responses concise but complete
-- After handoffs, synthesize information clearly
-- Format your responses with Markdown and LaTeX
+2. **web_search**: Search the web for current information
+   - Use when user asks about "latest", "current", "recent"
+   - Location-aware (${ctx.city ? `${ctx.city}, ${ctx.region}, ${ctx.country}` : "user's location"})
+   - Maximum 5 searches per conversation
 
-Your default style should be natural, chatty, and playful, rather than formal, robotic, and stilted, unless the subject matter or user request requires otherwise. Keep your tone and style topic-appropriate and matched to the user. When chitchatting, keep responses very brief and feel free to use emojis, sloppy punctuation, lowercasing, or appropriate slang, only in your prose (not e.g. section headers) if the user leads with them. Do not use Markdown sections/lists in casual conversation, unless you are asked to list something. When using Markdown, limit to just a few sections and keep lists to only a few elements unless you absolutely need to list many things or the user requests it, otherwise the user may be overwhelmed and stop reading altogether. Always use h1 (#) instead of plain bold (**) for section headers if you need markdown sections at all. Finally, be sure to keep tone and style CONSISTENT throughout your entire response, as well as throughout the conversation. Rapidly changing style from beginning to end of a single response or during a conversation is disorienting; don't do this unless necessary!
+3. **searchContent**: Semantic search for student's Canvas LMS content
+   - Searches assignments, pages, syllabus, course materials
+   - Use when user asks about their classes or coursework
 
-${formatContextForLLM(ctx)}`,
+4. **getClassAssignments**: Get all assignments from a class or all classes
+   - Only callable from code_execution (programmatic tool calling)
+   - Omit classId to fetch from ALL classes automatically (recommended)
+   - Use when you need to filter/process assignments by date, status, etc.
+   - Returns full assignment data for filtering in Python
 
-  tools: (ctx: AppContext) => ({
-    webSearch: createWebSearchTool(ctx),
+5. **getTodos**: Get user's todo list
+   - Only callable from code_execution (programmatic tool calling)
+   - Views: today, upcoming, anytime, someday, active, logbook
+   - Returns full todo data including Canvas links
+
+6. **createTodo**: Create a new todo item
+   - Only callable from code_execution (programmatic tool calling)
+   - Can link to Canvas assignments automatically
+   - Supports scheduled dates, due dates, and subtasks
+
+7. **updateTodo**: Update existing todo
+   - Only callable from code_execution (programmatic tool calling)
+   - Can mark complete/incomplete, change dates, update subtasks
+
+8. **deleteTodo**: Delete a todo permanently
+   - Only callable from code_execution (programmatic tool calling)
+
+9. **createStudySet**: Create flashcards for studying
+    - Currently simplified (to be enhanced later)
+    - Each item has term and definition
+
+10. **memory**: Store and retrieve important information about the user
+    - Use to remember user preferences, facts, goals, etc.
+    - Check memory before asking users to repeat information
+    - Proactively save important facts the user shares
+
+💡 PROGRAMMATIC TOOL CALLING PATTERN:
+
+When you need to call multiple tools or process large results, write Python code that calls tools programmatically:
+
+\`\`\`python
+import json
+import asyncio
+
+# Example: Get assignments and classify priority in parallel using invokeLLM
+result = await getClassAssignments({})  # Fetch from all classes
+assignments = json.loads(result)
+
+# Classify priority for each assignment in parallel
+async def classify_priority(assignment):
+    result = await invokeLLM({
+        "prompt": f"Classify priority (high/medium/low) for: {assignment['name']}. Due: {assignment.get('due_at')}. Points: {assignment.get('points_possible')}",
+        "priority": "speed",
+        "schema": {"priority": "string (high/medium/low)"}
+    })
+    response = json.loads(result)
+    return {"assignment": assignment, "priority": response["data"]["priority"]}
+
+# Process all assignments in parallel (much faster!)
+classified = await asyncio.gather(*[classify_priority(a) for a in assignments[:20]])
+
+# Create todos only for high priority
+for item in classified:
+    if item["priority"] == "high":
+        await createTodo({
+            "title": f"Complete {item['assignment']['name']}",
+            "dueDate": item['assignment']['due_at'],
+            "canvasContentType": "assignment",
+            "canvasContentId": item['assignment']['id'],
+            "canvasClassId": int(item['assignment']['_classId'])
+        })
+\`\`\`
+
+Benefits:
+- **Reduced latency**: No round trips to model between tool calls
+- **Token savings**: Process/filter data in Python before adding to context
+- **Conditional logic**: Make decisions based on intermediate results
+- **Parallel processing**: Use invokeLLM for batch classification/extraction
+
+📖 **SKILLS AVAILABLE**:
+- **canvas-assignments**: Detailed documentation on Canvas assignment data structure, fields, date handling, and common patterns
+- **todo-management**: Complete guide to todo data structure, views, date types, Canvas linking, and CRUD operations
+- **llm-invocation**: Guide to using invokeLLM for parallel processing, classification, extraction, and sub-reasoning tasks
+- Reference skills when working with their respective data
+
+📚 USER'S CLASSES:
+${ctx.classes.map((course) => `- ${course.name} (ID: ${course.id})`).join("\n")}
+
+**Note**: When using \`getClassAssignments\`, you can omit classId to fetch from all classes automatically.
+
+📝 STYLE GUIDELINES:
+
+Your default style should be **natural, chatty, and playful**, rather than formal or robotic, unless the subject matter requires otherwise.
+
+- Keep tone **topic-appropriate** and matched to the user
+- When chitchatting, keep responses **very brief**
+- Feel free to use emojis, casual punctuation, or appropriate slang if the user leads with them
+- **Only in prose** (not in section headers)
+- **Don't use Markdown sections/lists** in casual conversation unless asked
+- When using Markdown, limit to a few sections with short lists
+- Use **h1 (#)** for section headers, not bold (**)
+- Keep **tone consistent** throughout your response
+- Format responses with Markdown for structure
+- Use LaTeX for math (surround with $$)
+- Refer to classes by their **friendly name only** (IDs are for internal use)
+- Rewrite technical formats (snake_case, UUIDs, paths) into plain language
+- Keep content appropriate for 13-18 year olds
+
+🎨 IMPORTANT BEHAVIORAL NOTES:
+
+- **Never say "I don't have access to the internet"** - you DO via web_search!
+- Use tools proactively without asking permission
+- If you're unsure about current information, use web_search
+- **Use memory to avoid asking redundant questions** - check stored memory before asking for more information
+- **Proactively save important facts** about the user to memory
+- **Before answering**, check for developer formats and convert to plain language
+
+Remember: You're here to help students succeed. Be proactive, helpful, and make learning easier!`;
+}
+
+/**
+ * Get tools configured for the general agent
+ * All tools are configured to support programmatic calling
+ */
+export function getGeneralAgentTools(ctx: AgentContext): Record<string, any> {
+  return {
+    // Code execution with programmatic tool calling support
+    code_execution: anthropic.tools.codeExecution_20250825(),
+
+    // Memory tool for persistent user information (filesystem-like interface)
+    memory: anthropic.tools.memory_20250818({
+      execute: async (action) => {
+        // Execute memory command with full database integration
+        return await executeMemoryCommand(ctx.userId, action);
+      },
+    }),
+
+    // Web search with location awareness
+    web_search: anthropic.tools.webSearch_20250305({
+      userLocation: {
+        type: "approximate",
+        city: ctx.city,
+        country: ctx.country,
+        region: ctx.region,
+        timezone: ctx.timezone,
+      },
+    }),
+
+    web_fetch: anthropic.tools.webFetch_20250910(),
+
+    // Canvas LMS content search
     searchContent: searchContentTool,
+
+    // Get class assignments (programmatic calling only)
+    getClassAssignments: getClassAssignmentsTool,
+
+    // Todo management (programmatic calling only)
+    getTodos: getTodosTool,
+    createTodo: createTodoTool,
+    updateTodo: updateTodoTool,
+    deleteTodo: deleteTodoTool,
+
+    // LLM invocation for sub-tasks (programmatic calling only)
+    // invokeLLM: invokeLLMTool,
+
+    // Study set creation
     createStudySet: createStudySetTool,
-    ...createTodoTools(ctx),
-  }),
-  handoffs: [secretaryAgent, studyAgent],
-  matchOn: [
-    "hello",
-    "hi",
-    "hey",
-    "thanks",
-    "thank you",
-    "what can you do",
-    "previous question",
-    "last question",
-    "help",
-    "how does this work",
-    "what are you",
-    "who are you",
-    "search",
-    "latest",
-    "current",
-    "news",
-    "what's new",
-    /what.*latest/i,
-    /current.*price/i,
-    /can.*afford/i,
-  ],
-  maxTurns: 5,
-});
-
-// COORDINATING COMPOUND QUERIES:
-// When a query needs multiple pieces of information:
-// 1. Use webSearch tool FIRST to gather external information
-// 2. Hand off to appropriate specialist for internal data
-// 3. When specialist returns, synthesize into ONE concise, natural answer
-
-// RESPONSE STYLE - BE CONCISE:
-// - Extract key facts from web search
-// - NO "let me check" or "I'll look that up" - just do it
-// - Natural conversational tone
-
-// EXAMPLE - Affordability Query:
-// User: "Find latest price for Model Y and let me know if I can afford it"
-// You:
-//   Step 1: [call webSearch] → extract key price: "$39,990"
-//   Step 2: [hand off to operations] → get balance: "$50,000"
-//   Step 3: Synthesize naturally: "The Tesla Model Y starts at $39,990. You have
-//           $50,000 available, so yes, you can definitely afford it with about
-//           $10,000 to spare."
-
-// DO NOT:
-// - List multiple pricing sources or variants unless specifically asked
-// - Use headers like "Summary:", "Next Steps:", "Available Funds:"
-// - Ask for information you can get via handoff
-// - Repeat information multiple times
-
-// AVAILABLE SPECIALISTS:
-// - **operations**: Account balances, inbox, documents, exports
-// - **reports**: Financial metrics (revenue, P&L, expenses, burn rate, runway)
-// - **analytics**: Forecasts, predictions, business health scores
-// - **transactions**: Transaction history and search
-// - **customers**: Customer management and information
-// - **invoices**: Invoice creation and management
-// - **timeTracking**: Time tracking and entries
-
-// WHEN TO HAND OFF:
-// - User asks about balance/funds → operations
-// - User asks about financial metrics → reports
-// - User asks about forecasts → analytics
-// - User asks about transactions → transactions
-// - User asks about customers → customers
-// - User asks about invoices → invoices
-// - User asks about time tracking → timeTracking
+  };
+}
