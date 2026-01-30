@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/canvas-index",
-      "schedule": "0 5,16 * * *"
+      "schedule": "0 16 * * *"
     }
   ]
 }
