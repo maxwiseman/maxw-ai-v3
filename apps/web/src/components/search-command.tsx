@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { queryCanvasIndex } from "@/ai/utils/upstash-helpers";
-import { getDashboardData } from "@/app/actions/dashboard";
+import { getAllCanvasCourses } from "@/app/classes/classes-actions";
 import {
   CommandDialog,
   CommandEmpty,
@@ -58,9 +58,9 @@ export function SearchCommand() {
   const { setTheme, theme } = useTheme();
 
   // Fetch user's classes for navigation
-  const { data: dashboardData } = useQuery({
-    queryKey: ["dashboard-data"],
-    queryFn: getDashboardData,
+  const { data: classesData } = useQuery({
+    queryKey: ["all-canvas-courses"],
+    queryFn: getAllCanvasCourses,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -94,10 +94,7 @@ export function SearchCommand() {
     command();
   }, []);
 
-  const classes =
-    dashboardData && "courses" in dashboardData
-      ? (dashboardData.courses ?? [])
-      : [];
+  const classes = Array.isArray(classesData) ? classesData : [];
 
   // Define static items
   const pages: StaticItem[] = useMemo(
@@ -106,35 +103,35 @@ export function SearchCommand() {
         id: "home",
         label: "Home",
         keywords: ["dashboard", "main"],
-        icon: <IconHome className="size-4" />,
+        icon: <IconHome />,
         onSelect: () => runCommand(() => router.push("/")),
       },
       {
         id: "chat",
         label: "Chat",
         keywords: ["ai", "assistant", "message"],
-        icon: <IconMessageCircle className="size-4" />,
+        icon: <IconMessageCircle />,
         onSelect: () => runCommand(() => router.push("/chat")),
       },
       {
         id: "classes",
         label: "Classes",
         keywords: ["courses", "school"],
-        icon: <IconSchool className="size-4" />,
+        icon: <IconSchool />,
         onSelect: () => runCommand(() => router.push("/classes")),
       },
       {
         id: "study",
         label: "Study",
         keywords: ["flashcards", "learn", "review"],
-        icon: <IconBrain className="size-4" />,
+        icon: <IconBrain />,
         onSelect: () => runCommand(() => router.push("/study")),
       },
       {
         id: "todo",
         label: "Todo",
         keywords: ["tasks", "checklist", "assignments"],
-        icon: <IconListCheck className="size-4" />,
+        icon: <IconListCheck />,
         onSelect: () => runCommand(() => router.push("/todo")),
       },
     ],
@@ -147,7 +144,7 @@ export function SearchCommand() {
         id: "light-mode",
         label: "Light Mode",
         keywords: ["theme", "bright", "day"],
-        icon: <IconSun className="size-4" />,
+        icon: <IconSun />,
         onSelect: () => runCommand(() => setTheme("light")),
         shortcut:
           theme === "light" ? <CommandShortcut>Active</CommandShortcut> : null,
@@ -156,7 +153,7 @@ export function SearchCommand() {
         id: "dark-mode",
         label: "Dark Mode",
         keywords: ["theme", "night"],
-        icon: <IconMoon className="size-4" />,
+        icon: <IconMoon />,
         onSelect: () => runCommand(() => setTheme("dark")),
         shortcut:
           theme === "dark" ? <CommandShortcut>Active</CommandShortcut> : null,
@@ -165,7 +162,7 @@ export function SearchCommand() {
         id: "system-theme",
         label: "System Theme",
         keywords: ["theme", "auto", "automatic"],
-        icon: <IconDeviceDesktop className="size-4" />,
+        icon: <IconDeviceDesktop />,
         onSelect: () => runCommand(() => setTheme("system")),
         shortcut:
           theme === "system" ? <CommandShortcut>Active</CommandShortcut> : null,
@@ -180,7 +177,7 @@ export function SearchCommand() {
         id: `class-${course.id}`,
         label: course.name,
         keywords: ["course", "class"],
-        icon: <IconSchool className="size-4" />,
+        icon: <IconSchool />,
         onSelect: () => runCommand(() => router.push(`/classes/${course.id}`)),
       })),
     [classes, runCommand, router],
@@ -286,11 +283,7 @@ export function SearchCommand() {
                 })
               }
             >
-              {type === "assignment" ? (
-                <IconBook className="size-4" />
-              ) : (
-                <IconFile className="size-4" />
-              )}
+              {type === "assignment" ? <IconBook /> : <IconFile />}
               <div className="flex flex-col">
                 <span>{name}</span>
                 <span className="text-muted-foreground text-xs">
@@ -306,13 +299,13 @@ export function SearchCommand() {
   return (
     <>
       <Button
-        variant="outline"
+        variant="ghost"
         type="button"
         onClick={() => setOpen(true)}
         // className="relative hidden h-9 w-64 items-center justify-start gap-2 rounded-md border border-input bg-transparent px-3 text-muted-foreground text-sm shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground sm:flex"
         className="border-none font-normal text-muted-foreground shadow-none"
       >
-        <IconSearch className="size-4" />
+        <IconSearch />
         <span>Find anything...</span>
         <Kbd className="ml-4 rounded-[5px] border">⌘K</Kbd>
       </Button>
