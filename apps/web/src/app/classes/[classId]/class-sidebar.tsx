@@ -1,4 +1,9 @@
-import { IconBlocks, IconHome, IconPencil } from "@tabler/icons-react";
+import {
+  IconBell,
+  IconBlocks,
+  IconHome,
+  IconPencil,
+} from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ComponentProps, use } from "react";
@@ -27,6 +32,10 @@ export function ClassSidebar({
         <IconPencil className="text-muted-foreground" />
         Assignments
       </ClassSidebarButton>
+      <ClassSidebarButton path={{ slug: "/announcements" }} classId={classId}>
+        <IconBell className="text-muted-foreground" />
+        Announcements
+      </ClassSidebarButton>
     </div>
   );
 
@@ -52,6 +61,13 @@ export function ClassSidebar({
           <ClassSidebarButton path={{ slug: "/assignments" }} classId={classId}>
             <IconPencil className="text-muted-foreground" />
             Assignments
+          </ClassSidebarButton>
+          <ClassSidebarButton
+            path={{ slug: "/announcements" }}
+            classId={classId}
+          >
+            <IconBell className="text-muted-foreground" />
+            Announcements
           </ClassSidebarButton>
         </div>
       </MobileNavExtension>
