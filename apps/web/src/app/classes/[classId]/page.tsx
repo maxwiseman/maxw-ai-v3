@@ -71,7 +71,7 @@ export default async function ClassPage({
         </PageHeaderContent>
       </PageHeader>
       {typeof frontPageData === "object" && (
-        <CanvasHTML className="px-8">{frontPageData.body}</CanvasHTML>
+        <CanvasHTML className="px-8 pb-8">{frontPageData.body}</CanvasHTML>
       )}
     </div>
   );

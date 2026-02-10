@@ -24,24 +24,27 @@ export function CanvasHTML({
       jsxs: jsxs,
       Fragment: Fragment,
       components: {
-        a: ({ href, ...props }: ComponentProps<"a">) =>
+        a: ({ href, children, ...props }: ComponentProps<"a">) =>
           new RegExp(/.*instructure.com.*/).test(href ?? "") ? (
             <Link
               {...props}
               // @ts-expect-error -- It's fine if it's an external link
               href={
                 href
-                  ?.match(/^https?:\/\/(?:[^/]+\.)?instructure\.com(\/.*)?$/)
-                  ?.join("")
+                  // ?.match(/^https?:\/\/(?:[^/]+\.)?instructure\.com(\/.*)?$/)
+                  // ?.join("")
+                  ?.replace(/https?:\/\/(?:[^/]+\.)?instructure\.com/, "")
                   .replace("courses", "classes") ?? ""
               }
               target="_blank"
-            />
+            >
+              {children}
+            </Link>
           ) : (
-            <span className="inline-flex items-center gap-1">
-              <a {...props} href={href} target="_blank" />
-              <IconExternalLink className="size-4" />
-            </span>
+            <a {...props} href={href} target="_blank">
+              {children}
+              <IconExternalLink className="mx-1 inline-block aspect-square w-[1.25ch]" />
+            </a>
           ),
 
         img: ({

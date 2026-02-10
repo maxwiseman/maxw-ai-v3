@@ -90,7 +90,7 @@ export function TodoListItem({
       className={cn(
         "-mx-3 h-auto w-full max-w-full cursor-pointer flex-col items-start justify-start gap-0 border border-transparent p-0 transition-[background-color,box-shadow,border,margin,gap]",
         expanded &&
-          "my-2 cursor-[unset] border-border bg-neutral-50 shadow-lg/3 first:mt-0 last:mb-0 hover:bg-neutral-50 dark:bg-neutral-900 dark:hover:bg-neutral-900",
+          "my-2 cursor-[unset] border-border bg-card shadow-lg/3 first:mt-0 last:mb-0 hover:bg-card dark:bg-card dark:hover:bg-card",
       )}
       variant="ghost"
     >
