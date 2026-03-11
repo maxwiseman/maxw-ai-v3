@@ -69,8 +69,7 @@ export async function POST(request: NextRequest) {
 
   // Build agent context
   const now = new Date();
-  const timezone =
-    location.countryRegion || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const context: AgentContext = {
     userId,
