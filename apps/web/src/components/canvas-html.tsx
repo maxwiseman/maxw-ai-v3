@@ -5,6 +5,7 @@ import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import rehypeParse from "rehype-parse";
 import rehypeReact from "rehype-react";
 import { unified } from "unified";
+import { CanvasFileModal } from "@/components/canvas-file-modal";
 import { cn } from "@/lib/utils";
 import "katex/dist/katex.min.css";
 import Image from "next/image";
@@ -24,28 +25,42 @@ export function CanvasHTML({
       jsxs: jsxs,
       Fragment: Fragment,
       components: {
-        a: ({ href, children, ...props }: ComponentProps<"a">) =>
-          new RegExp(/.*instructure.com.*/).test(href ?? "") ? (
-            <Link
-              {...props}
-              // @ts-expect-error -- It's fine if it's an external link
-              href={
-                href
-                  // ?.match(/^https?:\/\/(?:[^/]+\.)?instructure\.com(\/.*)?$/)
-                  // ?.join("")
-                  ?.replace(/https?:\/\/(?:[^/]+\.)?instructure\.com/, "")
-                  .replace("courses", "classes") ?? ""
-              }
-              target="_blank"
-            >
-              {children}
-            </Link>
-          ) : (
+        a: ({ href, children, ...props }: ComponentProps<"a">) => {
+          // Detect Canvas file links and open them as modals
+          const fileMatch = href?.match(/\/courses\/(\d+)\/files\/(\d+)/);
+          if (fileMatch) {
+            const [, courseId, fileId] = fileMatch;
+            return (
+              <CanvasFileModal courseId={courseId} fileId={fileId}>
+                {children}
+              </CanvasFileModal>
+            );
+          }
+
+          if (/instructure\.com/.test(href ?? "")) {
+            return (
+              <Link
+                {...props}
+                // @ts-expect-error -- It's fine if it's an external link
+                href={
+                  href
+                    ?.replace(/https?:\/\/(?:[^/]+\.)?instructure\.com/, "")
+                    .replace("courses", "classes") ?? ""
+                }
+                target="_blank"
+              >
+                {children}
+              </Link>
+            );
+          }
+
+          return (
             <a {...props} href={href} target="_blank">
               {children}
               <IconExternalLink className="mx-1 inline-block aspect-square w-[1.25ch]" />
             </a>
-          ),
+          );
+        },
 
         img: ({
           "data-equation-content": latex,

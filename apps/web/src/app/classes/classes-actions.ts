@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import type {
   CanvasAssignment,
   CanvasCourse,
+  CanvasFile,
   CanvasModule,
   CanvasPage,
 } from "@/types/canvas";
@@ -143,6 +144,32 @@ export async function getAssignment({
       },
     },
   ).then((res) => res.json())) as CanvasAssignment | CanvasAssignment[];
+  return data;
+}
+
+export async function getCanvasFile({
+  classId,
+  fileId,
+}: {
+  classId: string;
+  fileId: string;
+}) {
+  const authData = await auth.api.getSession({ headers: await headers() });
+  if (!authData) return "Unauthorized" as const;
+  const settings = (
+    await db.query.user.findFirst({ where: eq(user.id, authData.user.id) })
+  )?.settings;
+
+  if (!settings?.canvasApiKey || !settings.canvasDomain)
+    return "Settings not configured" as const;
+  const data = (await fetch(
+    `https://${settings.canvasDomain}/api/v1/courses/${classId}/files/${fileId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${settings.canvasApiKey}`,
+      },
+    },
+  ).then((res) => res.json())) as CanvasFile;
   return data;
 }
 
