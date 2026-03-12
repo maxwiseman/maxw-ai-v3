@@ -23,15 +23,18 @@ export const memory = pgTable("memory", {
 });
 
 /**
- * Container session tracking for code execution persistence
- * Stores container IDs per chat for reuse across requests
+ * Sandbox session tracking for code execution persistence
+ * Stores Daytona sandbox IDs per chat for reuse across requests
  */
 export const containerSession = pgTable("container_session", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   chatId: text("chat_id").notNull().unique(),
-  containerId: text("container_id").notNull(),
+  sandboxId: text("sandbox_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });

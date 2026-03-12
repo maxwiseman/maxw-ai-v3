@@ -66,7 +66,6 @@ export const getTodosTool = tool({
   },
   providerOptions: {
     anthropic: {
-      allowedCallers: ["code_execution_20250825"],
       cacheControl: { type: "ephemeral" },
     },
   },
@@ -144,7 +143,6 @@ export const createTodoTool = tool({
   },
   providerOptions: {
     anthropic: {
-      allowedCallers: ["code_execution_20250825"],
       cacheControl: { type: "ephemeral" },
     },
   },
@@ -200,7 +198,6 @@ export const updateTodoTool = tool({
   },
   providerOptions: {
     anthropic: {
-      allowedCallers: ["code_execution_20250825"],
       cacheControl: { type: "ephemeral" },
     },
   },
@@ -227,7 +224,6 @@ export const deleteTodoTool = tool({
   },
   providerOptions: {
     anthropic: {
-      allowedCallers: ["code_execution_20250825"],
       cacheControl: { type: "ephemeral" },
     },
   },

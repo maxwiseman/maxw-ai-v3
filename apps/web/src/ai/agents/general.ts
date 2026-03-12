@@ -8,7 +8,14 @@ import type { Tool } from "ai";
 import type { CanvasCourse } from "@/types/canvas";
 import { getClassAssignmentsTool } from "../tools/canvas/get-class-assignments";
 import { searchContentTool } from "../tools/canvas/search-content";
-// import { invokeLLMTool } from "../tools/llm/invoke-llm";
+import { createApplyPatchTool } from "../tools/codex/patch";
+import { createViewImageTool } from "../tools/codex/image";
+import { createUpdatePlanTool } from "../tools/codex/plan";
+import { createCloseAgentTool, createSpawnAgentTool } from "../tools/codex/agents";
+import { createSearchToolsTool } from "../tools/codex/search-tools";
+import { requestUserInputTool } from "../tools/codex/user-input";
+import { createBashTool } from "../tools/execution/bash";
+import { createTextEditorTool } from "../tools/execution/text-editor";
 import { createStudySetTool } from "../tools/study/flashcards";
 import {
   createTodoTool,
@@ -39,118 +46,110 @@ export interface AgentContext {
  * Build system prompt for the general agent
  * Includes context, capabilities, and tool usage patterns
  */
+/**
+ * Build the dynamic per-request context block (NOT cached).
+ * Contains anything that changes per request: datetime, location.
+ */
+export function buildDynamicContext(ctx: AgentContext): string {
+  const location = ctx.city
+    ? `${ctx.city}, ${ctx.region}, ${ctx.country}`
+    : ctx.country ?? "unknown location";
+  return `🎯 CURRENT REQUEST CONTEXT:
+- **Date/Time**: ${ctx.currentDateTime} (${ctx.timezone})
+- **Location**: ${location}`;
+}
+
+/**
+ * Build the static system prompt (safe to cache).
+ * Contains stable content: tool docs, guidelines, user profile, classes.
+ */
 export function buildSystemPrompt(ctx: AgentContext): string {
   return `You are a general assistant and coordinator for students at ${ctx.schoolName}.
 
 🔍 YOUR CAPABILITIES:
 - **Web search**: Search for current information beyond your knowledge cutoff
-- **Code execution**: Run Python code for calculations, data processing, and analysis
-- **Programmatic tool calling**: Chain multiple tool calls efficiently within code
-- **Document processing**: Create and edit PowerPoint, Word, Excel, and PDF files
-- **Canvas LMS search**: Search student's course content, assignments, and materials
+- **Code execution**: Run bash commands and scripts in a persistent sandbox
+- **File editing**: Create and modify files in the sandbox workspace
+- **Canvas LMS**: Search and fetch student's course content and assignments
+- **Todo management**: Create and manage the student's task list
 - **Memory**: Remember important information about the user across conversations
+- **Planning**: Track multi-step tasks with a persistent plan file
 
-🎯 CURRENT CONTEXT:
-- **Date/Time**: ${ctx.currentDateTime} (${ctx.timezone})
+👤 USER PROFILE:
 - **School**: ${ctx.schoolName}
 - **User**: ${ctx.fullName}
 
 🛠️ YOUR TOOLS:
 
-1. **code_execution**: Run Python code in a sandboxed environment
-   - Use for calculations, loops, data processing, filtering
-   - Files persist in container across conversation
-   - Container expires after ~4.5 minutes of inactivity
+1. **bash**: Run shell commands in a persistent sandbox
+   - Working directory: /home/daytona/workspace (default)
+   - Python, Node.js, and common tools available
+   - Files persist across turns in the same conversation
+   - Use for calculations, data processing, running scripts
+   - **Canvas data available at \`/home/daytona/workspace/data/\`** (refreshed each turn):
+     - \`courses.json\` — all enrolled courses
+     - \`assignments.json\` — all assignments across all courses (each has \`_classId\`, \`_className\`)
+   - Use \`grep\`, \`jq\`, or Python scripts to filter/process this data instead of calling Canvas tools
 
-2. **web_search**: Search the web for current information
+2. **str_replace_based_edit_tool**: Create and edit files in the sandbox
+   - view: read a file with line numbers
+   - create: create a new file
+   - str_replace: replace a specific string in a file
+   - insert: insert text at a line number
+
+3. **web_search**: Search the web for current information
    - Use when user asks about "latest", "current", "recent"
-   - Location-aware (${ctx.city ? `${ctx.city}, ${ctx.region}, ${ctx.country}` : "user's location"})
-   - Maximum 5 searches per conversation
+   - Location-aware (uses user's location from request context)
 
-3. **searchContent**: Semantic search for student's Canvas LMS content
+4. **web_fetch**: Fetch and read content from a URL
+
+5. **searchContent**: Semantic search for student's Canvas LMS content
    - Searches assignments, pages, syllabus, course materials
    - Use when user asks about their classes or coursework
 
-4. **getClassAssignments**: Get all assignments from a class or all classes
-   - Only callable from code_execution (programmatic tool calling)
+6. **getClassAssignments**: Get all assignments from a class or all classes
    - Omit classId to fetch from ALL classes automatically (recommended)
    - Use when you need to filter/process assignments by date, status, etc.
-   - Returns full assignment data for filtering in Python
 
-5. **getTodos**: Get user's todo list
-   - Only callable from code_execution (programmatic tool calling)
+7. **getTodos**: Get user's todo list
    - Views: today, upcoming, anytime, someday, active, logbook
-   - Returns full todo data including Canvas links
 
-6. **createTodo**: Create a new todo item
-   - Only callable from code_execution (programmatic tool calling)
+8. **createTodo**: Create a new todo item
    - Can link to Canvas assignments automatically
    - Supports scheduled dates, due dates, and subtasks
 
-7. **updateTodo**: Update existing todo
-   - Only callable from code_execution (programmatic tool calling)
+9. **updateTodo**: Update existing todo
    - Can mark complete/incomplete, change dates, update subtasks
 
-8. **deleteTodo**: Delete a todo permanently
-   - Only callable from code_execution (programmatic tool calling)
+10. **deleteTodo**: Delete a todo permanently
 
-9. **createStudySet**: Create flashcards for studying
-    - Currently simplified (to be enhanced later)
+11. **createStudySet**: Create flashcards for studying
     - Each item has term and definition
 
-10. **memory**: Store and retrieve important information about the user
-    - Use to remember user preferences, facts, goals, etc.
+12. **memory**: Store and retrieve important information about the user
     - Check memory before asking users to repeat information
     - Proactively save important facts the user shares
 
-💡 PROGRAMMATIC TOOL CALLING PATTERN:
+13. **update_plan**: Write or update a plan.md file in the sandbox
+    - Use to track multi-step tasks and record progress across turns
 
-When you need to call multiple tools or process large results, write Python code that calls tools programmatically:
+14. **apply_patch**: Apply a unified diff patch to files in the sandbox
 
-\`\`\`python
-import json
-import asyncio
+15. **view_image**: Read an image from the sandbox and display it
+    - Supports png, jpg, gif, webp, svg
 
-# Example: Get assignments and classify priority in parallel using invokeLLM
-result = await getClassAssignments({})  # Fetch from all classes
-assignments = json.loads(result)
+16. **request_user_input**: Pause and ask the user a clarifying question
+    - Use when you need information only the user can provide
+    - Stop after calling this; resume in the next turn
 
-# Classify priority for each assignment in parallel
-async def classify_priority(assignment):
-    result = await invokeLLM({
-        "prompt": f"Classify priority (high/medium/low) for: {assignment['name']}. Due: {assignment.get('due_at')}. Points: {assignment.get('points_possible')}",
-        "priority": "speed",
-        "schema": {"priority": "string (high/medium/low)"}
-    })
-    response = json.loads(result)
-    return {"assignment": assignment, "priority": response["data"]["priority"]}
+17. **search_tools**: Search available tools by keyword
+    - Use when unsure which tool to use for a given task
 
-# Process all assignments in parallel (much faster!)
-classified = await asyncio.gather(*[classify_priority(a) for a in assignments[:20]])
+18. **spawn_agent**: Spawn a focused sub-agent for an isolated subtask
+    - Sub-agent gets its own sandbox with bash and file editing tools
+    - Runs synchronously and returns its output
 
-# Create todos only for high priority
-for item in classified:
-    if item["priority"] == "high":
-        await createTodo({
-            "title": f"Complete {item['assignment']['name']}",
-            "dueDate": item['assignment']['due_at'],
-            "canvasContentType": "assignment",
-            "canvasContentId": item['assignment']['id'],
-            "canvasClassId": int(item['assignment']['_classId'])
-        })
-\`\`\`
-
-Benefits:
-- **Reduced latency**: No round trips to model between tool calls
-- **Token savings**: Process/filter data in Python before adding to context
-- **Conditional logic**: Make decisions based on intermediate results
-- **Parallel processing**: Use invokeLLM for batch classification/extraction
-
-📖 **SKILLS AVAILABLE**:
-- **canvas-assignments**: Detailed documentation on Canvas assignment data structure, fields, date handling, and common patterns
-- **todo-management**: Complete guide to todo data structure, views, date types, Canvas linking, and CRUD operations
-- **llm-invocation**: Guide to using invokeLLM for parallel processing, classification, extraction, and sub-reasoning tasks
-- Reference skills when working with their respective data
+19. **close_agent**: Stop and delete a sub-agent's sandbox
 
 📚 USER'S CLASSES:
 ${ctx.classes.map((course) => `- ${course.name} (ID: ${course.id})`).join("\n")}
@@ -189,17 +188,18 @@ Remember: You're here to help students succeed. Be proactive, helpful, and make 
 
 /**
  * Get tools configured for the general agent
- * All tools are configured to support programmatic calling
  */
 export function getGeneralAgentTools(ctx: AgentContext): Record<string, Tool> {
-  return {
-    // Code execution with programmatic tool calling support
-    code_execution: anthropic.tools.codeExecution_20250825(),
+  const tools: Record<string, Tool> = {
+    // Bash execution in Daytona sandbox
+    bash: createBashTool(ctx.chatId, ctx.userId),
+
+    // File editing in sandbox
+    str_replace_based_edit_tool: createTextEditorTool(ctx.chatId),
 
     // Memory tool for persistent user information (filesystem-like interface)
     memory: anthropic.tools.memory_20250818({
       execute: async (action) => {
-        // Execute memory command with full database integration
         return await executeMemoryCommand(ctx.userId, action);
       },
     }),
@@ -219,20 +219,30 @@ export function getGeneralAgentTools(ctx: AgentContext): Record<string, Tool> {
 
     // Canvas LMS content search
     searchContent: searchContentTool,
-
-    // Get class assignments (programmatic calling only)
     getClassAssignments: getClassAssignmentsTool,
 
-    // Todo management (programmatic calling only)
+    // Todo management
     getTodos: getTodosTool,
     createTodo: createTodoTool,
     updateTodo: updateTodoTool,
     deleteTodo: deleteTodoTool,
 
-    // LLM invocation for sub-tasks (programmatic calling only)
-    // invokeLLM: invokeLLMTool,
-
     // Study set creation
     createStudySet: createStudySetTool,
+
+    // Codex CLI-inspired tools
+    update_plan: createUpdatePlanTool(ctx.chatId),
+    apply_patch: createApplyPatchTool(ctx.chatId),
+    view_image: createViewImageTool(ctx.chatId),
+    request_user_input: requestUserInputTool,
+    spawn_agent: createSpawnAgentTool(),
+    close_agent: createCloseAgentTool(),
   };
+
+  // search_tools gets the full tool list so it can search by name+description
+  tools.search_tools = createSearchToolsTool(
+    tools as Record<string, { description: string }>,
+  );
+
+  return tools;
 }

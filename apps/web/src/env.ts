@@ -7,6 +7,9 @@ export const env = createEnv({
     AUTH_SECRET: z.string().min(1),
     UPSTASH_SEARCH_URL: z.url(),
     UPSTASH_SEARCH_TOKEN: z.string(),
+    DAYTONA_API_KEY: z.string().min(1),
+    UPSTASH_REDIS_REST_URL: z.url(),
+    UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
   },
   client: {
     NEXT_PUBLIC_UPSTASH_SEARCH_TOKEN: z.string().optional(),

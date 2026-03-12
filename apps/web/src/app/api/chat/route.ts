@@ -1,12 +1,10 @@
-import {
-  type AnthropicProviderOptions,
-  anthropic,
-  forwardAnthropicContainerIdFromLastStep,
-} from "@ai-sdk/anthropic";
+import { type AnthropicProviderOptions, anthropic } from "@ai-sdk/anthropic";
+import { stopSandbox } from "@/ai/sandbox/sandbox-manager";
 import { geolocation } from "@vercel/functions";
 import {
   convertToModelMessages,
   type ModelMessage,
+  type SystemModelMessage,
   smoothStream,
   ToolLoopAgent,
   type UIMessage,
@@ -15,6 +13,7 @@ import { headers } from "next/headers";
 import type { NextRequest } from "next/server";
 import {
   type AgentContext,
+  buildDynamicContext,
   buildSystemPrompt,
   getGeneralAgentTools,
 } from "@/ai/agents/general";
@@ -22,7 +21,7 @@ import { getAllCanvasCourses } from "@/app/classes/classes-actions";
 import { auth } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
-  console.log("=== API /api/chat POST received ===");
+
   const location = geolocation(request);
 
   // Get request data
@@ -39,8 +38,6 @@ export async function POST(request: NextRequest) {
       },
     );
   }
-
-  console.log(messages);
 
   if (!chatId) {
     return new Response(JSON.stringify({ error: "No chat ID provided" }), {
@@ -87,39 +84,13 @@ export async function POST(request: NextRequest) {
   // Get tools configured for this context
   const tools = getGeneralAgentTools(context);
 
-  // Extract container ID from last assistant message in conversation history
-  const lastAssistantMessage = messages
-    .slice()
-    .reverse()
-    .find((msg) => msg.role === "assistant");
-  const existingContainerId = (lastAssistantMessage as any)
-    ?.experimental_providerMetadata?.anthropic?.containerId;
-
-  // Build provider options with container persistence
+  // Build provider options
   const providerOptions = {
     anthropic: {
       // Extended thinking for complex reasoning
       thinking: {
         type: "enabled" as const,
         budgetTokens: 10000,
-      },
-      // Container with Agent Skills (reuse from last message if exists)
-      container: {
-        id: existingContainerId,
-        skills: [
-          { type: "anthropic" as const, skillId: "pptx" },
-          { type: "anthropic" as const, skillId: "docx" },
-          { type: "anthropic" as const, skillId: "xlsx" },
-          { type: "anthropic" as const, skillId: "pdf" },
-          {
-            type: "custom" as const,
-            skillId: "skill_01VmZ8Be2T5orYF7i1YiBUTv",
-          },
-          {
-            type: "custom" as const,
-            skillId: "skill_01KxC6EtBShVCeb2jVEs7gXW",
-          },
-        ],
       },
     } satisfies AnthropicProviderOptions,
   };
@@ -128,22 +99,34 @@ export async function POST(request: NextRequest) {
     // Convert UI messages to model messages
     const modelMessages = await convertToModelMessages(messages);
 
-    // Add cache control breakpoints to optimize token usage
-    // 1. Cache system prompt (biggest win - always the same)
-    const systemPromptWithCache: ModelMessage = {
-      role: "system",
-      content: buildSystemPrompt(context),
-      providerOptions: {
-        anthropic: { cacheControl: { type: "ephemeral" } },
+    // Build system prompt instructions:
+    // - Static part (cached): stable tool docs, guidelines, user profile, classes
+    // - Dynamic part (uncached): current datetime and location (changes per request)
+    // Splitting these allows the static part to cache correctly across turns.
+    const instructions: SystemModelMessage[] = [
+      {
+        role: "system",
+        content: buildSystemPrompt(context),
+        providerOptions: {
+          anthropic: { cacheControl: { type: "ephemeral" } },
+        },
       },
-    };
+      {
+        role: "system",
+        content: buildDynamicContext(context),
+      },
+    ];
 
-    // 2. Add cache breakpoint to conversation history (after a few messages)
-    // This caches the conversation history up to a certain point
+    // Cache the conversation history at a stable breakpoint.
+    // We mark the second-to-last user message so the history up to that
+    // point is cached on the next turn (when the conversation is one longer).
+    const lastUserIdx = modelMessages.reduce(
+      (last, msg, idx) => (msg.role === "user" ? idx : last),
+      -1,
+    );
+    const cacheIdx = lastUserIdx > 0 ? lastUserIdx - 1 : -1;
     const messagesWithCache = modelMessages.map((msg, idx) => {
-      // Cache at a breakpoint ~4 messages before the end
-      // This allows recent messages to remain uncached (they change each turn)
-      if (idx === Math.max(0, modelMessages.length - 4)) {
+      if (idx === cacheIdx) {
         return {
           ...msg,
           providerOptions: {
@@ -155,12 +138,14 @@ export async function POST(request: NextRequest) {
     });
 
     const agent = new ToolLoopAgent({
-      model: anthropic("claude-sonnet-4-5"),
-      instructions: systemPromptWithCache,
+      model: anthropic("claude-sonnet-4-6"),
+      instructions,
       tools,
       providerOptions: providerOptions,
-      prepareStep: forwardAnthropicContainerIdFromLastStep,
-      onFinish: ({ steps }) => {
+      onFinish: async ({ steps }) => {
+        // Stop the sandbox to preserve filesystem while stopping billing
+        await stopSandbox(chatId);
+
         // Log cache performance metrics from the last step
         const lastStep = steps[steps.length - 1];
         const metadata = lastStep?.providerMetadata?.anthropic;
