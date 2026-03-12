@@ -7,7 +7,11 @@ import { tool } from "ai";
 import { z } from "zod";
 import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 
-export function createApplyPatchTool(chatId: string) {
+export function createApplyPatchTool(
+  chatId: string,
+  userId: string,
+  friendlyChatId?: string,
+) {
   return tool({
     description:
       "Apply a unified diff patch to one or more files in the sandbox. Accepts standard unified diff format (as produced by `diff -u` or `git diff`). Use this for precise multi-line edits when you know exactly what the before/after should look like.",
@@ -19,15 +23,22 @@ export function createApplyPatchTool(chatId: string) {
         ),
     }),
     execute: async ({ patch }) => {
-      const sandbox = await getOrCreateSandbox(chatId);
+      const sandbox = await getOrCreateSandbox(
+        userId,
+        chatId,
+        friendlyChatId,
+      );
 
       // Write the patch to a temp file and apply with `patch` command
       const patchPath = "/tmp/agent.patch";
       await sandbox.fs.uploadFile(Buffer.from(patch), patchPath);
 
+      const workingDir = friendlyChatId
+        ? `/home/daytona/workspace/chat/${friendlyChatId}`
+        : "/home/daytona/workspace";
       const result = await sandbox.process.executeCommand(
         `patch -p1 < "${patchPath}" 2>&1`,
-        "/home/daytona/workspace",
+        workingDir,
       );
 
       if (result.exitCode !== 0) {

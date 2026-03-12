@@ -7,10 +7,14 @@ import { tool } from "ai";
 import { z } from "zod";
 import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 
-export function createUpdatePlanTool(chatId: string) {
+export function createUpdatePlanTool(
+  chatId: string,
+  userId: string,
+  friendlyChatId?: string,
+) {
   return tool({
     description:
-      "Write or update a structured plan file (/home/daytona/workspace/plan.md) in the sandbox. Use this to track multi-step tasks, record progress, and organize work. The plan persists across turns.",
+      "Write or update a structured plan file under /chat/<friendlyId>. Use this to track multi-step tasks, record progress, and organize work. The plan persists across turns.",
     inputSchema: z.object({
       content: z
         .string()
@@ -19,11 +23,15 @@ export function createUpdatePlanTool(chatId: string) {
         ),
     }),
     execute: async ({ content }) => {
-      const sandbox = await getOrCreateSandbox(chatId);
-      await sandbox.fs.uploadFile(
-        Buffer.from(content),
-        "/home/daytona/workspace/plan.md",
+      const sandbox = await getOrCreateSandbox(
+        userId,
+        chatId,
+        friendlyChatId,
       );
+      const planPath = friendlyChatId
+        ? `/home/daytona/workspace/chat/${friendlyChatId}/plan.md`
+        : "/home/daytona/workspace/plan.md";
+      await sandbox.fs.uploadFile(Buffer.from(content), planPath);
       return "plan.md updated successfully.";
     },
   });

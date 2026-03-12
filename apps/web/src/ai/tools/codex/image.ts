@@ -17,7 +17,17 @@ const SUPPORTED_TYPES: Record<string, string> = {
   svg: "image/svg+xml",
 };
 
-export function createViewImageTool(chatId: string) {
+export interface ViewImageResult {
+  path: string;
+  dataUrl: string;
+  message: string;
+}
+
+export function createViewImageTool(
+  chatId: string,
+  userId: string,
+  friendlyChatId?: string,
+) {
   return tool({
     description:
       "Read an image file from the sandbox filesystem and return it as a base64 data URL. Useful for viewing charts, diagrams, screenshots, or any image the agent has created or downloaded.",
@@ -28,8 +38,12 @@ export function createViewImageTool(chatId: string) {
           "Absolute or workspace-relative path to the image file (e.g., /home/daytona/workspace/chart.png)",
         ),
     }),
-    execute: async ({ path }) => {
-      const sandbox = await getOrCreateSandbox(chatId);
+    execute: async ({ path }): Promise<ViewImageResult | string> => {
+      const sandbox = await getOrCreateSandbox(
+        userId,
+        chatId,
+        friendlyChatId,
+      );
 
       const ext = path.split(".").pop()?.toLowerCase() ?? "";
       const mimeType = SUPPORTED_TYPES[ext] ?? "application/octet-stream";
@@ -41,8 +55,21 @@ export function createViewImageTool(chatId: string) {
         return `File not found or could not be read: ${path}`;
       }
 
-      const base64 = buffer.toString("base64");
-      return `data:${mimeType};base64,${base64}`;
+      const dataUrl = `data:${mimeType};base64,${buffer.toString("base64")}`;
+      return {
+        path,
+        dataUrl,
+        message: `Displayed image from ${path}`,
+      };
+    },
+    toModelOutput: (result) => {
+      if (typeof result === "string") {
+        return [{ type: "text", data: result }];
+      }
+      return [
+        { type: "text", data: result.message },
+        { type: "image", data: result.dataUrl },
+      ];
     },
   });
 }

@@ -98,9 +98,4 @@ export const getClassAssignmentsTool = tool({
     // Flatten the array of arrays
     return allAssignments.flat();
   },
-  providerOptions: {
-    anthropic: {
-      cacheControl: { type: "ephemeral" },
-    },
-  },
 });

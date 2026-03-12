@@ -21,7 +21,6 @@ export const searchContentTool = tool({
   providerOptions: {
     anthropic: {
       allowedCallers: ["direct", "code_execution_20250825"],
-      cacheControl: { type: "ephemeral" },
     },
   },
 });

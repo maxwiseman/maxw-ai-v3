@@ -62,8 +62,8 @@ export function createSpawnAgentTool() {
         const result = await generateText({
           model: anthropic("claude-sonnet-4-6"),
           tools: {
-            bash: createBashTool(agentId),
-            str_replace_based_edit_tool: createTextEditorTool(agentId),
+            bash: createBashTool(agentId, agentId),
+            str_replace_based_edit_tool: createTextEditorTool(agentId, agentId),
           },
           prompt: instructions,
           stopWhen: stepCountIs(30),

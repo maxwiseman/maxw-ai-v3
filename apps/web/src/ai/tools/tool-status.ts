@@ -3,13 +3,20 @@ import {
   IconBrain,
   IconCards,
   IconCode,
+  IconEdit,
+  IconHelpCircle,
   IconListCheck,
   IconListDetails,
   IconListSearch,
   IconNotebook,
+  IconPhoto,
   IconPlaylistX,
+  IconSearch,
+  IconTerminal,
   IconWorld,
   IconWorldDownload,
+  IconX,
+  IconLayersLinked,
 } from "@tabler/icons-react";
 
 export const toolStatus: Record<string, { icon: Icon; text: string }> = {
@@ -56,5 +63,41 @@ export const toolStatus: Record<string, { icon: Icon; text: string }> = {
   getTodos: {
     icon: IconListSearch,
     text: "Listing todo items",
+  },
+  bash: {
+    icon: IconTerminal,
+    text: "Running shell commands",
+  },
+  str_replace_based_edit_tool: {
+    icon: IconEdit,
+    text: "Editing files",
+  },
+  update_plan: {
+    icon: IconNotebook,
+    text: "Updating plan",
+  },
+  apply_patch: {
+    icon: IconCode,
+    text: "Applying patch",
+  },
+  view_image: {
+    icon: IconPhoto,
+    text: "Viewing image",
+  },
+  request_user_input: {
+    icon: IconHelpCircle,
+    text: "Requesting clarification",
+  },
+  search_tools: {
+    icon: IconSearch,
+    text: "Searching tools",
+  },
+  spawn_agent: {
+    icon: IconLayersLinked,
+    text: "Spawning sub-agent",
+  },
+  close_agent: {
+    icon: IconX,
+    text: "Closing sub-agent",
   },
 };

@@ -8,10 +8,13 @@ import type { Tool } from "ai";
 import type { CanvasCourse } from "@/types/canvas";
 import { getClassAssignmentsTool } from "../tools/canvas/get-class-assignments";
 import { searchContentTool } from "../tools/canvas/search-content";
-import { createApplyPatchTool } from "../tools/codex/patch";
+import {
+  createCloseAgentTool,
+  createSpawnAgentTool,
+} from "../tools/codex/agents";
 import { createViewImageTool } from "../tools/codex/image";
+import { createApplyPatchTool } from "../tools/codex/patch";
 import { createUpdatePlanTool } from "../tools/codex/plan";
-import { createCloseAgentTool, createSpawnAgentTool } from "../tools/codex/agents";
 import { createSearchToolsTool } from "../tools/codex/search-tools";
 import { requestUserInputTool } from "../tools/codex/user-input";
 import { createBashTool } from "../tools/execution/bash";
@@ -37,6 +40,7 @@ export interface AgentContext {
   currentDateTime: string;
   timezone: string;
   chatId: string;
+  friendlyChatId: string;
   country?: string;
   city?: string;
   region?: string;
@@ -53,10 +57,13 @@ export interface AgentContext {
 export function buildDynamicContext(ctx: AgentContext): string {
   const location = ctx.city
     ? `${ctx.city}, ${ctx.region}, ${ctx.country}`
-    : ctx.country ?? "unknown location";
+    : (ctx.country ?? "unknown location");
   return `🎯 CURRENT REQUEST CONTEXT:
-- **Date/Time**: ${ctx.currentDateTime} (${ctx.timezone})
-- **Location**: ${location}`;
+- **Timezone**: ${ctx.timezone}
+- **Location**: ${location}
+- **Friendly Chat ID**: ${ctx.friendlyChatId}
+- **Chat workspace**: /home/daytona/workspace/chat/${ctx.friendlyChatId}
+- **Environment memory**: /memories/environment.txt`;
 }
 
 /**
@@ -79,13 +86,20 @@ export function buildSystemPrompt(ctx: AgentContext): string {
 - **School**: ${ctx.schoolName}
 - **User**: ${ctx.fullName}
 
+🗂️ CHAT WORKSPACE:
+- **Friendly Chat ID**: ${ctx.friendlyChatId}
+- **Workspace directory**: /home/daytona/workspace/chat/${ctx.friendlyChatId}
+- Store every file you create for this conversation under the chat directory.
+- When you install a CLI, tool, or dependency, append a short note to /memories/environment.txt via the memory tool so future turns know the environment state.
+
 🛠️ YOUR TOOLS:
 
 1. **bash**: Run shell commands in a persistent sandbox
-   - Working directory: /home/daytona/workspace (default)
+   - Working directory: /home/daytona/workspace/chat/${ctx.friendlyChatId}
    - Python, Node.js, and common tools available
    - Files persist across turns in the same conversation
    - Use for calculations, data processing, running scripts
+   - Keep chat-specific installs and files inside /home/daytona/workspace/chat/${ctx.friendlyChatId}.
    - **Canvas data available at \`/home/daytona/workspace/data/\`** (refreshed each turn):
      - \`courses.json\` — all enrolled courses
      - \`assignments.json\` — all assignments across all courses (each has \`_classId\`, \`_className\`)
@@ -129,6 +143,7 @@ export function buildSystemPrompt(ctx: AgentContext): string {
 12. **memory**: Store and retrieve important information about the user
     - Check memory before asking users to repeat information
     - Proactively save important facts the user shares
+    - Record any environment changes or installed CLIs in \`/memories/environment.txt\`
 
 13. **update_plan**: Write or update a plan.md file in the sandbox
     - Use to track multi-step tasks and record progress across turns
@@ -192,10 +207,14 @@ Remember: You're here to help students succeed. Be proactive, helpful, and make 
 export function getGeneralAgentTools(ctx: AgentContext): Record<string, Tool> {
   const tools: Record<string, Tool> = {
     // Bash execution in Daytona sandbox
-    bash: createBashTool(ctx.chatId, ctx.userId),
+    bash: createBashTool(ctx.chatId, ctx.userId, ctx.friendlyChatId),
 
     // File editing in sandbox
-    str_replace_based_edit_tool: createTextEditorTool(ctx.chatId),
+    str_replace_based_edit_tool: createTextEditorTool(
+      ctx.chatId,
+      ctx.userId,
+      ctx.friendlyChatId,
+    ),
 
     // Memory tool for persistent user information (filesystem-like interface)
     memory: anthropic.tools.memory_20250818({
@@ -231,9 +250,17 @@ export function getGeneralAgentTools(ctx: AgentContext): Record<string, Tool> {
     createStudySet: createStudySetTool,
 
     // Codex CLI-inspired tools
-    update_plan: createUpdatePlanTool(ctx.chatId),
-    apply_patch: createApplyPatchTool(ctx.chatId),
-    view_image: createViewImageTool(ctx.chatId),
+    update_plan: createUpdatePlanTool(
+      ctx.chatId,
+      ctx.userId,
+      ctx.friendlyChatId,
+    ),
+    apply_patch: createApplyPatchTool(
+      ctx.chatId,
+      ctx.userId,
+      ctx.friendlyChatId,
+    ),
+    view_image: createViewImageTool(ctx.chatId, ctx.userId, ctx.friendlyChatId),
     request_user_input: requestUserInputTool,
     spawn_agent: createSpawnAgentTool(),
     close_agent: createCloseAgentTool(),

@@ -64,11 +64,6 @@ export const getTodosTool = tool({
     // Return as JSON string for consistency with other tools
     return JSON.stringify(todos);
   },
-  providerOptions: {
-    anthropic: {
-      cacheControl: { type: "ephemeral" },
-    },
-  },
 });
 
 /**
@@ -141,11 +136,6 @@ export const createTodoTool = tool({
     // Return as JSON string for consistency
     return JSON.stringify(todo);
   },
-  providerOptions: {
-    anthropic: {
-      cacheControl: { type: "ephemeral" },
-    },
-  },
 });
 
 /**
@@ -196,11 +186,6 @@ export const updateTodoTool = tool({
     // Return as JSON string for consistency
     return JSON.stringify(todo);
   },
-  providerOptions: {
-    anthropic: {
-      cacheControl: { type: "ephemeral" },
-    },
-  },
 });
 
 /**
@@ -221,10 +206,5 @@ export const deleteTodoTool = tool({
 
     // Return as JSON string for consistency
     return JSON.stringify({ success: true, id });
-  },
-  providerOptions: {
-    anthropic: {
-      cacheControl: { type: "ephemeral" },
-    },
   },
 });

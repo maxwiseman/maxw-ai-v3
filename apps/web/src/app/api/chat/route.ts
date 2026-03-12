@@ -1,5 +1,5 @@
 import { type AnthropicProviderOptions, anthropic } from "@ai-sdk/anthropic";
-import { stopSandbox } from "@/ai/sandbox/sandbox-manager";
+import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { geolocation } from "@vercel/functions";
 import {
   convertToModelMessages,
@@ -17,11 +17,12 @@ import {
   buildSystemPrompt,
   getGeneralAgentTools,
 } from "@/ai/agents/general";
+import { stopSandbox } from "@/ai/sandbox/sandbox-manager";
+import { getOrCreateChatMetadata } from "@/ai/utils/chat-metadata";
 import { getAllCanvasCourses } from "@/app/classes/classes-actions";
 import { auth } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
-
   const location = geolocation(request);
 
   // Get request data
@@ -68,12 +69,15 @@ export async function POST(request: NextRequest) {
   const now = new Date();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+  const metadata = await getOrCreateChatMetadata(userId, chatId);
+
   const context: AgentContext = {
     userId,
     fullName,
     schoolName,
     classes,
     chatId,
+    friendlyChatId: metadata.friendlyId,
     currentDateTime: now.toLocaleString(undefined, { timeZone: timezone }),
     timezone,
     country: location.country,
@@ -87,29 +91,29 @@ export async function POST(request: NextRequest) {
   // Build provider options
   const providerOptions = {
     anthropic: {
-      // Extended thinking for complex reasoning
       thinking: {
         type: "enabled" as const,
         budgetTokens: 10000,
       },
-    } satisfies AnthropicProviderOptions,
+      cacheControl: {
+        type: "ephemeral",
+        ttl: "1h",
+      },
+    },
+  } satisfies {
+    anthropic?: AnthropicProviderOptions;
+    openai?: OpenAIResponsesProviderOptions;
   };
 
   try {
     // Convert UI messages to model messages
     const modelMessages = await convertToModelMessages(messages);
 
-    // Build system prompt instructions:
-    // - Static part (cached): stable tool docs, guidelines, user profile, classes
-    // - Dynamic part (uncached): current datetime and location (changes per request)
-    // Splitting these allows the static part to cache correctly across turns.
+    // Build system prompt instructions.
     const instructions: SystemModelMessage[] = [
       {
         role: "system",
         content: buildSystemPrompt(context),
-        providerOptions: {
-          anthropic: { cacheControl: { type: "ephemeral" } },
-        },
       },
       {
         role: "system",
@@ -117,62 +121,35 @@ export async function POST(request: NextRequest) {
       },
     ];
 
-    // Cache the conversation history at a stable breakpoint.
-    // We mark the second-to-last user message so the history up to that
-    // point is cached on the next turn (when the conversation is one longer).
-    const lastUserIdx = modelMessages.reduce(
-      (last, msg, idx) => (msg.role === "user" ? idx : last),
-      -1,
-    );
-    const cacheIdx = lastUserIdx > 0 ? lastUserIdx - 1 : -1;
-    const messagesWithCache = modelMessages.map((msg, idx) => {
-      if (idx === cacheIdx) {
-        return {
-          ...msg,
-          providerOptions: {
-            anthropic: { cacheControl: { type: "ephemeral" } },
-          },
-        };
-      }
-      return msg;
-    });
-
     const agent = new ToolLoopAgent({
       model: anthropic("claude-sonnet-4-6"),
       instructions,
       tools,
       providerOptions: providerOptions,
-      onFinish: async ({ steps }) => {
-        // Stop the sandbox to preserve filesystem while stopping billing
-        await stopSandbox(chatId);
-
-        // Log cache performance metrics from the last step
-        const lastStep = steps[steps.length - 1];
-        const metadata = lastStep?.providerMetadata?.anthropic;
-        if (metadata) {
-          console.log("=== Cache Performance Metrics ===");
-          console.log(
-            "Cache creation tokens:",
-            metadata.cacheCreationInputTokens ?? 0,
-          );
-          console.log("Cache read tokens:", metadata.cacheReadInputTokens ?? 0);
-          console.log("Total input tokens:", lastStep.usage?.inputTokens ?? 0);
-
-          const cacheReadTokens = Number(metadata.cacheReadInputTokens ?? 0);
-          const totalInputTokens = Number(lastStep.usage?.inputTokens ?? 0);
-          console.log(
-            "Cache hit rate:",
-            totalInputTokens > 0
-              ? `${Math.round((cacheReadTokens / totalInputTokens) * 100)}%`
-              : "N/A",
-          );
-          console.log("Steps completed:", steps.length);
+      onFinish: async (event) => {
+        try {
+          // Stop the sandbox to preserve filesystem while stopping billing
+          await stopSandbox(userId, chatId);
+        } catch (stopError) {
+          console.error("Failed to stop sandbox", stopError);
         }
+
+        const usage = event.totalUsage;
+        const inputTokens = usage.inputTokens ?? 0;
+        const cachedTokens = usage.inputTokenDetails.cacheReadTokens ?? 0;
+        const cacheWrites = usage.inputTokenDetails.cacheWriteTokens ?? 0;
+        const cachedPercent = inputTokens
+          ? Math.round((cachedTokens / inputTokens) * 100)
+          : 0;
+
+        console.info(
+          `Claude cache for chat ${chatId}: ${cachedTokens}/${inputTokens} input tokens cached (${cachedPercent}%) and ${cacheWrites} tokens written to the cache.`,
+        );
       },
     });
 
     const result = await agent.stream({
-      messages: messagesWithCache,
+      messages: modelMessages,
       experimental_transform: smoothStream({ chunking: "word" }),
     });
 

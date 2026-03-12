@@ -25,25 +25,17 @@ interface MetadataResponse {
 export async function GET() {
   try {
     // Hardcoded metadata for the new general agent
-    const agents: AgentMetadata[] = [
-      {
-        name: "general",
-        description:
-          "AI assistant with web search, code execution, Canvas LMS integration, and study tools",
-        tools: [
-          "code_execution",
-          "web_search",
-          "searchContent",
-          "createStudySet",
-        ],
-      },
-    ];
-
     const tools: ToolMetadata[] = [
       {
-        name: "code_execution",
+        name: "bash",
         description:
-          "Run Python code for calculations, data processing, and programmatic tool calling",
+          "Run Daytona shell commands with persistent workspace files and cached Canvas data",
+        agent: "general",
+      },
+      {
+        name: "str_replace_based_edit_tool",
+        description:
+          "View, edit, and create files directly inside the Daytona sandbox",
         agent: "general",
       },
       {
@@ -52,14 +44,98 @@ export async function GET() {
         agent: "general",
       },
       {
+        name: "web_fetch",
+        description: "Fetch a webpage URL and read its contents in detail",
+        agent: "general",
+      },
+      {
+        name: "memory",
+        description:
+          "Store and recall user preferences or facts that matter across chats",
+        agent: "general",
+      },
+      {
         name: "searchContent",
-        description: "Search Canvas LMS content (assignments, pages, syllabus)",
+        description: "Semantic search across the student's Canvas courses and pages",
+        agent: "general",
+      },
+      {
+        name: "getClassAssignments",
+        description: "List Canvas assignments for a class or all courses",
+        agent: "general",
+      },
+      {
+        name: "getTodos",
+        description: "Return the user's todo list (today, upcoming, anytime, etc.)",
+        agent: "general",
+      },
+      {
+        name: "createTodo",
+        description:
+          "Create a scheduled todo tied to Canvas work, due dates, and subtasks",
+        agent: "general",
+      },
+      {
+        name: "updateTodo",
+        description: "Edit an existing todo (status, dates, subtasks)",
+        agent: "general",
+      },
+      {
+        name: "deleteTodo",
+        description: "Permanently remove a todo from the student's list",
         agent: "general",
       },
       {
         name: "createStudySet",
-        description: "Create flashcards and practice questions for studying",
+        description: "Generate flashcards and practice questions for study",
         agent: "general",
+      },
+      {
+        name: "update_plan",
+        description:
+          "Write or update the persistent plan.md inside the Daytona sandbox",
+        agent: "general",
+      },
+      {
+        name: "apply_patch",
+        description: "Apply a unified diff patch to sandbox files (precise edits)",
+        agent: "general",
+      },
+      {
+        name: "view_image",
+        description: "Read and preview an image stored in the sandbox",
+        agent: "general",
+      },
+      {
+        name: "request_user_input",
+        description:
+          "Pause the agent and ask the human for missing clarification",
+        agent: "general",
+      },
+      {
+        name: "search_tools",
+        description: "Search available tools and command descriptions",
+        agent: "general",
+      },
+      {
+        name: "spawn_agent",
+        description:
+          "Launch an isolated sub-agent with its own Daytona sandbox for experiments",
+        agent: "general",
+      },
+      {
+        name: "close_agent",
+        description: "Stop and delete a previously spawned sub-agent sandbox",
+        agent: "general",
+      },
+    ];
+
+    const agents: AgentMetadata[] = [
+      {
+        name: "general",
+        description:
+          "Daytona-powered assistant with sandbox execution, Canvas/todo helpers, and planning tools",
+        tools: tools.map((tool) => tool.name),
       },
     ];
 

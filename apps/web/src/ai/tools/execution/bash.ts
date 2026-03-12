@@ -8,7 +8,11 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { seedCanvasData } from "@/ai/sandbox/data-seeder";
 import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 
-export function createBashTool(chatId: string, userId: string) {
+export function createBashTool(
+  chatId: string,
+  userId: string,
+  friendlyChatId?: string,
+) {
   return anthropic.tools.bash_20250124({
     execute: async ({ command, restart }) => {
       if (restart) {
@@ -16,12 +20,19 @@ export function createBashTool(chatId: string, userId: string) {
       }
 
       try {
-        const sandbox = await getOrCreateSandbox(chatId);
+        const sandbox = await getOrCreateSandbox(
+          userId,
+          chatId,
+          friendlyChatId,
+        );
+        const workingDir = friendlyChatId
+          ? `/home/daytona/workspace/chat/${friendlyChatId}`
+          : "/home/daytona/workspace";
         // Lazily seed Canvas data on first sandbox use this turn
         await seedCanvasData(userId, sandbox);
         const result = await sandbox.process.executeCommand(
           command,
-          "/home/daytona/workspace",
+          workingDir,
           undefined,
           60, // 60s timeout
         );
