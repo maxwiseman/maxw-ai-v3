@@ -1,6 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { queryCanvasIndex } from "@/ai/utils/upstash-helpers";
+import { getAllCanvasCourses } from "@/app/classes/classes-actions";
 
 export const searchContentTool = tool({
   description:
@@ -10,7 +11,12 @@ export const searchContentTool = tool({
     // classIds: z.array(z.string()).min(1).optional().describe("Optional: class IDs to filter by -- to search all classes, leave `classIds` undefined")
   }),
   execute: async ({ query }) => {
-    return await queryCanvasIndex(query);
+    const courses = await getAllCanvasCourses();
+    if (typeof courses === "string") return courses;
+    return await queryCanvasIndex(
+      query,
+      courses.map((c) => c.id.toString()),
+    );
   },
   providerOptions: {
     anthropic: {

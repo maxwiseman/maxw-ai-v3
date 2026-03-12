@@ -4,6 +4,7 @@
  */
 
 import { anthropic } from "@ai-sdk/anthropic";
+import type { Tool } from "ai";
 import type { CanvasCourse } from "@/types/canvas";
 import { getClassAssignmentsTool } from "../tools/canvas/get-class-assignments";
 import { searchContentTool } from "../tools/canvas/search-content";
@@ -190,7 +191,7 @@ Remember: You're here to help students succeed. Be proactive, helpful, and make 
  * Get tools configured for the general agent
  * All tools are configured to support programmatic calling
  */
-export function getGeneralAgentTools(ctx: AgentContext): Record<string, any> {
+export function getGeneralAgentTools(ctx: AgentContext): Record<string, Tool> {
   return {
     // Code execution with programmatic tool calling support
     code_execution: anthropic.tools.codeExecution_20250825(),
