@@ -71,9 +71,7 @@ export function createSearchToolsTool(tools: Record<string, ToolEntry>) {
         return `No tools found matching "${query}".`;
       }
 
-      return scored
-        .map((t) => `**${t.name}**: ${t.description}`)
-        .join("\n\n");
+      return scored.map((t) => `**${t.name}**: ${t.description}`).join("\n\n");
     },
   });
 }

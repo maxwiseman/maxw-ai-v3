@@ -23,15 +23,17 @@ export function createUpdatePlanTool(
         ),
     }),
     execute: async ({ content }) => {
-      const sandbox = await getOrCreateSandbox(
-        userId,
-        chatId,
-        friendlyChatId,
-      );
+      // Fire-and-forget: don't block streaming on sandbox spinup / file write
       const planPath = friendlyChatId
         ? `/home/daytona/workspace/chat/${friendlyChatId}/plan.md`
         : "/home/daytona/workspace/plan.md";
-      await sandbox.fs.uploadFile(Buffer.from(content), planPath);
+      getOrCreateSandbox(userId, chatId, friendlyChatId)
+        .then((sandbox) =>
+          sandbox.fs.uploadFile(Buffer.from(content), planPath),
+        )
+        .catch((err) =>
+          console.error("[update_plan] sandbox write failed:", err),
+        );
       return "plan.md updated successfully.";
     },
   });

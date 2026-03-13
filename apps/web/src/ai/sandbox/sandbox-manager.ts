@@ -29,10 +29,7 @@ async function ensureChatDirectory(
 
   const workspace = "/home/daytona/workspace";
   const chatDir = `${workspace}/chat/${friendlyChatId}`;
-  await sandbox.process.executeCommand(
-    `mkdir -p "${chatDir}"`,
-    workspace,
-  );
+  await sandbox.process.executeCommand(`mkdir -p "${chatDir}"`, workspace);
 }
 
 /**
@@ -58,7 +55,9 @@ export async function getOrCreateSandbox(
         throw err;
       }
       // Sandbox was deleted externally — fall through to create a new one
-      console.log(`[sandbox] Sandbox ${existingId} not found for chat ${chatId}, creating new one`);
+      console.log(
+        `[sandbox] Sandbox ${existingId} not found for chat ${chatId}, creating new one`,
+      );
     }
   }
 

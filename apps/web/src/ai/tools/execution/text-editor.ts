@@ -37,11 +37,7 @@ export function createTextEditorTool(
 ) {
   return anthropic.tools.textEditor_20250728({
     execute: async (action) => {
-      const sandbox = await getOrCreateSandbox(
-        userId,
-        chatId,
-        friendlyChatId,
-      );
+      const sandbox = await getOrCreateSandbox(userId, chatId, friendlyChatId);
 
       switch (action.command) {
         case "view": {

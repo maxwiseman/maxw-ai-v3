@@ -8,8 +8,11 @@
  *   - assignments.json   — array of assignments with _classId and _className fields
  */
 
-import { getAssignment, getAllCanvasCourses } from "@/app/classes/classes-actions";
 import { Redis } from "@upstash/redis";
+import {
+  getAllCanvasCourses,
+  getAssignment,
+} from "@/app/classes/classes-actions";
 import { env } from "@/env";
 import type { Sandbox } from "./sandbox-manager";
 
@@ -35,8 +38,13 @@ async function fetchCanvasData(): Promise<CanvasData | null> {
 
   const assignmentResults = await Promise.all(
     courses.map(async (course) => {
-      const assignments = await getAssignment({ classId: course.id.toString() });
-      if (assignments === "Unauthorized" || assignments === "Settings not configured") {
+      const assignments = await getAssignment({
+        classId: course.id.toString(),
+      });
+      if (
+        assignments === "Unauthorized" ||
+        assignments === "Settings not configured"
+      ) {
         return [];
       }
       return (assignments as Array<object>).map((a) => ({
@@ -58,7 +66,10 @@ async function fetchCanvasData(): Promise<CanvasData | null> {
  * Fetches fresh data if cache is expired, otherwise uses cached data.
  * Silently returns on any error (Canvas not configured, network issues, etc.)
  */
-export async function seedCanvasData(userId: string, sandbox: Sandbox): Promise<void> {
+export async function seedCanvasData(
+  userId: string,
+  sandbox: Sandbox,
+): Promise<void> {
   try {
     // Try cache first
     let data = await redis.get<CanvasData>(CANVAS_CACHE_KEY(userId));

@@ -56,7 +56,8 @@ export async function GET() {
       },
       {
         name: "searchContent",
-        description: "Semantic search across the student's Canvas courses and pages",
+        description:
+          "Semantic search across the student's Canvas courses and pages",
         agent: "general",
       },
       {
@@ -66,7 +67,8 @@ export async function GET() {
       },
       {
         name: "getTodos",
-        description: "Return the user's todo list (today, upcoming, anytime, etc.)",
+        description:
+          "Return the user's todo list (today, upcoming, anytime, etc.)",
         agent: "general",
       },
       {
@@ -98,7 +100,8 @@ export async function GET() {
       },
       {
         name: "apply_patch",
-        description: "Apply a unified diff patch to sandbox files (precise edits)",
+        description:
+          "Apply a unified diff patch to sandbox files (precise edits)",
         agent: "general",
       },
       {

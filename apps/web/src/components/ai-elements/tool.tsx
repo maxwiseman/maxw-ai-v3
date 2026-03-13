@@ -18,7 +18,9 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { Card, CardContent } from "../ui/card";
 import { CodeBlock } from "./code-block";
+import { Response } from "./response";
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
@@ -161,3 +163,14 @@ export const ToolOutput = ({
     </div>
   );
 };
+
+export function UpdatePlanCard({ part }: { part: ToolUIPart }) {
+  const { content } = part.input as { content: string };
+  return (
+    <Card className="max-h-80 overflow-scroll p-8">
+      <CardContent className="p-0">
+        <Response>{content}</Response>
+      </CardContent>
+    </Card>
+  );
+}

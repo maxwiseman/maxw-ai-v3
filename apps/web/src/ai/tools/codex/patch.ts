@@ -23,11 +23,7 @@ export function createApplyPatchTool(
         ),
     }),
     execute: async ({ patch }) => {
-      const sandbox = await getOrCreateSandbox(
-        userId,
-        chatId,
-        friendlyChatId,
-      );
+      const sandbox = await getOrCreateSandbox(userId, chatId, friendlyChatId);
 
       // Write the patch to a temp file and apply with `patch` command
       const patchPath = "/tmp/agent.patch";

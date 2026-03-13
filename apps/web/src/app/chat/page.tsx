@@ -10,7 +10,8 @@ import {
   type UIMessage,
   type UITools,
 } from "ai";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import type { UserInputQuestion } from "@/ai/tools/codex/user-input";
 import { toolStatus } from "@/ai/tools/tool-status";
 import { Action, Actions } from "@/components/ai-elements/actions";
 import {
@@ -20,6 +21,7 @@ import {
 import { Message, MessageContent } from "@/components/ai-elements/message";
 import { PromptInputProvider } from "@/components/ai-elements/prompt-input";
 import { Response } from "@/components/ai-elements/response";
+import { UpdatePlanCard } from "@/components/ai-elements/tool";
 import { AnimatedStatus } from "@/components/chat/animated-status";
 import { ChatInput, type ChatInputMessage } from "@/components/chat/chat-input";
 import { ChatTitle } from "@/components/chat/chat-title";
@@ -31,6 +33,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export default function ChatPage() {
   const { messages, sendMessage, status, error, stop } = useChat({
@@ -54,6 +57,31 @@ export default function ChatPage() {
   console.log("messages:", messages);
 
   const [webSearch, setWebSearch] = useState(false);
+
+  const pendingQuestion = useMemo(() => {
+    if (status !== "ready") return null;
+    // Find the last assistant message that has a request_user_input tool call
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg.role !== "assistant") continue;
+      const toolPart = msg.parts.find(
+        (p) =>
+          p.type === "tool-request_user_input" &&
+          p.state === "output-available",
+      );
+      if (!toolPart) continue;
+      // Only surface it if no user message came after this assistant message
+      const hasSubsequentUserMsg = messages
+        .slice(i + 1)
+        .some((m) => m.role === "user");
+      if (hasSubsequentUserMsg) return null;
+      const { questions } = (
+        toolPart as { input: { questions: UserInputQuestion[] } }
+      ).input;
+      return { questions };
+    }
+    return null;
+  }, [messages, status]);
 
   const handleSubmit = (message: ChatInputMessage) => {
     console.log("handleSubmit called with:", message);
@@ -94,6 +122,7 @@ export default function ChatPage() {
               setUseWebSearch={setWebSearch}
               useWebSearch={webSearch}
               status={status as ChatStatus}
+              pendingQuestion={pendingQuestion}
             />
           </EmptyState>
         ) : (
@@ -114,11 +143,19 @@ export default function ChatPage() {
                     setUseWebSearch={setWebSearch}
                     useWebSearch={webSearch}
                     status={status as ChatStatus}
+                    pendingQuestion={pendingQuestion}
                   />
                 </div>
               </div>
             </div>
-            <ConversationContent className="mx-auto max-w-3xl pt-10 pb-64">
+            <ConversationContent
+              className={cn(
+                "mx-auto max-w-3xl pt-10 transition-[padding-bottom]",
+                (pendingQuestion?.questions.length ?? 0) > 0
+                  ? "pb-96"
+                  : "pb-64",
+              )}
+            >
               {messages.map((msg) => (
                 <ChatMessage key={msg.id} msg={msg} status={status} />
               ))}
@@ -185,6 +222,14 @@ function ChatMessage({
             return part.text && part.text.length > 0 ? (
               <Response key={i}>{part.text}</Response>
             ) : null;
+          }
+          if (
+            part.type === "tool-update_plan" &&
+            (part.state === "input-available" ||
+              part.state === "output-available" ||
+              part.state === "output-error")
+          ) {
+            return <UpdatePlanCard key={i} part={part} />;
           }
           return null;
         })}

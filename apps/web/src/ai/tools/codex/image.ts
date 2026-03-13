@@ -39,11 +39,7 @@ export function createViewImageTool(
         ),
     }),
     execute: async ({ path }): Promise<ViewImageResult | string> => {
-      const sandbox = await getOrCreateSandbox(
-        userId,
-        chatId,
-        friendlyChatId,
-      );
+      const sandbox = await getOrCreateSandbox(userId, chatId, friendlyChatId);
 
       const ext = path.split(".").pop()?.toLowerCase() ?? "";
       const mimeType = SUPPORTED_TYPES[ext] ?? "application/octet-stream";
