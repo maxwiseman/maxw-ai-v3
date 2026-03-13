@@ -1,11 +1,12 @@
 /**
  * Sandbox Manager
  * Manages Daytona sandbox lifecycle with Upstash Redis caching.
- * Sandboxes are stopped after each request (filesystem persists) and
- * auto-archived after 10 minutes of inactivity.
+ * Sandboxes auto-stop after 5 minutes of inactivity and auto-archive after 30 minutes.
+ * We never stop them manually — the auto-stop handles billing, and avoiding manual stops
+ * means the user can immediately use the sandbox again without waiting for a restart.
  */
 
-import { Daytona, DaytonaNotFoundError, type Sandbox } from "@daytonaio/sdk";
+import { Daytona, DaytonaError, DaytonaNotFoundError, type Sandbox } from "@daytonaio/sdk";
 import { Redis } from "@upstash/redis";
 import { env } from "@/env";
 
@@ -34,7 +35,7 @@ async function ensureChatDirectory(
 
 /**
  * Get an existing sandbox or create a new one for this chat.
- * Reconnects to a stopped/archived sandbox if one exists (fast/slow respectively).
+ * Handles "stopping" state gracefully by waiting for it to finish, then starting.
  */
 export async function getOrCreateSandbox(
   userId: string,
@@ -47,11 +48,35 @@ export async function getOrCreateSandbox(
   if (existingId) {
     try {
       const sandbox = await daytona.get(existingId);
-      await sandbox.start();
+
+      // If the sandbox is in the middle of stopping, wait for it to finish
+      // before we attempt to start it again.
+      if (sandbox.state === "stopping") {
+        console.log(`[sandbox] Sandbox ${existingId} is stopping — waiting for it to stop before restarting`);
+        try {
+          await sandbox.waitUntilStopped(60);
+        } catch (waitErr) {
+          // If we time out or get an error, fall through and try start() anyway
+          console.warn(`[sandbox] Wait-until-stopped timed out for ${existingId}:`, waitErr);
+        }
+      }
+
+      // If already started, no need to call start() again
+      if (sandbox.state !== "started") {
+        await sandbox.start();
+      }
+
       await ensureChatDirectory(sandbox, friendlyChatId);
       return sandbox;
     } catch (err) {
       if (!(err instanceof DaytonaNotFoundError)) {
+        // Re-surface any "sandbox is stopping" type errors with a helpful message
+        const msg = err instanceof DaytonaError ? err.message : String(err);
+        if (/stopping|transition|busy/i.test(msg)) {
+          throw new Error(
+            `The sandbox is currently stopping. Please try again in a few seconds. (${msg})`,
+          );
+        }
         throw err;
       }
       // Sandbox was deleted externally — fall through to create a new one
@@ -63,8 +88,8 @@ export async function getOrCreateSandbox(
 
   const sandbox = await daytona.create({
     language: "python",
-    autoStopInterval: 0, // we stop manually at end of each request
-    autoArchiveInterval: 10, // auto-archive 10min after stop
+    autoStopInterval: 5,    // auto-stop 5 minutes after last activity
+    autoArchiveInterval: 30, // auto-archive 30 minutes after stop
   });
 
   await redis.set(key, sandbox.id, { ex: REDIS_TTL_SECONDS });
@@ -73,26 +98,30 @@ export async function getOrCreateSandbox(
 }
 
 /**
- * Stop a sandbox after request completes. Preserves filesystem.
+ * Returns the sandbox for this chat only if it is already in the "started" state.
+ * Does NOT call sandbox.start() — safe to use in onFinish for opportunistic tasks
+ * like syncing output files without spinning up a sandbox unnecessarily.
+ * Returns null if no sandbox exists, or if it is stopped/stopping/archived.
  */
-export async function stopSandbox(
+export async function getSandboxIfRunning(
   userId: string,
   chatId: string,
-): Promise<void> {
+): Promise<Sandbox | null> {
   const key = REDIS_KEY(userId, chatId);
   const sandboxId = await redis.get<string>(key);
-  if (!sandboxId) return;
+  if (!sandboxId) return null;
 
   try {
     const sandbox = await daytona.get(sandboxId);
-    await sandbox.stop();
+    if (sandbox.state !== "started") return null;
+    return sandbox;
   } catch {
-    // Ignore errors — sandbox may already be stopped or deleted
+    return null;
   }
 }
 
 /**
- * Remove a sandbox and its Redis entry (used for sub-agent cleanup).
+ * Remove a sandbox and its Redis entry (used for cleanup).
  */
 export async function deleteSandbox(
   userId: string,

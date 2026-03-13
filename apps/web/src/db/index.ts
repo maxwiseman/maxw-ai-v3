@@ -5,6 +5,7 @@ import { env } from "../env";
 import * as authSchema from "./schema/auth";
 import * as chatSchema from "./schema/chat";
 import * as memorySchema from "./schema/memory";
+import * as sandboxFilesSchema from "./schema/sandbox-files";
 import * as studySchema from "./schema/study";
 import * as todoSchema from "./schema/todo";
 
@@ -22,5 +23,6 @@ export const db = drizzle({
     ...studySchema,
     ...todoSchema,
     ...chatSchema,
+    ...sandboxFilesSchema,
   },
 });

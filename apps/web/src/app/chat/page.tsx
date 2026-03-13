@@ -2,7 +2,8 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { IconCopy, IconPencil } from "@tabler/icons-react";
+import { IconCopy, IconFolder, IconPencil } from "@tabler/icons-react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   type ChatStatus,
   DefaultChatTransport,
@@ -21,12 +22,14 @@ import {
 import { Message, MessageContent } from "@/components/ai-elements/message";
 import { PromptInputProvider } from "@/components/ai-elements/prompt-input";
 import { Response } from "@/components/ai-elements/response";
-import { UpdatePlanCard } from "@/components/ai-elements/tool";
+import { ShareFileCard, UpdatePlanCard } from "@/components/ai-elements/tool";
 import { AnimatedStatus } from "@/components/chat/animated-status";
 import { ChatInput, type ChatInputMessage } from "@/components/chat/chat-input";
 import { ChatTitle } from "@/components/chat/chat-title";
 import { EmptyState } from "@/components/chat/empty-state";
+import { ChatFilesPanel, useChatFiles } from "@/components/chat/files-panel";
 import { PromptSuggestions } from "@/components/chat/prompt-suggestions";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardDescription,
@@ -35,13 +38,16 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+const CHAT_ID = "main-chat";
+
 export default function ChatPage() {
+  const queryClient = useQueryClient();
   const { messages, sendMessage, status, error, stop } = useChat({
-    id: "main-chat",
+    id: CHAT_ID,
     transport: new DefaultChatTransport({
       api: "/api/chat",
       body: {
-        id: "main-chat",
+        id: CHAT_ID,
       },
     }),
     onError: (err) => {
@@ -49,6 +55,8 @@ export default function ChatPage() {
     },
     onFinish: (message) => {
       console.log("useChat finished:", message);
+      // Refresh the files panel whenever the AI finishes a turn
+      queryClient.invalidateQueries({ queryKey: ["chat-files", CHAT_ID] });
     },
     // onResponse: (response) => {
     //   console.log("useChat response:", response);
@@ -57,6 +65,8 @@ export default function ChatPage() {
   console.log("messages:", messages);
 
   const [webSearch, setWebSearch] = useState(false);
+  const [filesOpen, setFilesOpen] = useState(false);
+  const { data: files = [] } = useChatFiles(CHAT_ID);
 
   const pendingQuestion = useMemo(() => {
     if (status !== "ready") return null;
@@ -111,7 +121,7 @@ export default function ChatPage() {
 
   return (
     <PromptInputProvider>
-      <div className="relative flex size-full justify-center">
+      <div className="flex size-full overflow-hidden">
         {messages.length === 0 ? (
           <EmptyState>
             <ChatInput
@@ -126,9 +136,27 @@ export default function ChatPage() {
             />
           </EmptyState>
         ) : (
+          <>
           <Conversation>
             <div className="absolute inset-x-0 top-0 z-10 flex h-10 items-center justify-center bg-background/90 backdrop-blur-sm">
               <ChatTitle />
+              {/* Files panel toggle */}
+              <div className="absolute right-2 flex items-center">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative size-7"
+                  onClick={() => setFilesOpen((o) => !o)}
+                  title="Output files"
+                >
+                  <IconFolder className="size-4" />
+                  {files.length > 0 && (
+                    <span className="-top-0.5 -right-0.5 absolute flex size-3.5 items-center justify-center rounded-full bg-primary font-semibold text-[9px] text-primary-foreground leading-none">
+                      {files.length > 9 ? "9+" : files.length}
+                    </span>
+                  )}
+                </Button>
+              </div>
             </div>
             <div className="pointer-events-none absolute inset-0 z-10 flex h-full w-full flex-col justify-end">
               <div className="w-full bg-linear-to-t from-[1.25rem] from-background to-transparent">
@@ -175,6 +203,13 @@ export default function ChatPage() {
               )}
             </ConversationContent>
           </Conversation>
+          {/* Push-sidebar files panel */}
+          <ChatFilesPanel
+            chatId={CHAT_ID}
+            open={filesOpen}
+            onClose={() => setFilesOpen(false)}
+          />
+          </>
         )}
       </div>
     </PromptInputProvider>
@@ -230,6 +265,12 @@ function ChatMessage({
               part.state === "output-error")
           ) {
             return <UpdatePlanCard key={i} part={part} />;
+          }
+          if (
+            part.type === "tool-share_file" &&
+            part.state === "output-available"
+          ) {
+            return <ShareFileCard key={i} part={part} />;
           }
           return null;
         })}

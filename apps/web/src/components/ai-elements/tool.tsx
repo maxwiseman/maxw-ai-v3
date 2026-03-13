@@ -6,9 +6,16 @@ import {
   ChevronDownIcon,
   CircleIcon,
   ClockIcon,
+  DownloadIcon,
+  FileIcon,
   WrenchIcon,
   XCircleIcon,
 } from "lucide-react";
+import { useState } from "react";
+import {
+  FilePreviewModal,
+  type PreviewFile,
+} from "@/components/file-preview-modal";
 import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -172,5 +179,59 @@ export function UpdatePlanCard({ part }: { part: ToolUIPart }) {
         <Response>{content}</Response>
       </CardContent>
     </Card>
+  );
+}
+
+export function ShareFileCard({ part }: { part: ToolUIPart }) {
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  if (part.state !== "output-available" || !part.output) return null;
+
+  const output = part.output as {
+    url: string;
+    filename: string;
+    contentType: string;
+    sizeBytes: number;
+  };
+
+  if (typeof output !== "object" || !output.url) return null;
+
+  const sizeLabel =
+    output.sizeBytes < 1024
+      ? `${output.sizeBytes} B`
+      : output.sizeBytes < 1024 * 1024
+        ? `${(output.sizeBytes / 1024).toFixed(1)} KB`
+        : `${(output.sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+
+  const previewFile: PreviewFile = {
+    url: output.url,
+    filename: output.filename,
+    contentType: output.contentType,
+    sizeBytes: output.sizeBytes,
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setPreviewOpen(true)}
+        className="flex w-full items-center gap-3 rounded-lg border bg-muted/40 px-4 py-3 text-left transition-colors hover:bg-muted"
+      >
+        <FileIcon className="size-5 shrink-0 text-muted-foreground" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-foreground text-sm">
+            {output.filename}
+          </p>
+          <p className="text-muted-foreground text-xs">{sizeLabel}</p>
+        </div>
+        <DownloadIcon className="size-4 shrink-0 text-muted-foreground" />
+      </button>
+
+      <FilePreviewModal
+        file={previewFile}
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      />
+    </>
   );
 }

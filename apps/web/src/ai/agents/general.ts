@@ -19,6 +19,7 @@ import { createSearchToolsTool } from "../tools/codex/search-tools";
 import { requestUserInputTool } from "../tools/codex/user-input";
 import { createBashTool } from "../tools/execution/bash";
 import { createTextEditorTool } from "../tools/execution/text-editor";
+import { createShareFileTool } from "../tools/sandbox/share-file";
 import { createStudySetTool } from "../tools/study/flashcards";
 import {
   createTodoTool,
@@ -63,6 +64,7 @@ export function buildDynamicContext(ctx: AgentContext): string {
 - **Location**: ${location}
 - **Friendly Chat ID**: ${ctx.friendlyChatId}
 - **Chat workspace**: /home/daytona/workspace/chat/${ctx.friendlyChatId}
+- **Output directory**: /home/daytona/workspace/chat/${ctx.friendlyChatId}/output
 - **Environment memory**: /memories/environment.txt`;
 }
 
@@ -81,6 +83,7 @@ export function buildSystemPrompt(ctx: AgentContext): string {
 - **Todo management**: Create and manage the student's task list
 - **Memory**: Remember important information about the user across conversations
 - **Planning**: Track multi-step tasks with a persistent plan file
+- **File delivery**: Upload output files to cloud storage and give the user a download link
 
 👤 USER PROFILE:
 - **School**: ${ctx.schoolName}
@@ -100,6 +103,7 @@ export function buildSystemPrompt(ctx: AgentContext): string {
    - Files persist across turns in the same conversation
    - Use for calculations, data processing, running scripts
    - Keep chat-specific installs and files inside /home/daytona/workspace/chat/${ctx.friendlyChatId}.
+   - If the sandbox returns a "sandbox is stopping" error, wait a few seconds and retry once — it will be ready shortly.
    - **Canvas data available at \`/home/daytona/workspace/data/\`** (refreshed each turn):
      - \`courses.json\` — all enrolled courses
      - \`assignments.json\` — all assignments across all courses (each has \`_classId\`, \`_className\`)
@@ -165,6 +169,13 @@ export function buildSystemPrompt(ctx: AgentContext): string {
     - Runs synchronously and returns its output
 
 19. **close_agent**: Stop and delete a sub-agent's sandbox
+
+20. **share_file**: Upload a file from the sandbox to cloud storage for the user to download
+    - Call this after creating a report, export, or any file the user needs
+    - Pass the path relative to the chat workspace (e.g. \`output/report.pdf\`) or an absolute path
+    - Returns a relative URL like \`/api/sandbox-files/abc123\` — use it **exactly as returned** in a markdown link (e.g. \`[report.pdf](/api/sandbox-files/abc123)\`); never prepend a domain or hostname
+    - Files in the **output directory** (/home/daytona/workspace/chat/${ctx.friendlyChatId}/output/) are also automatically uploaded at the end of each turn, but calling \`share_file\` gives you the URL immediately
+    - Always call \`share_file\` when producing a deliverable file — don't just leave it in the workspace
 
 📚 USER'S CLASSES:
 ${ctx.classes.map((course) => `- ${course.name} (ID: ${course.id})`).join("\n")}
@@ -264,6 +275,9 @@ export function getGeneralAgentTools(ctx: AgentContext): Record<string, Tool> {
     request_user_input: requestUserInputTool,
     spawn_agent: createSpawnAgentTool(),
     close_agent: createCloseAgentTool(),
+
+    // File delivery to user via Vercel Blob
+    share_file: createShareFileTool(ctx.chatId, ctx.userId, ctx.friendlyChatId),
   };
 
   // search_tools gets the full tool list so it can search by name+description

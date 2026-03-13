@@ -14,6 +14,7 @@ import {
   IconPlaylistX,
   IconSearch,
   IconTerminal,
+  IconUpload,
   IconWorld,
   IconWorldDownload,
   IconX,
@@ -99,5 +100,9 @@ export const toolStatus: Record<string, { icon: Icon; text: string }> = {
   close_agent: {
     icon: IconX,
     text: "Closing sub-agent",
+  },
+  share_file: {
+    icon: IconUpload,
+    text: "Sharing file",
   },
 };

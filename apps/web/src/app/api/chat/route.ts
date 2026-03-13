@@ -17,7 +17,8 @@ import {
   buildSystemPrompt,
   getGeneralAgentTools,
 } from "@/ai/agents/general";
-import { stopSandbox } from "@/ai/sandbox/sandbox-manager";
+import { getSandboxIfRunning } from "@/ai/sandbox/sandbox-manager";
+import { syncOutputFiles } from "@/ai/sandbox/sync-output-files";
 import { getOrCreateChatMetadata } from "@/ai/utils/chat-metadata";
 import { getAllCanvasCourses } from "@/app/classes/classes-actions";
 import { auth } from "@/lib/auth";
@@ -127,11 +128,22 @@ export async function POST(request: NextRequest) {
       tools,
       providerOptions: providerOptions,
       onFinish: async (event) => {
-        try {
-          // Stop the sandbox to preserve filesystem while stopping billing
-          await stopSandbox(userId, chatId);
-        } catch (stopError) {
-          console.error("Failed to stop sandbox", stopError);
+        // Only sync output files if a sandbox is already running — we never
+        // want to spin one up just to scan a (likely empty) output directory.
+        if (context.friendlyChatId) {
+          try {
+            const sandbox = await getSandboxIfRunning(userId, chatId);
+            if (sandbox) {
+              await syncOutputFiles(
+                sandbox,
+                userId,
+                chatId,
+                context.friendlyChatId,
+              );
+            }
+          } catch (syncError) {
+            console.error("Failed to sync output files", syncError);
+          }
         }
 
         const usage = event.totalUsage;
