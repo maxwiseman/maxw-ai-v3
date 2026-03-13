@@ -58,14 +58,20 @@ export function createViewImageTool(
         message: `Displayed image from ${path}`,
       };
     },
-    toModelOutput: (result) => {
-      if (typeof result === "string") {
-        return [{ type: "text", data: result }];
+    toModelOutput: ({ output }) => {
+      if (typeof output === "string") {
+        return { type: "text", value: output };
       }
-      return [
-        { type: "text", data: result.message },
-        { type: "image", data: result.dataUrl },
-      ];
+      const match = output.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+      const mediaType = match?.[1] ?? "image/png";
+      const data = match?.[2] ?? "";
+      return {
+        type: "content",
+        value: [
+          { type: "text", text: output.message },
+          { type: "image-data", data, mediaType },
+        ],
+      };
     },
   });
 }
