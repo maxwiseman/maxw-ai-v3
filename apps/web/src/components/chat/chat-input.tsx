@@ -84,7 +84,7 @@ function AnimateChangeInHeight({
   const containerRef = useCallback((node: HTMLDivElement | null) => {
     if (node) {
       observerRef.current = new ResizeObserver((entries) => {
-        const h = entries[0]?.contentRect.height;
+        const h = entries[0]?.contentRect.height + 24;
         if (h !== undefined) setHeight(h);
       });
       observerRef.current.observe(node);
@@ -100,6 +100,7 @@ function AnimateChangeInHeight({
       style={{ height, overflow: "hidden" }}
       animate={{ height }}
       transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+      className="-m-3 p-3"
     >
       <div ref={containerRef} className={className}>
         {children}
@@ -151,7 +152,7 @@ function QuestionBody({
       {/* Multiple choice */}
       {q.type === "multiple-choice" && (
         <div className="space-y-2">
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {q.options.map((opt, oi) => (
               <Button
                 key={oi}
@@ -159,9 +160,9 @@ function QuestionBody({
                 onClick={() => onMCSelect(opt)}
                 variant="outline"
                 className={cn(
-                  "rounded-full bg-background",
+                  "bg-background",
                   currentAnswer === opt && !currentOther
-                    ? "border-secondary! bg-secondary! text-foreground"
+                    ? "bg-secondary! text-foreground"
                     : "",
                 )}
               >
@@ -173,10 +174,8 @@ function QuestionBody({
               onClick={onOtherSelect}
               variant="outline"
               className={cn(
-                "rounded-full bg-background",
-                currentOther
-                  ? "border-secondary! bg-secondary! text-foreground"
-                  : "",
+                "bg-background",
+                currentOther ? "bg-secondary! text-foreground" : "",
               )}
             >
               Other
@@ -186,6 +185,7 @@ function QuestionBody({
             <Input
               type="text"
               placeholder="Type your answer…"
+              className="text-foreground"
               value={currentAnswer}
               onChange={(e) => onAnswerChange(e.target.value)}
               onKeyDown={onKeyDown}
@@ -207,13 +207,13 @@ function QuestionBody({
       )}
 
       {/* Submit button — only on last question (and not single auto-submit MC) */}
-      {isLast && !isSingleMCNoOther && (
+      {/*{isLast && !isSingleMCNoOther && (
         <div className="mt-3 flex justify-end">
           <Button type="button" size="sm" onClick={formatAndSend}>
             Submit
           </Button>
         </div>
-      )}
+      )}*/}
     </div>
   );
 }
@@ -315,8 +315,8 @@ function PendingQuestionsWidget({
   };
 
   return (
-    <InputGroupAddon align="block-start" className="border-b p-3">
-      <div className="flex w-full flex-col gap-3">
+    <InputGroupAddon align="block-start" className="border-b p-3 pt-3 pb-3">
+      <div className="flex w-full flex-col-reverse gap-3">
         {/* Header row: dots + counter + arrow buttons */}
         {total > 1 && (
           <div className="flex items-center justify-between">
@@ -363,6 +363,16 @@ function PendingQuestionsWidget({
                 onClick={advance}
               >
                 <ChevronRightIcon className="size-4" />
+              </Button>
+              <Button
+                onClick={() => {
+                  formatAndSend();
+                }}
+                className="h-7 px-3"
+                size="sm"
+                variant="default"
+              >
+                Submit
               </Button>
             </div>
           </div>
