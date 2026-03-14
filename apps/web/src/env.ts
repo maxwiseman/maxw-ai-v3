@@ -18,8 +18,9 @@ export const env = createEnv({
   },
   client: {
     NEXT_PUBLIC_UPSTASH_SEARCH_TOKEN: z.string().optional(),
-    /** Public app origin — used by the sandbox sync script to reach /api/sandbox/sync. */
-    NEXT_PUBLIC_SERVER_URL: z.url(),
+    /** Public app origin — used by the sandbox sync script to reach /api/sandbox/sync.
+     *  Not required on Vercel preview/development — VERCEL_URL is used automatically. */
+    NEXT_PUBLIC_SERVER_URL: z.url().optional(),
   },
   // @ts-expect-error -- This does contain all the correct data, it's just not typed
   experimental__runtimeEnv: process.env,

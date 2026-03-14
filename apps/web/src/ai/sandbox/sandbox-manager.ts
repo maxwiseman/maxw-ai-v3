@@ -18,6 +18,23 @@ const redis = new Redis({
   token: env.UPSTASH_REDIS_REST_TOKEN,
 });
 
+/**
+ * Resolve the public URL the sandbox sync script should call back to.
+ * On Vercel preview/development deployments VERCEL_URL is used automatically
+ * so NEXT_PUBLIC_SERVER_URL doesn't need to be set there.
+ */
+function getSyncApiUrl(): string {
+  const vercelEnv = process.env.VERCEL_ENV;
+  if (vercelEnv === "preview" || vercelEnv === "development") {
+    const vercelUrl = process.env.VERCEL_URL;
+    if (vercelUrl) return `https://${vercelUrl}`;
+  }
+  if (env.NEXT_PUBLIC_SERVER_URL) return env.NEXT_PUBLIC_SERVER_URL;
+  throw new Error(
+    "NEXT_PUBLIC_SERVER_URL is not set. Required for non-Vercel deployments.",
+  );
+}
+
 const daytona = new Daytona({ apiKey: env.DAYTONA_API_KEY });
 
 const REDIS_KEY = (userId: string, chatId: string) =>
@@ -46,7 +63,7 @@ async function createSandbox(userId: string, chatId: string): Promise<Sandbox> {
     autoStopInterval: 5,
     autoArchiveInterval: 1,
     envVars: {
-      SYNC_API_URL: env.NEXT_PUBLIC_SERVER_URL,
+      SYNC_API_URL: getSyncApiUrl(),
       SYNC_TOKEN: syncToken,
       // SYNC_INTERVAL can be overridden here if desired (default: 30s)
     },
