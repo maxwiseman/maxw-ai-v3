@@ -5,6 +5,7 @@ import Header from "@/components/header";
 import Providers from "@/components/providers";
 import Sidebar from "@/components/sidebar";
 import "../index.css";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,6 +38,15 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
     >
+      {process.env.NODE_ENV !== "production" && (
+        <head>
+          <Script
+            src="//unpkg.com/react-scan/dist/auto.global.js"
+            crossOrigin="anonymous"
+            strategy="beforeInteractive"
+          />
+        </head>
+      )}
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${garamond.variable} h-full overflow-x-hidden antialiased`}
       >
