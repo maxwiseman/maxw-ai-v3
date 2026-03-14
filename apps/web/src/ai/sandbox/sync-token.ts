@@ -34,7 +34,10 @@ export function createSyncToken(
 
 export function verifySyncToken(token: string): SyncTokenPayload | null {
   const dotIdx = token.lastIndexOf(".");
-  if (dotIdx === -1) return null;
+  if (dotIdx === -1) {
+    console.error("[sync-token] No dot separator found in token");
+    return null;
+  }
 
   const payloadB64 = token.slice(0, dotIdx);
   const sigB64 = token.slice(dotIdx + 1);
@@ -44,16 +47,20 @@ export function verifySyncToken(token: string): SyncTokenPayload | null {
     .digest("base64url");
 
   try {
-    if (!timingSafeEqual(Buffer.from(sigB64, "base64url"), Buffer.from(expectedSig, "base64url")))
+    if (!timingSafeEqual(Buffer.from(sigB64, "base64url"), Buffer.from(expectedSig, "base64url"))) {
+      console.error("[sync-token] Signature mismatch — AUTH_SECRET likely differs between token creation and verification");
       return null;
-  } catch {
+    }
+  } catch (e) {
+    console.error("[sync-token] timingSafeEqual threw:", e);
     return null;
   }
 
   let payload: SyncTokenPayload;
   try {
     payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString()) as SyncTokenPayload;
-  } catch {
+  } catch (e) {
+    console.error("[sync-token] Failed to parse payload:", e);
     return null;
   }
 
@@ -61,9 +68,15 @@ export function verifySyncToken(token: string): SyncTokenPayload | null {
     typeof payload.userId !== "string" ||
     typeof payload.chatId !== "string" ||
     typeof payload.exp !== "number"
-  )
+  ) {
+    console.error("[sync-token] Payload missing required fields:", payload);
     return null;
-  if (payload.exp < Date.now()) return null;
+  }
+
+  if (payload.exp < Date.now()) {
+    console.error("[sync-token] Token expired at", new Date(payload.exp).toISOString());
+    return null;
+  }
 
   return payload;
 }
