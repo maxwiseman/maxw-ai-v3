@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import type { NextRequest } from "next/server";
 import { db } from "@/db";
 import { sandboxFile } from "@/db/schema/sandbox-files";
+import { getR2SignedUrl } from "@/ai/sandbox/r2-client";
 import { auth } from "@/lib/auth";
 
 export async function GET(
@@ -28,25 +29,7 @@ export async function GET(
     return new Response("Not found", { status: 404 });
   }
 
-  // Proxy the private Vercel Blob using our read/write token
-  const blobResponse = await fetch(file.blobUrl, {
-    headers: {
-      Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
-    },
-  });
-
-  if (!blobResponse.ok) {
-    return new Response("Failed to fetch file", {
-      status: blobResponse.status,
-    });
-  }
-
-  return new Response(blobResponse.body, {
-    headers: {
-      "Content-Type": file.contentType,
-      "Content-Disposition": `inline; filename="${file.filename}"`,
-      "Content-Length": String(file.sizeBytes),
-      "Cache-Control": "private, max-age=3600",
-    },
-  });
+  // Generate a short-lived signed URL and redirect
+  const signedUrl = await getR2SignedUrl(file.r2Key, 3600);
+  return Response.redirect(signedUrl, 302);
 }

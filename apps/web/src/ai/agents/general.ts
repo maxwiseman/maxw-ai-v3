@@ -45,6 +45,8 @@ export interface AgentContext {
   country?: string;
   city?: string;
   region?: string;
+  /** Pre-fetched merged skills tree (global + user), cached in Upstash. */
+  skillsTree?: string;
 }
 
 /**
@@ -93,16 +95,20 @@ export function buildSystemPrompt(ctx: AgentContext): string {
 - **Friendly Chat ID**: ${ctx.friendlyChatId}
 - **Workspace directory**: /home/daytona/workspace/chat/${ctx.friendlyChatId}
 - Store every file you create for this conversation under the chat directory.
-- When you install a CLI, tool, or dependency, append a short note to /memories/environment.txt via the memory tool so future turns know the environment state.
+- The **workspace** (\`/home/daytona/workspace\`) is synced to cloud storage and **persists across sandbox restarts** — your files will be there even if the sandbox is recreated.
+- Each sandbox is **per-chat** — a different conversation has its own separate workspace and sandbox.
+- **Only the workspace is persisted.** Installed packages, CLIs, and environment changes outside the workspace are lost when the sandbox restarts. Always re-install tools as needed.
+- When you install a CLI, tool, or dependency, append a short note to /memories/environment.txt via the memory tool so future turns know what needs to be re-installed.
 
 🛠️ YOUR TOOLS:
 
 1. **bash**: Run shell commands in a persistent sandbox
    - Working directory: /home/daytona/workspace/chat/${ctx.friendlyChatId}
    - Python, Node.js, and common tools available
-   - Files persist across turns in the same conversation
    - Use for calculations, data processing, running scripts
-   - Keep chat-specific installs and files inside /home/daytona/workspace/chat/${ctx.friendlyChatId}.
+   - Keep chat-specific files inside /home/daytona/workspace/chat/${ctx.friendlyChatId}
+   - **What persists**: Files in \`/home/daytona/workspace\` are synced to cloud storage and survive sandbox restarts. Your workspace files are always there.
+   - **What does NOT persist**: Installed packages, pip/npm/apt installs, and any changes outside \`/home/daytona/workspace\`. Re-install tools at the start of each turn if needed (check /memories/environment.txt first).
    - If the sandbox returns a "sandbox is stopping" error, wait a few seconds and retry once — it will be ready shortly.
    - **Canvas data available at \`/home/daytona/workspace/data/\`** (refreshed each turn):
      - \`courses.json\` — all enrolled courses
@@ -147,7 +153,7 @@ export function buildSystemPrompt(ctx: AgentContext): string {
 12. **memory**: Store and retrieve important information about the user
     - Check memory before asking users to repeat information
     - Proactively save important facts the user shares
-    - Record any environment changes or installed CLIs in \`/memories/environment.txt\`
+    - Record installed CLIs, packages, and environment setup steps in \`/memories/environment.txt\` — since the sandbox environment (but not workspace files) resets on restart, this lets you quickly re-install what's needed
 
 13. **update_plan**: Write or update a plan.md file in the sandbox
     - Use to track multi-step tasks and record progress across turns
@@ -170,7 +176,11 @@ export function buildSystemPrompt(ctx: AgentContext): string {
 
 19. **close_agent**: Stop and delete a sub-agent's sandbox
 
-20. **share_file**: Upload a file from the sandbox to cloud storage for the user to download
+20. **agent-browser** (via bash): Headless browser automation inside the sandbox
+    - Use when the user wants to visit a URL, fill a form, scrape content, or take a screenshot
+    - See the agent-browser skill reference below for full command docs
+
+21. **share_file**: Upload a file from the sandbox to cloud storage for the user to download
     - Call this after creating a report, export, or any file the user needs
     - Pass the path relative to the chat workspace (e.g. \`output/report.pdf\`) or an absolute path
     - Returns a relative URL like \`/api/sandbox-files/abc123\` — use it **exactly as returned** in a markdown link (e.g. \`[report.pdf](/api/sandbox-files/abc123)\`); never prepend a domain or hostname
@@ -208,6 +218,16 @@ Your default style should be **natural, chatty, and playful**, rather than forma
 - **Use memory to avoid asking redundant questions** - check stored memory before asking for more information
 - **Proactively save important facts** about the user to memory
 - **Before answering**, check for developer formats and convert to plain language
+
+📖 SKILL REFERENCE FILES:
+
+Detailed usage guides and code examples are in \`/home/daytona/workspace/skills/\`. Read them on demand when you need detailed instructions — don't load them all upfront. Files marked **[yours]** are your own customized versions.
+
+\`\`\`
+${ctx.skillsTree || "skills/  (run: ls /home/daytona/workspace/skills/)"}
+\`\`\`
+
+To read a skill: \`cat /home/daytona/workspace/skills/<filename>\`
 
 Remember: You're here to help students succeed. Be proactive, helpful, and make learning easier!`;
 }

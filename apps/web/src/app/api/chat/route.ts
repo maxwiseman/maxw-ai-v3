@@ -17,8 +17,8 @@ import {
   buildSystemPrompt,
   getGeneralAgentTools,
 } from "@/ai/agents/general";
-import { getSandboxIfRunning } from "@/ai/sandbox/sandbox-manager";
-import { syncOutputFiles } from "@/ai/sandbox/sync-output-files";
+import { listWorkspaceFiles } from "@/ai/sandbox/list-workspace-files";
+import { getSkillsTree } from "@/ai/sandbox/skills-tree";
 import { getOrCreateChatMetadata } from "@/ai/utils/chat-metadata";
 import { getAllCanvasCourses } from "@/app/classes/classes-actions";
 import { auth } from "@/lib/auth";
@@ -62,8 +62,11 @@ export async function POST(request: NextRequest) {
   const fullName = authData.user.name;
   const schoolName = "Harvard University"; // TODO: Get from user settings
 
-  // Load user's classes
-  const classesResponse = await getAllCanvasCourses();
+  // Load user's classes and skills tree in parallel
+  const [classesResponse, skillsTree] = await Promise.all([
+    getAllCanvasCourses(),
+    getSkillsTree(userId),
+  ]);
   const classes = typeof classesResponse === "string" ? [] : classesResponse;
 
   // Build agent context
@@ -84,6 +87,7 @@ export async function POST(request: NextRequest) {
     country: location.country,
     city: location.city,
     region: location.countryRegion,
+    skillsTree,
   };
 
   // Get tools configured for this context
@@ -128,21 +132,14 @@ export async function POST(request: NextRequest) {
       tools,
       providerOptions: providerOptions,
       onFinish: async (event) => {
-        // Only sync output files if a sandbox is already running — we never
-        // want to spin one up just to scan a (likely empty) output directory.
+        // Index any new output files from R2 into the DB.
+        // Since the workspace is R2-backed, files are already persisted —
+        // this just keeps the DB index in sync without touching the sandbox.
         if (context.friendlyChatId) {
           try {
-            const sandbox = await getSandboxIfRunning(userId, chatId);
-            if (sandbox) {
-              await syncOutputFiles(
-                sandbox,
-                userId,
-                chatId,
-                context.friendlyChatId,
-              );
-            }
+            await listWorkspaceFiles(userId, chatId, context.friendlyChatId);
           } catch (syncError) {
-            console.error("Failed to sync output files", syncError);
+            console.error("Failed to index workspace files", syncError);
           }
         }
 

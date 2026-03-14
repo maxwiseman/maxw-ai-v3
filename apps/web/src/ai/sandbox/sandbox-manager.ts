@@ -1,13 +1,16 @@
 /**
  * Sandbox Manager
  * Manages Daytona sandbox lifecycle with Upstash Redis caching.
- * Sandboxes auto-stop after 5 minutes of inactivity and auto-archive after 30 minutes.
- * We never stop them manually — the auto-stop handles billing, and avoiding manual stops
- * means the user can immediately use the sandbox again without waiting for a restart.
+ *
+ * Workspaces are synced to R2 via /api/sandbox/sync — the sandbox never holds
+ * real R2 credentials. Instead it gets a short-lived HMAC sync token that the
+ * sync script uses to obtain presigned PUT/GET URLs scoped to this user's
+ * workspace prefix.
  */
 
 import { Daytona, DaytonaError, DaytonaNotFoundError, type Sandbox } from "@daytonaio/sdk";
 import { Redis } from "@upstash/redis";
+import { createSyncToken } from "./sync-token";
 import { env } from "@/env";
 
 const redis = new Redis({
@@ -19,8 +22,8 @@ const daytona = new Daytona({ apiKey: env.DAYTONA_API_KEY });
 
 const REDIS_KEY = (userId: string, chatId: string) =>
   `sandbox:user:${userId}:chat:${chatId}`;
-// 30 days — sandbox can be archived but ID is still valid for reconnection
-const REDIS_TTL_SECONDS = 60 * 60 * 24 * 30;
+// 7 days — sandbox IDs are short-lived since we delete and recreate as needed
+const REDIS_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 async function ensureChatDirectory(
   sandbox: Sandbox,
@@ -33,9 +36,27 @@ async function ensureChatDirectory(
   await sandbox.process.executeCommand(`mkdir -p "${chatDir}"`, workspace);
 }
 
+/** Create a fresh sandbox. R2 credentials never enter the sandbox — only the sync token. */
+async function createSandbox(userId: string, chatId: string): Promise<Sandbox> {
+  // 8-hour token — longer than the maximum sandbox lifetime so it never expires mid-session
+  const syncToken = createSyncToken(userId, chatId, 8 * 60 * 60 * 1000);
+
+  return daytona.create({
+    ...(env.DAYTONA_SNAPSHOT ? { snapshot: env.DAYTONA_SNAPSHOT } : { language: "python" }),
+    autoStopInterval: 5,
+    autoArchiveInterval: 1,
+    envVars: {
+      SYNC_API_URL: env.NEXT_PUBLIC_SERVER_URL,
+      SYNC_TOKEN: syncToken,
+      // SYNC_INTERVAL can be overridden here if desired (default: 30s)
+    },
+  });
+}
+
 /**
  * Get an existing sandbox or create a new one for this chat.
- * Handles "stopping" state gracefully by waiting for it to finish, then starting.
+ * If the sandbox is stopped or archived, it is deleted and a fresh one is
+ * created — the sync script restores the workspace from R2 automatically.
  */
 export async function getOrCreateSandbox(
   userId: string,
@@ -49,28 +70,32 @@ export async function getOrCreateSandbox(
     try {
       const sandbox = await daytona.get(existingId);
 
-      // If the sandbox is in the middle of stopping, wait for it to finish
-      // before we attempt to start it again.
+      if (sandbox.state === "started") {
+        await ensureChatDirectory(sandbox, friendlyChatId);
+        return sandbox;
+      }
+
+      // If stopping, wait briefly then fall through to delete + recreate
       if (sandbox.state === "stopping") {
-        console.log(`[sandbox] Sandbox ${existingId} is stopping — waiting for it to stop before restarting`);
+        console.log(`[sandbox] Sandbox ${existingId} is stopping — waiting before recreating`);
         try {
-          await sandbox.waitUntilStopped(60);
-        } catch (waitErr) {
-          // If we time out or get an error, fall through and try start() anyway
-          console.warn(`[sandbox] Wait-until-stopped timed out for ${existingId}:`, waitErr);
+          await sandbox.waitUntilStopped(30);
+        } catch {
+          // Continue to delete regardless
         }
       }
 
-      // If already started, no need to call start() again
-      if (sandbox.state !== "started") {
-        await sandbox.start();
+      // Sandbox is stopped/archived — delete it (R2 has the state) and create fresh
+      console.log(
+        `[sandbox] Sandbox ${existingId} is ${sandbox.state} — deleting and recreating (workspace persisted in R2)`,
+      );
+      try {
+        await sandbox.delete();
+      } catch {
+        // Ignore delete errors — might already be gone
       }
-
-      await ensureChatDirectory(sandbox, friendlyChatId);
-      return sandbox;
     } catch (err) {
       if (!(err instanceof DaytonaNotFoundError)) {
-        // Re-surface any "sandbox is stopping" type errors with a helpful message
         const msg = err instanceof DaytonaError ? err.message : String(err);
         if (/stopping|transition|busy/i.test(msg)) {
           throw new Error(
@@ -79,19 +104,13 @@ export async function getOrCreateSandbox(
         }
         throw err;
       }
-      // Sandbox was deleted externally — fall through to create a new one
       console.log(
         `[sandbox] Sandbox ${existingId} not found for chat ${chatId}, creating new one`,
       );
     }
   }
 
-  const sandbox = await daytona.create({
-    language: "python",
-    autoStopInterval: 5,    // auto-stop 5 minutes after last activity
-    autoArchiveInterval: 30, // auto-archive 30 minutes after stop
-  });
-
+  const sandbox = await createSandbox(userId, chatId);
   await redis.set(key, sandbox.id, { ex: REDIS_TTL_SECONDS });
   await ensureChatDirectory(sandbox, friendlyChatId);
   return sandbox;
@@ -99,8 +118,7 @@ export async function getOrCreateSandbox(
 
 /**
  * Returns the sandbox for this chat only if it is already in the "started" state.
- * Does NOT call sandbox.start() — safe to use in onFinish for opportunistic tasks
- * like syncing output files without spinning up a sandbox unnecessarily.
+ * Does NOT call sandbox.start() — safe to use in onFinish for opportunistic tasks.
  * Returns null if no sandbox exists, or if it is stopped/stopping/archived.
  */
 export async function getSandboxIfRunning(
@@ -121,7 +139,7 @@ export async function getSandboxIfRunning(
 }
 
 /**
- * Remove a sandbox and its Redis entry (used for cleanup).
+ * Remove a sandbox and its Redis entry (used for explicit cleanup).
  */
 export async function deleteSandbox(
   userId: string,
@@ -133,7 +151,6 @@ export async function deleteSandbox(
 
   try {
     const sandbox = await daytona.get(sandboxId);
-    await sandbox.stop();
     await sandbox.delete();
   } catch {
     // Ignore errors

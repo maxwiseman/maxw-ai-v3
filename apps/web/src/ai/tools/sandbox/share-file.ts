@@ -1,18 +1,19 @@
 /**
  * Share File Tool
- * Downloads a file from the Daytona sandbox and uploads it to Vercel Blob,
- * returning a public CDN URL that the agent can include in its response.
+ * Returns a download URL for a file in the sandbox.
+ * Since the workspace is R2-backed via s3fs, files within /home/daytona/workspace
+ * are already in R2 — we just derive the key and record it in the DB.
+ * Files outside the workspace are uploaded to R2 explicitly.
  */
 
-import { put } from "@vercel/blob";
 import { tool } from "ai";
 import { z } from "zod";
+import { r2Key, putR2Object, getR2SignedUrl } from "@/ai/sandbox/r2-client";
 import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 import { db } from "@/db";
 import { sandboxFile } from "@/db/schema/sandbox-files";
 
 const MIME_TYPES: Record<string, string> = {
-  // Documents
   pdf: "application/pdf",
   doc: "application/msword",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -20,13 +21,11 @@ const MIME_TYPES: Record<string, string> = {
   xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   ppt: "application/vnd.ms-powerpoint",
   pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  // Text
   txt: "text/plain",
   md: "text/markdown",
   csv: "text/csv",
   html: "text/html",
   htm: "text/html",
-  // Code
   js: "text/javascript",
   ts: "text/typescript",
   py: "text/x-python",
@@ -35,18 +34,15 @@ const MIME_TYPES: Record<string, string> = {
   yaml: "text/yaml",
   yml: "text/yaml",
   sh: "text/x-sh",
-  // Archives
   zip: "application/zip",
   tar: "application/x-tar",
   gz: "application/gzip",
-  // Images
   png: "image/png",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   gif: "image/gif",
   webp: "image/webp",
   svg: "image/svg+xml",
-  // Typst / LaTeX output
   typ: "text/plain",
 };
 
@@ -62,14 +58,16 @@ export interface ShareFileResult {
   sizeBytes: number;
 }
 
+const WORKSPACE_ROOT = "/home/daytona/workspace";
+
 export function createShareFileTool(
   chatId: string,
   userId: string,
   friendlyChatId?: string,
 ) {
   const workspaceDir = friendlyChatId
-    ? `/home/daytona/workspace/chat/${friendlyChatId}`
-    : "/home/daytona/workspace";
+    ? `${WORKSPACE_ROOT}/chat/${friendlyChatId}`
+    : WORKSPACE_ROOT;
 
   return tool({
     description:
@@ -88,29 +86,44 @@ export function createShareFileTool(
         ),
     }),
     execute: async ({ path, filename }): Promise<ShareFileResult | string> => {
-      // Resolve to absolute path
       const absolutePath = path.startsWith("/")
         ? path
         : `${workspaceDir}/${path}`;
 
       const displayName = filename ?? absolutePath.split("/").pop() ?? "file";
-
-      const sandbox = await getOrCreateSandbox(userId, chatId, friendlyChatId);
-
-      let buffer: Buffer;
-      try {
-        buffer = await sandbox.fs.downloadFile(absolutePath);
-      } catch {
-        return `File not found or could not be read: ${absolutePath}`;
-      }
-
       const contentType = getMimeType(displayName);
 
-      const blob = await put(`sandbox-files/${chatId}/${displayName}`, buffer, {
-        access: "private",
-        contentType,
-        addRandomSuffix: true,
-      });
+      let key: string;
+      let sizeBytes: number;
+
+      if (absolutePath.startsWith(`${WORKSPACE_ROOT}/`)) {
+        // File is inside the R2-backed workspace — derive key directly from path
+        const relativePath = absolutePath.slice(WORKSPACE_ROOT.length + 1);
+        key = r2Key(userId, chatId, relativePath);
+
+        // Get size by downloading a stat — use the sandbox to read metadata
+        const sandbox = await getOrCreateSandbox(userId, chatId, friendlyChatId);
+        let buffer: Buffer;
+        try {
+          buffer = await sandbox.fs.downloadFile(absolutePath);
+          sizeBytes = buffer.length;
+        } catch {
+          return `File not found or could not be read: ${absolutePath}`;
+        }
+      } else {
+        // File is outside the workspace — download and upload to R2 explicitly
+        const sandbox = await getOrCreateSandbox(userId, chatId, friendlyChatId);
+        let buffer: Buffer;
+        try {
+          buffer = await sandbox.fs.downloadFile(absolutePath);
+        } catch {
+          return `File not found or could not be read: ${absolutePath}`;
+        }
+
+        key = r2Key(userId, chatId, "uploads", displayName);
+        await putR2Object(key, buffer, contentType);
+        sizeBytes = buffer.length;
+      }
 
       const [inserted] = await db
         .insert(sandboxFile)
@@ -118,18 +131,17 @@ export function createShareFileTool(
           userId,
           chatId,
           filename: displayName,
-          blobUrl: blob.url,
+          r2Key: key,
           contentType,
-          sizeBytes: buffer.length,
+          sizeBytes,
         })
         .returning({ id: sandboxFile.id });
 
-      // Return a proxied download URL (the raw blob URL requires auth)
       return {
         url: `/api/sandbox-files/${inserted.id}`,
         filename: displayName,
         contentType,
-        sizeBytes: buffer.length,
+        sizeBytes,
       };
     },
   });
