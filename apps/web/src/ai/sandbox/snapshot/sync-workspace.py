@@ -58,21 +58,26 @@ def put_file(url: str, path: Path) -> None:
         pass
 
 
-def restore_workspace() -> None:
-    """Download all workspace files from R2 on startup."""
+def restore_workspace() -> set[str]:
+    """
+    Download all workspace files from R2 on startup.
+    Returns the set of relative paths that were successfully restored,
+    so the caller can immediately upload any files that appeared during
+    startup (created by the agent before we finished restoring).
+    """
     log("Restoring workspace from R2...")
     try:
         result = api_request("GET", "/api/sandbox/sync")
         files = result.get("files", [])
     except Exception as e:
         log(f"Restore failed (may be a fresh workspace): {e}")
-        return
+        return set()
 
     if not files:
         log("No existing workspace files found — starting fresh.")
-        return
+        return set()
 
-    restored = 0
+    restored_paths: set[str] = set()
     for item in files:
         rel_path = item["path"].lstrip("/")
         url = item["url"]
@@ -83,11 +88,12 @@ def restore_workspace() -> None:
             req = urllib.request.Request(url, method="GET")
             with urllib.request.urlopen(req, timeout=60) as resp:
                 dest.write_bytes(resp.read())
-            restored += 1
+            restored_paths.add(rel_path)
         except Exception as e:
             log(f"Failed to restore {rel_path}: {e}")
 
-    log(f"Restored {restored}/{len(files)} files.")
+    log(f"Restored {len(restored_paths)}/{len(files)} files.")
+    return restored_paths
 
 
 def upload_batch(files: list[tuple[str, Path]]) -> int:
@@ -157,19 +163,40 @@ def main() -> None:
 
     WORKSPACE.mkdir(parents=True, exist_ok=True)
 
-    restore_workspace()
+    restored_paths = restore_workspace()
+
+    # Scan the workspace to build last_seen. Any file that exists but was NOT
+    # restored from R2 was created during startup (e.g. by the agent running a
+    # bash command before we finished restoring). Upload those immediately so
+    # they aren't silently dropped into last_seen without ever hitting R2.
+    last_seen: dict[str, float] = {}
+    startup_new: list[tuple[str, Path]] = []
+
+    for path in WORKSPACE.rglob("*"):
+        if not path.is_file():
+            continue
+        rel = str(path.relative_to(WORKSPACE))
+        try:
+            mtime = path.stat().st_mtime
+        except OSError:
+            continue
+        last_seen[rel] = mtime
+        if rel not in restored_paths:
+            startup_new.append((rel, path))
+
+    if startup_new:
+        log(f"Found {len(startup_new)} file(s) created during startup — uploading immediately.")
+        total = 0
+        for i in range(0, len(startup_new), BATCH_SIZE):
+            total += upload_batch(startup_new[i : i + BATCH_SIZE])
+        log(f"Startup upload complete ({total}/{len(startup_new)} files).")
+
+    # Signal to the server that restore + startup upload are done.
+    # sandbox-manager.ts polls for this file before handing the sandbox to the agent.
+    Path("/home/daytona/.sync-ready").write_text("ready")
+    log("Sync ready.")
 
     log(f"Starting sync loop (interval: {SYNC_INTERVAL}s).")
-    last_seen: dict[str, float] = {}
-
-    # Do an initial scan immediately after restore so we don't re-upload just-restored files
-    for path in WORKSPACE.rglob("*"):
-        if path.is_file():
-            rel = str(path.relative_to(WORKSPACE))
-            try:
-                last_seen[rel] = path.stat().st_mtime
-            except OSError:
-                pass
 
     while True:
         time.sleep(SYNC_INTERVAL)

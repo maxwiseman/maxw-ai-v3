@@ -42,6 +42,17 @@ const REDIS_KEY = (userId: string, chatId: string) =>
 // 7 days — sandbox IDs are short-lived since we delete and recreate as needed
 const REDIS_TTL_SECONDS = 60 * 60 * 24 * 7;
 
+/**
+ * Block until the sync script has finished restoring the workspace from R2.
+ * The script writes /home/daytona/.sync-ready when done.
+ * Without this, the agent can run bash commands against an empty workspace.
+ */
+async function waitForSyncReady(sandbox: Sandbox, timeoutSeconds = 60): Promise<void> {
+  await sandbox.process.executeCommand(
+    `timeout ${timeoutSeconds} bash -c 'until [ -f /home/daytona/.sync-ready ]; do sleep 0.5; done'`,
+  );
+}
+
 async function ensureChatDirectory(
   sandbox: Sandbox,
   friendlyChatId?: string,
@@ -88,6 +99,7 @@ export async function getOrCreateSandbox(
       const sandbox = await daytona.get(existingId);
 
       if (sandbox.state === "started") {
+        await waitForSyncReady(sandbox);
         await ensureChatDirectory(sandbox, friendlyChatId);
         return sandbox;
       }
@@ -129,6 +141,7 @@ export async function getOrCreateSandbox(
 
   const sandbox = await createSandbox(userId, chatId);
   await redis.set(key, sandbox.id, { ex: REDIS_TTL_SECONDS });
+  await waitForSyncReady(sandbox);
   await ensureChatDirectory(sandbox, friendlyChatId);
   return sandbox;
 }
