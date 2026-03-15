@@ -3,7 +3,6 @@
 
 import { useChat } from "@ai-sdk/react";
 import { IconCopy, IconFolder, IconPencil } from "@tabler/icons-react";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   type ChatStatus,
   DefaultChatTransport,
@@ -41,7 +40,6 @@ import { cn } from "@/lib/utils";
 const CHAT_ID = "main-chat";
 
 export default function ChatPage() {
-  const queryClient = useQueryClient();
   const { messages, sendMessage, status, error, stop } = useChat({
     id: CHAT_ID,
     transport: new DefaultChatTransport({
@@ -55,8 +53,6 @@ export default function ChatPage() {
     },
     onFinish: (message) => {
       console.log("useChat finished:", message);
-      // Refresh the files panel whenever the AI finishes a turn
-      queryClient.invalidateQueries({ queryKey: ["chat-files", CHAT_ID] });
     },
     // onResponse: (response) => {
     //   console.log("useChat response:", response);
@@ -66,7 +62,7 @@ export default function ChatPage() {
 
   const [webSearch, setWebSearch] = useState(false);
   const [filesOpen, setFilesOpen] = useState(false);
-  const { data: files = [] } = useChatFiles(CHAT_ID);
+  const files = useChatFiles(messages);
 
   const pendingQuestion = useMemo(() => {
     if (status !== "ready") return null;
@@ -205,7 +201,7 @@ export default function ChatPage() {
           </Conversation>
           {/* Push-sidebar files panel */}
           <ChatFilesPanel
-            chatId={CHAT_ID}
+            files={files}
             open={filesOpen}
             onClose={() => setFilesOpen(false)}
           />
@@ -287,7 +283,7 @@ function StatusMessage({
   parts: UIMessage<unknown, UIDataTypes, UITools>["parts"];
   status: ChatStatus;
 }) {
-  const ignoredParts = ["data-chat-title"];
+  const ignoredParts = ["data-chat-title", "data-workspace-files"];
   const filteredParts = parts.filter((p) => !ignoredParts.includes(p.type));
   const lastPart = filteredParts[filteredParts.length - 1];
   const latestToolStatus = lastPart?.type.startsWith("tool-")

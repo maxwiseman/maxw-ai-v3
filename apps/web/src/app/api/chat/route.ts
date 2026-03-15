@@ -3,6 +3,8 @@ import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { geolocation } from "@vercel/functions";
 import {
   convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
   type ModelMessage,
   type SystemModelMessage,
   smoothStream,
@@ -17,9 +19,13 @@ import {
   buildSystemPrompt,
   getGeneralAgentTools,
 } from "@/ai/agents/general";
+import {
+  getWorkspaceFilesForStream,
+  indexWorkspaceFiles,
+  type WorkspaceFileEntry,
+} from "@/ai/sandbox/list-workspace-files";
 import { getSandboxIfRunning } from "@/ai/sandbox/sandbox-manager";
-import { syncOutputFiles } from "@/ai/sandbox/sync-output-files";
-import { getOrCreateChatMetadata } from "@/ai/utils/chat-metadata";
+import { getSkillsTree } from "@/ai/sandbox/skills-tree";
 import { getAllCanvasCourses } from "@/app/classes/classes-actions";
 import { auth } from "@/lib/auth";
 
@@ -62,15 +68,16 @@ export async function POST(request: NextRequest) {
   const fullName = authData.user.name;
   const schoolName = "Harvard University"; // TODO: Get from user settings
 
-  // Load user's classes
-  const classesResponse = await getAllCanvasCourses();
+  // Load user's classes and skills tree in parallel
+  const [classesResponse, skillsTree] = await Promise.all([
+    getAllCanvasCourses(),
+    getSkillsTree(userId),
+  ]);
   const classes = typeof classesResponse === "string" ? [] : classesResponse;
 
   // Build agent context
   const now = new Date();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-  const metadata = await getOrCreateChatMetadata(userId, chatId);
 
   const context: AgentContext = {
     userId,
@@ -78,12 +85,12 @@ export async function POST(request: NextRequest) {
     schoolName,
     classes,
     chatId,
-    friendlyChatId: metadata.friendlyId,
     currentDateTime: now.toLocaleString(undefined, { timeZone: timezone }),
     timezone,
     country: location.country,
     city: location.city,
     region: location.countryRegion,
+    skillsTree,
   };
 
   // Get tools configured for this context
@@ -122,30 +129,20 @@ export async function POST(request: NextRequest) {
       },
     ];
 
+    // Promise bridge: onFinish resolves this after sync + indexing so the
+    // outer createUIMessageStream can append the workspace-files data part
+    // before closing the stream.
+    let resolveFiles!: (files: WorkspaceFileEntry[]) => void;
+    const filesPromise = new Promise<WorkspaceFileEntry[]>((resolve) => {
+      resolveFiles = resolve;
+    });
+
     const agent = new ToolLoopAgent({
       model: anthropic("claude-sonnet-4-6"),
       instructions,
       tools,
       providerOptions: providerOptions,
       onFinish: async (event) => {
-        // Only sync output files if a sandbox is already running — we never
-        // want to spin one up just to scan a (likely empty) output directory.
-        if (context.friendlyChatId) {
-          try {
-            const sandbox = await getSandboxIfRunning(userId, chatId);
-            if (sandbox) {
-              await syncOutputFiles(
-                sandbox,
-                userId,
-                chatId,
-                context.friendlyChatId,
-              );
-            }
-          } catch (syncError) {
-            console.error("Failed to sync output files", syncError);
-          }
-        }
-
         const usage = event.totalUsage;
         const inputTokens = usage.inputTokens ?? 0;
         const cachedTokens = usage.inputTokenDetails.cacheReadTokens ?? 0;
@@ -157,15 +154,63 @@ export async function POST(request: NextRequest) {
         console.info(
           `Claude cache for chat ${chatId}: ${cachedTokens}/${inputTokens} input tokens cached (${cachedPercent}%) and ${cacheWrites} tokens written to the cache.`,
         );
+
+        // Force a sync from the sandbox (if it was used this turn) so R2
+        // has the latest files before we index them into the DB.
+        let files: WorkspaceFileEntry[] = [];
+        try {
+          const sandbox = await getSandboxIfRunning(userId, chatId);
+          if (sandbox) {
+            await sandbox.process.executeCommand(
+              "python3 /home/daytona/sync-workspace.py --once",
+              "/home/daytona",
+              undefined,
+              120,
+            );
+          }
+          // Index any new workspace files from R2 into the DB, then read
+          // back the full list to stream to the client.
+          await indexWorkspaceFiles(userId, chatId);
+          files = await getWorkspaceFilesForStream(userId, chatId);
+        } catch (err) {
+          console.error("[onFinish] workspace sync/index failed:", err);
+        } finally {
+          resolveFiles(files);
+        }
       },
     });
 
-    const result = await agent.stream({
-      messages: modelMessages,
-      experimental_transform: smoothStream({ chunking: "word" }),
+    const stream = createUIMessageStream({
+      execute: async ({ writer }) => {
+        const result = await agent.stream({
+          messages: modelMessages,
+          experimental_transform: smoothStream({ chunking: "word" }),
+        });
+
+        // Pipe agent output into the outer stream and wait for it to finish.
+        // Awaiting merge is required — streams are lazy, so without a consumer
+        // the agent loop never runs and onFinish never fires.
+        await writer.merge(result.toUIMessageStream());
+
+        // onFinish has now run; filesPromise is already resolved.
+        const files = await filesPromise;
+        if (files.length > 0) {
+          writer.write({
+            type: "data-workspace-files",
+            id: crypto.randomUUID(),
+            data: files,
+          });
+        }
+      },
+      onError: (err) => {
+        // Unblock the promise so the stream can close cleanly
+        resolveFiles([]);
+        console.error("[createUIMessageStream] error:", err);
+        return "An error occurred while processing your request";
+      },
     });
 
-    return result.toUIMessageStreamResponse();
+    return createUIMessageStreamResponse({ stream });
   } catch (error) {
     console.error("Chat API error:", error);
     return new Response(

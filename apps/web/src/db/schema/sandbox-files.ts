@@ -10,7 +10,7 @@ export const sandboxFile = pgTable("sandbox_file", {
     .references(() => user.id, { onDelete: "cascade" }),
   chatId: text("chat_id").notNull(),
   filename: text("filename").notNull(),
-  blobUrl: text("blob_url").notNull(),
+  r2Key: text("r2_key").notNull(),
   contentType: text("content_type").notNull(),
   sizeBytes: integer("size_bytes").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

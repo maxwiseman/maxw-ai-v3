@@ -3,7 +3,7 @@
  * Fetches Canvas data and uploads it to the sandbox as JSON files.
  * Redis-cached per user (5 min TTL) to avoid hitting Canvas API on every turn.
  *
- * Produces in /home/daytona/workspace/data/:
+ * Produces in /home/daytona/data/:
  *   - courses.json       — array of CanvasCourse
  *   - assignments.json   — array of assignments with _classId and _className fields
  */
@@ -85,11 +85,11 @@ export async function seedCanvasData(
     await Promise.all([
       sandbox.fs.uploadFile(
         Buffer.from(JSON.stringify(data.courses, null, 2)),
-        "/home/daytona/workspace/data/courses.json",
+        "/home/daytona/data/courses.json",
       ),
       sandbox.fs.uploadFile(
         Buffer.from(JSON.stringify(data.assignments, null, 2)),
-        "/home/daytona/workspace/data/assignments.json",
+        "/home/daytona/data/assignments.json",
       ),
     ]);
   } catch {
