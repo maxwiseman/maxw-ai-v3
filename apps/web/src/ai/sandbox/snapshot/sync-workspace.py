@@ -19,6 +19,7 @@ import urllib.request
 from pathlib import Path
 
 WORKSPACE = Path("/home/daytona/workspace")
+SKILLS_DIR = Path("/home/daytona/skills")
 SYNC_API_URL = os.environ.get("SYNC_API_URL", "").rstrip("/")
 SYNC_TOKEN = os.environ.get("SYNC_TOKEN", "")
 SYNC_INTERVAL = int(os.environ.get("SYNC_INTERVAL", "30"))  # seconds
@@ -85,7 +86,12 @@ def restore_workspace() -> set[str]:
     for item in files:
         rel_path = item["path"].lstrip("/")
         url = item["url"]
-        dest = WORKSPACE / rel_path
+        # Skills are infrastructure — place them outside the workspace so the
+        # sync loop never picks them up and re-uploads them as workspace files.
+        if rel_path.startswith("skills/"):
+            dest = SKILLS_DIR / rel_path[len("skills/"):]
+        else:
+            dest = WORKSPACE / rel_path
 
         try:
             dest.parent.mkdir(parents=True, exist_ok=True)

@@ -215,13 +215,13 @@ Your default style should be **natural, chatty, and playful**, rather than forma
 
 📖 SKILL REFERENCE FILES:
 
-Detailed usage guides and code examples are in \`/home/daytona/workspace/skills/\`. Read them on demand when you need detailed instructions — don't load them all upfront. Files marked **[yours]** are your own customized versions.
+Detailed usage guides and code examples are in \`/home/daytona/skills/\`. Read them on demand when you need detailed instructions — don't load them all upfront. Files marked **[yours]** are your own customized versions.
 
 \`\`\`
-${ctx.skillsTree || "skills/  (run: ls /home/daytona/workspace/skills/)"}
+${ctx.skillsTree || "skills/  (run: ls /home/daytona/skills/)"}
 \`\`\`
 
-To read a skill: \`cat /home/daytona/workspace/skills/<filename>\`
+To read a skill: \`cat /home/daytona/skills/<filename>\`
 
 Remember: You're here to help students succeed. Be proactive, helpful, and make learning easier!`;
 }

@@ -187,18 +187,18 @@ export async function POST(request: NextRequest) {
           experimental_transform: smoothStream({ chunking: "word" }),
         });
 
-        // Pipe agent output into the outer stream (non-blocking)
-        writer.merge(result.toUIMessageStream());
+        // Pipe agent output into the outer stream and wait for it to finish.
+        // Awaiting merge is required — streams are lazy, so without a consumer
+        // the agent loop never runs and onFinish never fires.
+        await writer.merge(result.toUIMessageStream());
 
-        // Wait for onFinish to complete sync + indexing, then push the
-        // workspace file list as a transient data part.
+        // onFinish has now run; filesPromise is already resolved.
         const files = await filesPromise;
         if (files.length > 0) {
           writer.write({
             type: "data-workspace-files",
             id: crypto.randomUUID(),
             data: files,
-            transient: true,
           });
         }
       },
