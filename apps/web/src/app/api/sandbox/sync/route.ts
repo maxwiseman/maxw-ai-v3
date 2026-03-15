@@ -13,6 +13,7 @@
  * DELETE /api/sandbox/sync — delete a file from the chat workspace
  */
 
+import path from "node:path";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { type NextRequest, NextResponse } from "next/server";
@@ -40,9 +41,12 @@ function extractToken(req: NextRequest): string | null {
 }
 
 function sanitizePath(rawPath: string): string | null {
-  const clean = rawPath.replace(/\.\./g, "").replace(/^\/+/, "").trim();
-  if (!clean || clean.includes("\0")) return null;
-  return clean;
+  if (rawPath.includes("\0")) return null;
+  // Normalize resolves all `.` and `..` components; stripping the leading `/`
+  // means a path that escapes the root will start with `..` after normalization.
+  const normalized = path.posix.normalize("/" + rawPath.trim()).slice(1);
+  if (!normalized || normalized.startsWith("..") || normalized.startsWith("/")) return null;
+  return normalized;
 }
 
 const presign = (key: string) =>
