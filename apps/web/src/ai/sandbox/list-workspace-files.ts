@@ -13,10 +13,9 @@ import { db } from "@/db";
 import { sandboxFile } from "@/db/schema/sandbox-files";
 import { chatWorkspacePrefix, listR2Objects } from "./r2-client";
 
-// Workspace-relative path prefixes that are never shown in the files panel.
-// - data/   is re-seeded from Canvas every turn — ephemeral, not user output.
-// - skills/ lives in a separate R2 path and is infrastructure, not user files.
-const SKIP_PREFIXES = ["data/", "skills/"];
+// data/ and skills/ now live at /home/daytona/data/ and /home/daytona/skills/
+// (outside the workspace), so they never appear in R2 under the workspace
+// prefix and don't need to be filtered here.
 
 const MIME_TYPES: Record<string, string> = {
   pdf: "application/pdf",
@@ -58,7 +57,7 @@ function getMimeType(filename: string): string {
 
 /**
  * Scan R2 for all user files in a chat's workspace and upsert any new ones
- * into the DB. Skips data/ and skills/ prefixes.
+ * into the DB.
  * Safe to call even if the workspace is empty.
  */
 export async function indexWorkspaceFiles(
@@ -84,10 +83,7 @@ export async function indexWorkspaceFiles(
       filename: obj.key.slice(workspacePrefix.length), // e.g. "report.pdf"
       size: obj.size,
     }))
-    .filter(
-      (f) =>
-        f.filename && !SKIP_PREFIXES.some((p) => f.filename.startsWith(p)),
-    );
+    .filter((f) => f.filename);
 
   if (fileEntries.length === 0) return;
 

@@ -25,9 +25,9 @@ SYNC_TOKEN = os.environ.get("SYNC_TOKEN", "")
 SYNC_INTERVAL = int(os.environ.get("SYNC_INTERVAL", "30"))  # seconds
 BATCH_SIZE = 50  # files per presign request
 
-# Directories under the workspace that are never synced to R2.
-# - data/  is regenerated from Canvas every turn — no point persisting it.
-SKIP_PREFIXES = ("data/",)
+# No workspace subdirectories need to be skipped — data/ and skills/ now live
+# at /home/daytona/data/ and /home/daytona/skills/ (outside the workspace).
+SKIP_PREFIXES: tuple[()] = ()
 
 
 def log(msg: str) -> None:

@@ -104,7 +104,7 @@ export function buildSystemPrompt(ctx: AgentContext): string {
    - **What persists**: Files in \`/home/daytona/workspace\` are synced to cloud storage and survive sandbox restarts. Your workspace files are always there.
    - **What does NOT persist**: Installed packages, pip/npm/apt installs, and any changes outside \`/home/daytona/workspace\`. Re-install tools at the start of each turn if needed (check /memories/environment.txt first).
    - If the sandbox returns a "sandbox is stopping" error, wait a few seconds and retry once — it will be ready shortly.
-   - **Canvas data available at \`/home/daytona/workspace/data/\`** (refreshed each turn):
+   - **Canvas data available at \`/home/daytona/data/\`** (refreshed each turn):
      - \`courses.json\` — all enrolled courses
      - \`assignments.json\` — all assignments across all courses (each has \`_classId\`, \`_className\`)
    - Use \`grep\`, \`jq\`, or Python scripts to filter/process this data instead of calling Canvas tools

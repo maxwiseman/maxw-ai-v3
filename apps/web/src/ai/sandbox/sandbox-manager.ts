@@ -9,8 +9,8 @@
 
 import { Daytona, DaytonaNotFoundError, type Sandbox } from "@daytonaio/sdk";
 import { Redis } from "@upstash/redis";
-import { createSyncToken } from "./sync-token";
 import { env } from "@/env";
+import { createSyncToken } from "./sync-token";
 
 const redis = new Redis({
   url: env.UPSTASH_REDIS_REST_URL,
@@ -29,12 +29,15 @@ function getSyncApiUrl(): string {
     if (vercelUrl) return `https://${vercelUrl}`;
   }
   if (env.NEXT_PUBLIC_SERVER_URL) return env.NEXT_PUBLIC_SERVER_URL;
-  throw new Error("NEXT_PUBLIC_SERVER_URL is not set. Required for non-Vercel deployments.");
+  throw new Error(
+    "NEXT_PUBLIC_SERVER_URL is not set. Required for non-Vercel deployments.",
+  );
 }
 
 const daytona = new Daytona({ apiKey: env.DAYTONA_API_KEY });
 
-const REDIS_KEY = (userId: string, chatId: string) => `sandbox:user:${userId}:chat:${chatId}`;
+const REDIS_KEY = (userId: string, chatId: string) =>
+  `sandbox:user:${userId}:chat:${chatId}`;
 const REDIS_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
 /**
@@ -42,7 +45,10 @@ const REDIS_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
  * The script writes /home/daytona/.sync-ready when done.
  * Without this, the agent can run bash commands against an empty workspace.
  */
-async function waitForSyncReady(sandbox: Sandbox, timeoutSeconds = 60): Promise<void> {
+async function waitForSyncReady(
+  sandbox: Sandbox,
+  timeoutSeconds = 60,
+): Promise<void> {
   await sandbox.process.executeCommand(
     `timeout ${timeoutSeconds} bash -c 'until [ -f /home/daytona/.sync-ready ]; do sleep 0.5; done'`,
   );
@@ -53,9 +59,11 @@ async function createSandbox(userId: string, chatId: string): Promise<Sandbox> {
   const syncToken = createSyncToken(userId, chatId, 8 * 60 * 60 * 1000);
 
   return daytona.create({
-    ...(env.DAYTONA_SNAPSHOT ? { snapshot: env.DAYTONA_SNAPSHOT } : { language: "python" }),
-    autoStopInterval: 10,    // stop after 10 min of inactivity
-    autoDeleteInterval: 60,  // delete 1 hour after stopping — workspace lives in R2, not here
+    ...(env.DAYTONA_SNAPSHOT
+      ? { snapshot: env.DAYTONA_SNAPSHOT }
+      : { language: "python" }),
+    autoStopInterval: 30, // stop after 30 min of inactivity
+    autoDeleteInterval: 0, // delete immediately after stopping — workspace lives in R2, no reason to keep around
     envVars: {
       SYNC_API_URL: getSyncApiUrl(),
       SYNC_TOKEN: syncToken,
@@ -82,7 +90,9 @@ export async function getOrCreateSandbox(
         await waitForSyncReady(sandbox);
         return sandbox;
       }
-      console.log(`[sandbox] ${existingId} is ${sandbox.state} — creating fresh (workspace in R2)`);
+      console.log(
+        `[sandbox] ${existingId} is ${sandbox.state} — creating fresh (workspace in R2)`,
+      );
     } catch (err) {
       if (!(err instanceof DaytonaNotFoundError)) throw err;
       console.log(`[sandbox] ${existingId} was deleted — creating fresh`);
@@ -115,7 +125,10 @@ export async function getSandboxIfRunning(
 }
 
 /** Explicitly delete a sandbox and clear its Redis entry. */
-export async function deleteSandbox(userId: string, chatId: string): Promise<void> {
+export async function deleteSandbox(
+  userId: string,
+  chatId: string,
+): Promise<void> {
   const key = REDIS_KEY(userId, chatId);
   const sandboxId = await redis.get<string>(key);
   if (!sandboxId) return;
