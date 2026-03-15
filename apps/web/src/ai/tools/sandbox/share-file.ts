@@ -96,12 +96,18 @@ export function createShareFileTool(
         const relativePath = absolutePath.slice(WORKSPACE_ROOT.length + 1);
         key = r2Key(userId, chatId, relativePath);
 
-        // Get size by downloading a stat — use the sandbox to read metadata
+        // Get size using stat via the sandbox to avoid downloading the full file
         const sandbox = await getOrCreateSandbox(userId, chatId);
-        let buffer: Buffer;
         try {
-          buffer = await sandbox.fs.downloadFile(absolutePath);
-          sizeBytes = buffer.length;
+          const result = await sandbox.process.executeCommand(
+            `stat -c %s ${absolutePath}`,
+          );
+          const sizeStr = result.result.trim();
+          const parsedSize = Number.parseInt(sizeStr, 10);
+          if (Number.isNaN(parsedSize)) {
+            return `File not found or could not be read: ${absolutePath}`;
+          }
+          sizeBytes = parsedSize;
         } catch {
           return `File not found or could not be read: ${absolutePath}`;
         }
