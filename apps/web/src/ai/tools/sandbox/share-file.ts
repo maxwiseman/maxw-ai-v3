@@ -102,7 +102,7 @@ export function createShareFileTool(
           const result = await sandbox.process.executeCommand(
             `stat -c %s ${absolutePath}`,
           );
-          const sizeStr = result.stdout.trim();
+          const sizeStr = result.result.trim();
           const parsedSize = Number.parseInt(sizeStr, 10);
           if (Number.isNaN(parsedSize)) {
             return `File not found or could not be read: ${absolutePath}`;
