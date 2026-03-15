@@ -22,6 +22,7 @@ import {
   listR2Objects,
   r2,
   r2Key,
+  userSkillKey,
   userSkillsPrefix,
 } from "@/ai/sandbox/r2-client";
 import { invalidateSkillsTree } from "@/ai/sandbox/skills-tree";
@@ -78,7 +79,10 @@ export async function POST(req: NextRequest) {
       const safePath = sanitizePath(rawPath);
       if (!safePath) return null;
 
-      const key = r2Key(claims.userId, claims.chatId, safePath);
+      // skills/ files belong under users/{userId}/skills/, not per-chat workspace
+      const key = safePath.startsWith("skills/")
+        ? userSkillKey(claims.userId, safePath.slice("skills/".length))
+        : r2Key(claims.userId, claims.chatId, safePath);
       const url = await getSignedUrl(
         r2,
         new PutObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }),
@@ -174,7 +178,9 @@ export async function DELETE(req: NextRequest) {
   const safePath = sanitizePath(body.path);
   if (!safePath) return NextResponse.json({ error: "Invalid path" }, { status: 400 });
 
-  const key = r2Key(claims.userId, claims.chatId, safePath);
+  const key = safePath.startsWith("skills/")
+    ? userSkillKey(claims.userId, safePath.slice("skills/".length))
+    : r2Key(claims.userId, claims.chatId, safePath);
   await r2.send(new DeleteObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }));
 
   if (safePath.startsWith("skills/")) await invalidateSkillsTree(claims.userId);
