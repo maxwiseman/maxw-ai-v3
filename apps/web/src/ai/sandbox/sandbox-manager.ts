@@ -49,16 +49,21 @@ async function waitForSyncReady(
   sandbox: Sandbox,
   timeoutSeconds = 60,
 ): Promise<void> {
+  const t0 = Date.now();
   await sandbox.process.executeCommand(
     `timeout ${timeoutSeconds} bash -c 'until [ -f /home/daytona/.sync-ready ]; do sleep 0.5; done'`,
   );
+  console.log(`[sandbox] ${sandbox.id} sync-ready in ${Date.now() - t0}ms`);
 }
 
 /** Create a fresh sandbox. R2 credentials never enter the sandbox — only the sync token. */
 async function createSandbox(userId: string, chatId: string): Promise<Sandbox> {
   const syncToken = createSyncToken(userId, chatId, 8 * 60 * 60 * 1000);
 
-  return daytona.create({
+  const t0 = Date.now();
+  console.log(`[sandbox] creating new sandbox for chat ${chatId}...`);
+
+  const sandbox = await daytona.create({
     ...(env.DAYTONA_SNAPSHOT
       ? { snapshot: env.DAYTONA_SNAPSHOT }
       : { language: "python" }),
@@ -69,6 +74,9 @@ async function createSandbox(userId: string, chatId: string): Promise<Sandbox> {
       SYNC_TOKEN: syncToken,
     },
   });
+
+  console.log(`[sandbox] sandbox ${sandbox.id} created in ${Date.now() - t0}ms`);
+  return sandbox;
 }
 
 /**
