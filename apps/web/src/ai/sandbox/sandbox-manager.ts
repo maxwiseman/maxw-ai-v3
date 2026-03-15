@@ -38,7 +38,7 @@ const daytona = new Daytona({ apiKey: env.DAYTONA_API_KEY });
 
 const REDIS_KEY = (userId: string, chatId: string) =>
   `sandbox:user:${userId}:chat:${chatId}`;
-const REDIS_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const REDIS_TTL_SECONDS = 60 * 60; // 1 hour — sandboxes auto-delete after 30 min of inactivity
 
 /**
  * Block until the sync script has finished restoring the workspace from R2.

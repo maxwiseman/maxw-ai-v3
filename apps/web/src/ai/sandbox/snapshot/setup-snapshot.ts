@@ -19,6 +19,16 @@ const image = Image.base("daytonaio/sandbox:latest")
     "npm install -g agent-browser",
     "agent-browser install",
   )
+  // Document creation tools: LibreOffice (headless conversions), TeX Live (LaTeX/XeLaTeX/LuaLaTeX), Typst
+  .runCommands(
+    "sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends " +
+      "libreoffice " +
+      "texlive-latex-recommended texlive-fonts-recommended texlive-xetex texlive-luatex texlive-latex-extra latexmk " +
+      "&& sudo rm -rf /var/lib/apt/lists/*",
+    // Typst — install latest pre-built binary
+    "curl -fsSL https://github.com/typst/typst/releases/latest/download/typst-x86_64-unknown-linux-musl.tar.xz " +
+      "| sudo tar -xJf - --strip-components=1 -C /usr/local/bin typst-x86_64-unknown-linux-musl/typst",
+  )
   // Skills are not baked in — they are pulled from R2 on startup via the sync script.
   // Global skills live at skills/global/ in R2; user skills at users/{id}/workspace/skills/.
   // Both are merged into /home/daytona/workspace/skills/ when the sandbox starts.

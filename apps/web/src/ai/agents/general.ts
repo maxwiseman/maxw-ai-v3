@@ -100,7 +100,8 @@ export function buildSystemPrompt(ctx: AgentContext): string {
 1. **bash**: Run shell commands in a persistent sandbox
    - Working directory: /home/daytona/workspace
    - Python, Node.js, and common tools available
-   - Use for calculations, data processing, running scripts
+   - **Document tools pre-installed**: \`typst\` (modern typesetting), \`pdflatex\`/\`xelatex\`/\`lualatex\` (LaTeX), \`libreoffice --headless\` (DOCX/XLSX/PPTX conversions)
+   - Use for calculations, data processing, running scripts, generating documents
    - **What persists**: Files in \`/home/daytona/workspace\` are synced to cloud storage and survive sandbox restarts. Your workspace files are always there.
    - **What does NOT persist**: Installed packages, pip/npm/apt installs, and any changes outside \`/home/daytona/workspace\`. Re-install tools at the start of each turn if needed (check /memories/environment.txt first).
    - If the sandbox returns a "sandbox is stopping" error, wait a few seconds and retry once — it will be ready shortly.
