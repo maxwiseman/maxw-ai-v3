@@ -99,10 +99,9 @@ export function createShareFileTool(
         // Get size using stat via the sandbox to avoid downloading the full file
         const sandbox = await getOrCreateSandbox(userId, chatId);
         try {
-          const result = await sandbox.process.executeCommand({
-            command: "stat",
-            args: ["-c", "%s", absolutePath],
-          });
+          const result = await sandbox.process.executeCommand(
+            `stat -c %s ${absolutePath}`,
+          );
           const sizeStr = result.stdout.trim();
           const parsedSize = Number.parseInt(sizeStr, 10);
           if (Number.isNaN(parsedSize)) {
