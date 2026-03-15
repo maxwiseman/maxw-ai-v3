@@ -3,6 +3,8 @@ import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { geolocation } from "@vercel/functions";
 import {
   convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
   type ModelMessage,
   type SystemModelMessage,
   smoothStream,
@@ -17,7 +19,12 @@ import {
   buildSystemPrompt,
   getGeneralAgentTools,
 } from "@/ai/agents/general";
-import { listWorkspaceFiles } from "@/ai/sandbox/list-workspace-files";
+import {
+  getWorkspaceFilesForStream,
+  indexWorkspaceFiles,
+  type WorkspaceFileEntry,
+} from "@/ai/sandbox/list-workspace-files";
+import { getSandboxIfRunning } from "@/ai/sandbox/sandbox-manager";
 import { getSkillsTree } from "@/ai/sandbox/skills-tree";
 import { getAllCanvasCourses } from "@/app/classes/classes-actions";
 import { auth } from "@/lib/auth";
@@ -122,21 +129,20 @@ export async function POST(request: NextRequest) {
       },
     ];
 
+    // Promise bridge: onFinish resolves this after sync + indexing so the
+    // outer createUIMessageStream can append the workspace-files data part
+    // before closing the stream.
+    let resolveFiles!: (files: WorkspaceFileEntry[]) => void;
+    const filesPromise = new Promise<WorkspaceFileEntry[]>((resolve) => {
+      resolveFiles = resolve;
+    });
+
     const agent = new ToolLoopAgent({
       model: anthropic("claude-sonnet-4-6"),
       instructions,
       tools,
       providerOptions: providerOptions,
       onFinish: async (event) => {
-        // Index any new workspace files from R2 into the DB.
-        // Since the workspace is R2-backed, files are already persisted —
-        // this just keeps the DB index in sync without touching the sandbox.
-        try {
-          await listWorkspaceFiles(userId, chatId);
-        } catch (syncError) {
-          console.error("Failed to index workspace files", syncError);
-        }
-
         const usage = event.totalUsage;
         const inputTokens = usage.inputTokens ?? 0;
         const cachedTokens = usage.inputTokenDetails.cacheReadTokens ?? 0;
@@ -148,15 +154,63 @@ export async function POST(request: NextRequest) {
         console.info(
           `Claude cache for chat ${chatId}: ${cachedTokens}/${inputTokens} input tokens cached (${cachedPercent}%) and ${cacheWrites} tokens written to the cache.`,
         );
+
+        // Force a sync from the sandbox (if it was used this turn) so R2
+        // has the latest files before we index them into the DB.
+        let files: WorkspaceFileEntry[] = [];
+        try {
+          const sandbox = await getSandboxIfRunning(userId, chatId);
+          if (sandbox) {
+            await sandbox.process.executeCommand(
+              "python3 /home/daytona/sync-workspace.py --once",
+              "/home/daytona",
+              undefined,
+              120,
+            );
+          }
+          // Index any new workspace files from R2 into the DB, then read
+          // back the full list to stream to the client.
+          await indexWorkspaceFiles(userId, chatId);
+          files = await getWorkspaceFilesForStream(userId, chatId);
+        } catch (err) {
+          console.error("[onFinish] workspace sync/index failed:", err);
+        } finally {
+          resolveFiles(files);
+        }
       },
     });
 
-    const result = await agent.stream({
-      messages: modelMessages,
-      experimental_transform: smoothStream({ chunking: "word" }),
+    const stream = createUIMessageStream({
+      execute: async ({ writer }) => {
+        const result = await agent.stream({
+          messages: modelMessages,
+          experimental_transform: smoothStream({ chunking: "word" }),
+        });
+
+        // Pipe agent output into the outer stream (non-blocking)
+        writer.merge(result.toUIMessageStream());
+
+        // Wait for onFinish to complete sync + indexing, then push the
+        // workspace file list as a transient data part.
+        const files = await filesPromise;
+        if (files.length > 0) {
+          writer.write({
+            type: "data-workspace-files",
+            id: crypto.randomUUID(),
+            data: files,
+            transient: true,
+          });
+        }
+      },
+      onError: (err) => {
+        // Unblock the promise so the stream can close cleanly
+        resolveFiles([]);
+        console.error("[createUIMessageStream] error:", err);
+        return "An error occurred while processing your request";
+      },
     });
 
-    return result.toUIMessageStreamResponse();
+    return createUIMessageStreamResponse({ stream });
   } catch (error) {
     console.error("Chat API error:", error);
     return new Response(

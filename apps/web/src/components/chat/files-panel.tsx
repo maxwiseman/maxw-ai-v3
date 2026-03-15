@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import type { UIDataTypes, UIMessage, UITools } from "ai";
 import type { LucideIcon } from "lucide-react";
 import {
   ArchiveIcon,
@@ -74,29 +74,31 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-export function useChatFiles(chatId: string) {
-  return useQuery<SandboxFileEntry[]>({
-    queryKey: ["chat-files", chatId],
-    queryFn: () =>
-      fetch(`/api/chat/${chatId}/files`).then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch files");
-        return r.json();
-      }),
-    refetchOnWindowFocus: false,
-    staleTime: 0,
-  });
+export function useChatFiles(
+  messages: UIMessage<unknown, UIDataTypes, UITools>[],
+): SandboxFileEntry[] {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (msg.role !== "assistant") continue;
+    for (let j = msg.parts.length - 1; j >= 0; j--) {
+      const part = msg.parts[j];
+      if (part.type === "data-workspace-files" && "data" in part) {
+        return part.data as SandboxFileEntry[];
+      }
+    }
+  }
+  return [];
 }
 
 export function ChatFilesPanel({
-  chatId,
+  files,
   open,
   onClose,
 }: {
-  chatId: string;
+  files: SandboxFileEntry[];
   open: boolean;
   onClose: () => void;
 }) {
-  const { data: files = [], isLoading } = useChatFiles(chatId);
   const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -134,16 +136,7 @@ export function ChatFilesPanel({
 
           {/* File list */}
           <div className="flex-1 overflow-y-auto p-2">
-            {isLoading ? (
-              <div className="space-y-2 p-2">
-                {[1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="h-14 animate-pulse rounded-lg bg-muted/60"
-                  />
-                ))}
-              </div>
-            ) : files.length === 0 ? (
+            {files.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
                 <FileIcon className="size-8 text-muted-foreground/40" />
                 <p className="text-muted-foreground text-xs">

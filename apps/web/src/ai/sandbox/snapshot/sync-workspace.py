@@ -24,6 +24,10 @@ SYNC_TOKEN = os.environ.get("SYNC_TOKEN", "")
 SYNC_INTERVAL = int(os.environ.get("SYNC_INTERVAL", "30"))  # seconds
 BATCH_SIZE = 50  # files per presign request
 
+# Directories under the workspace that are never synced to R2.
+# - data/  is regenerated from Canvas every turn — no point persisting it.
+SKIP_PREFIXES = ("data/",)
+
 
 def log(msg: str) -> None:
     print(f"[sync] {msg}", flush=True)
@@ -133,6 +137,8 @@ def sync_cycle(last_seen: dict[str, float]) -> dict[str, float]:
         if not path.is_file():
             continue
         rel = str(path.relative_to(WORKSPACE))
+        if any(rel.startswith(prefix) for prefix in SKIP_PREFIXES):
+            continue
         try:
             mtime = path.stat().st_mtime
         except OSError:
@@ -162,6 +168,15 @@ def main() -> None:
         sys.exit(1)
 
     WORKSPACE.mkdir(parents=True, exist_ok=True)
+
+    # --once: flush current workspace to R2 and exit (used by the server to
+    # force a sync at the end of each agent turn before reading the file list).
+    # Skips restore — the workspace is already live. Respects SKIP_PREFIXES.
+    if "--once" in sys.argv:
+        log("One-shot sync: uploading all workspace files to R2.")
+        sync_cycle({})
+        log("One-shot sync complete.")
+        sys.exit(0)
 
     restored_paths = restore_workspace()
 
