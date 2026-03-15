@@ -9,7 +9,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { sandboxFile } from "@/db/schema/sandbox-files";
-import { listR2Objects, r2Key } from "./r2-client";
+import { chatWorkspacePrefix, listR2Objects } from "./r2-client";
 
 const MIME_TYPES: Record<string, string> = {
   pdf: "application/pdf",
@@ -50,19 +50,18 @@ function getMimeType(filename: string): string {
 }
 
 /**
- * List output files for a chat from R2 and upsert any new ones into the DB.
- * Safe to call even if the output directory doesn't exist yet.
+ * List all files in a chat's workspace from R2 and upsert any new ones into the DB.
+ * Safe to call even if the workspace is empty.
  */
 export async function listWorkspaceFiles(
   userId: string,
   chatId: string,
-  friendlyChatId: string,
 ): Promise<void> {
-  const outputPrefix = r2Key(userId, chatId, "chat", friendlyChatId, "output");
+  const workspacePrefix = chatWorkspacePrefix(userId, chatId);
 
   let objects: Array<{ key: string; size: number }>;
   try {
-    objects = await listR2Objects(`${outputPrefix}/`);
+    objects = await listR2Objects(workspacePrefix);
   } catch (err) {
     console.error("[listWorkspaceFiles] Failed to list R2 objects:", err);
     return;
@@ -70,29 +69,29 @@ export async function listWorkspaceFiles(
 
   if (objects.length === 0) return;
 
-  // Extract filenames from keys
+  // Build entries with relative path as display name
   const fileEntries = objects.map((obj) => ({
     key: obj.key,
-    filename: obj.key.split("/").pop()!,
+    filename: obj.key.slice(workspacePrefix.length), // relative path from workspace root
     size: obj.size,
   })).filter((f) => f.filename);
 
-  const filenames = fileEntries.map((f) => f.filename);
+  const r2Keys = fileEntries.map((f) => f.key);
 
-  // Find which are already indexed
+  // Find which are already indexed by r2Key
   const existingFiles = await db
-    .select({ filename: sandboxFile.filename })
+    .select({ r2Key: sandboxFile.r2Key })
     .from(sandboxFile)
     .where(
       and(
         eq(sandboxFile.chatId, chatId),
         eq(sandboxFile.userId, userId),
-        inArray(sandboxFile.filename, filenames),
+        inArray(sandboxFile.r2Key, r2Keys),
       ),
     );
 
-  const existingSet = new Set(existingFiles.map((f) => f.filename));
-  const newEntries = fileEntries.filter((f) => !existingSet.has(f.filename));
+  const existingSet = new Set(existingFiles.map((f) => f.r2Key));
+  const newEntries = fileEntries.filter((f) => !existingSet.has(f.key));
 
   if (newEntries.length === 0) return;
 
@@ -102,7 +101,7 @@ export async function listWorkspaceFiles(
       chatId,
       filename: f.filename,
       r2Key: f.key,
-      contentType: getMimeType(f.filename),
+      contentType: getMimeType(f.filename.split("/").pop() ?? f.filename),
       sizeBytes: f.size,
     })),
   );

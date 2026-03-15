@@ -41,7 +41,6 @@ export interface AgentContext {
   currentDateTime: string;
   timezone: string;
   chatId: string;
-  friendlyChatId: string;
   country?: string;
   city?: string;
   region?: string;
@@ -64,9 +63,7 @@ export function buildDynamicContext(ctx: AgentContext): string {
   return `🎯 CURRENT REQUEST CONTEXT:
 - **Timezone**: ${ctx.timezone}
 - **Location**: ${location}
-- **Friendly Chat ID**: ${ctx.friendlyChatId}
-- **Chat workspace**: /home/daytona/workspace/chat/${ctx.friendlyChatId}
-- **Output directory**: /home/daytona/workspace/chat/${ctx.friendlyChatId}/output
+- **Workspace**: /home/daytona/workspace
 - **Environment memory**: /memories/environment.txt`;
 }
 
@@ -92,9 +89,7 @@ export function buildSystemPrompt(ctx: AgentContext): string {
 - **User**: ${ctx.fullName}
 
 🗂️ CHAT WORKSPACE:
-- **Friendly Chat ID**: ${ctx.friendlyChatId}
-- **Workspace directory**: /home/daytona/workspace/chat/${ctx.friendlyChatId}
-- Store every file you create for this conversation under the chat directory.
+- **Workspace directory**: /home/daytona/workspace
 - The **workspace** (\`/home/daytona/workspace\`) is synced to cloud storage and **persists across sandbox restarts** — your files will be there even if the sandbox is recreated.
 - Each sandbox is **per-chat** — a different conversation has its own separate workspace and sandbox.
 - **Only the workspace is persisted.** Installed packages, CLIs, and environment changes outside the workspace are lost when the sandbox restarts. Always re-install tools as needed.
@@ -103,10 +98,9 @@ export function buildSystemPrompt(ctx: AgentContext): string {
 🛠️ YOUR TOOLS:
 
 1. **bash**: Run shell commands in a persistent sandbox
-   - Working directory: /home/daytona/workspace/chat/${ctx.friendlyChatId}
+   - Working directory: /home/daytona/workspace
    - Python, Node.js, and common tools available
    - Use for calculations, data processing, running scripts
-   - Keep chat-specific files inside /home/daytona/workspace/chat/${ctx.friendlyChatId}
    - **What persists**: Files in \`/home/daytona/workspace\` are synced to cloud storage and survive sandbox restarts. Your workspace files are always there.
    - **What does NOT persist**: Installed packages, pip/npm/apt installs, and any changes outside \`/home/daytona/workspace\`. Re-install tools at the start of each turn if needed (check /memories/environment.txt first).
    - If the sandbox returns a "sandbox is stopping" error, wait a few seconds and retry once — it will be ready shortly.
@@ -182,9 +176,9 @@ export function buildSystemPrompt(ctx: AgentContext): string {
 
 21. **share_file**: Upload a file from the sandbox to cloud storage for the user to download
     - Call this after creating a report, export, or any file the user needs
-    - Pass the path relative to the chat workspace (e.g. \`output/report.pdf\`) or an absolute path
+    - Pass the path relative to the workspace (e.g. \`report.pdf\`) or an absolute path
     - Returns a relative URL like \`/api/sandbox-files/abc123\` — use it **exactly as returned** in a markdown link (e.g. \`[report.pdf](/api/sandbox-files/abc123)\`); never prepend a domain or hostname
-    - Files in the **output directory** (/home/daytona/workspace/chat/${ctx.friendlyChatId}/output/) are also automatically uploaded at the end of each turn, but calling \`share_file\` gives you the URL immediately
+    - All workspace files are also automatically indexed at the end of each turn, but calling \`share_file\` gives you the URL immediately
     - Always call \`share_file\` when producing a deliverable file — don't just leave it in the workspace
 
 📚 USER'S CLASSES:
@@ -238,14 +232,10 @@ Remember: You're here to help students succeed. Be proactive, helpful, and make 
 export function getGeneralAgentTools(ctx: AgentContext): Record<string, Tool> {
   const tools: Record<string, Tool> = {
     // Bash execution in Daytona sandbox
-    bash: createBashTool(ctx.chatId, ctx.userId, ctx.friendlyChatId),
+    bash: createBashTool(ctx.chatId, ctx.userId),
 
     // File editing in sandbox
-    str_replace_based_edit_tool: createTextEditorTool(
-      ctx.chatId,
-      ctx.userId,
-      ctx.friendlyChatId,
-    ),
+    str_replace_based_edit_tool: createTextEditorTool(ctx.chatId, ctx.userId),
 
     // Memory tool for persistent user information (filesystem-like interface)
     memory: anthropic.tools.memory_20250818({
@@ -281,23 +271,15 @@ export function getGeneralAgentTools(ctx: AgentContext): Record<string, Tool> {
     createStudySet: createStudySetTool,
 
     // Codex CLI-inspired tools
-    update_plan: createUpdatePlanTool(
-      ctx.chatId,
-      ctx.userId,
-      ctx.friendlyChatId,
-    ),
-    apply_patch: createApplyPatchTool(
-      ctx.chatId,
-      ctx.userId,
-      ctx.friendlyChatId,
-    ),
-    view_image: createViewImageTool(ctx.chatId, ctx.userId, ctx.friendlyChatId),
+    update_plan: createUpdatePlanTool(ctx.chatId, ctx.userId),
+    apply_patch: createApplyPatchTool(ctx.chatId, ctx.userId),
+    view_image: createViewImageTool(ctx.chatId, ctx.userId),
     request_user_input: requestUserInputTool,
     spawn_agent: createSpawnAgentTool(),
     close_agent: createCloseAgentTool(),
 
     // File delivery to user via Vercel Blob
-    share_file: createShareFileTool(ctx.chatId, ctx.userId, ctx.friendlyChatId),
+    share_file: createShareFileTool(ctx.chatId, ctx.userId),
   };
 
   // search_tools gets the full tool list so it can search by name+description

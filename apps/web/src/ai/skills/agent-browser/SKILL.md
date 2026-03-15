@@ -74,10 +74,10 @@ agent-browser focus @e2                       # focus element
 ## Screenshots
 
 ```bash
-agent-browser screenshot /home/daytona/workspace/chat/{friendlyChatId}/output/page.png
+agent-browser screenshot /home/daytona/workspace/screenshot.png
 ```
 
-Always save screenshots to the output directory. Then use `view_image` to show them to the user, or `share_file` to give a download link.
+Always save screenshots to the workspace. Then use `view_image` to show them to the user, or `share_file` to give a download link.
 
 ## JavaScript evaluation
 
@@ -134,7 +134,7 @@ agent-browser snapshot -i
 agent-browser eval "document.querySelector('.dashboard').innerText"
 
 # Screenshot for user
-agent-browser screenshot /home/daytona/workspace/chat/{friendlyChatId}/output/dashboard.png
+agent-browser screenshot /home/daytona/workspace/dashboard.png
 ```
 
 ## Common patterns
@@ -170,6 +170,6 @@ agent-browser snapshot -i        # re-snapshot after scroll
 ## Important notes
 
 - Always re-snapshot after interactions — refs change when DOM updates
-- Save screenshots to the output directory, then use `view_image` or `share_file`
+- Save screenshots to the workspace, then use `view_image` or `share_file`
 - The browser daemon starts automatically on first use; no setup needed
 - The Chrome binary is pre-installed in the sandbox — `agent-browser install` has already been run

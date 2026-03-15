@@ -121,7 +121,7 @@ export function ChatFilesPanel({
         <div className="flex h-full w-72 flex-col">
           {/* Header */}
           <div className="flex h-10 shrink-0 items-center justify-between border-b px-3">
-            <span className="font-medium text-sm">Output files</span>
+            <span className="font-medium text-sm">Workspace files</span>
             <Button
               variant="ghost"
               size="icon"
@@ -147,11 +147,11 @@ export function ChatFilesPanel({
               <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
                 <FileIcon className="size-8 text-muted-foreground/40" />
                 <p className="text-muted-foreground text-xs">
-                  Files the agent writes to the{" "}
+                  Files the agent writes to{" "}
                   <code className="rounded bg-muted px-1 font-mono text-[11px]">
-                    output/
+                    /workspace
                   </code>{" "}
-                  directory will appear here.
+                  will appear here.
                 </p>
               </div>
             ) : (

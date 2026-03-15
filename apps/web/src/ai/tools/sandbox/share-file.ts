@@ -63,12 +63,7 @@ const WORKSPACE_ROOT = "/home/daytona/workspace";
 export function createShareFileTool(
   chatId: string,
   userId: string,
-  friendlyChatId?: string,
 ) {
-  const workspaceDir = friendlyChatId
-    ? `${WORKSPACE_ROOT}/chat/${friendlyChatId}`
-    : WORKSPACE_ROOT;
-
   return tool({
     description:
       "Upload a file from the sandbox to cloud storage and return a relative download URL. Use this to deliver output files (reports, PDFs, data exports, scripts, etc.) to the user so they can download them. The returned url field is a relative path (e.g. /api/sandbox-files/abc123) — always use it exactly as-is in markdown links without adding any domain or hostname.",
@@ -76,7 +71,7 @@ export function createShareFileTool(
       path: z
         .string()
         .describe(
-          "Path to the file in the sandbox. Can be absolute (e.g. /home/daytona/workspace/chat/abc/report.pdf) or relative to the chat workspace (e.g. report.pdf or output/report.pdf).",
+          "Path to the file in the sandbox. Can be absolute (e.g. /home/daytona/workspace/report.pdf) or relative to the workspace (e.g. report.pdf).",
         ),
       filename: z
         .string()
@@ -88,7 +83,7 @@ export function createShareFileTool(
     execute: async ({ path, filename }): Promise<ShareFileResult | string> => {
       const absolutePath = path.startsWith("/")
         ? path
-        : `${workspaceDir}/${path}`;
+        : `${WORKSPACE_ROOT}/${path}`;
 
       const displayName = filename ?? absolutePath.split("/").pop() ?? "file";
       const contentType = getMimeType(displayName);
@@ -102,7 +97,7 @@ export function createShareFileTool(
         key = r2Key(userId, chatId, relativePath);
 
         // Get size by downloading a stat — use the sandbox to read metadata
-        const sandbox = await getOrCreateSandbox(userId, chatId, friendlyChatId);
+        const sandbox = await getOrCreateSandbox(userId, chatId);
         let buffer: Buffer;
         try {
           buffer = await sandbox.fs.downloadFile(absolutePath);
@@ -112,7 +107,7 @@ export function createShareFileTool(
         }
       } else {
         // File is outside the workspace — download and upload to R2 explicitly
-        const sandbox = await getOrCreateSandbox(userId, chatId, friendlyChatId);
+        const sandbox = await getOrCreateSandbox(userId, chatId);
         let buffer: Buffer;
         try {
           buffer = await sandbox.fs.downloadFile(absolutePath);

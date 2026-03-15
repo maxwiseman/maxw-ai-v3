@@ -19,7 +19,6 @@ import {
 } from "@/ai/agents/general";
 import { listWorkspaceFiles } from "@/ai/sandbox/list-workspace-files";
 import { getSkillsTree } from "@/ai/sandbox/skills-tree";
-import { getOrCreateChatMetadata } from "@/ai/utils/chat-metadata";
 import { getAllCanvasCourses } from "@/app/classes/classes-actions";
 import { auth } from "@/lib/auth";
 
@@ -73,15 +72,12 @@ export async function POST(request: NextRequest) {
   const now = new Date();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  const metadata = await getOrCreateChatMetadata(userId, chatId);
-
   const context: AgentContext = {
     userId,
     fullName,
     schoolName,
     classes,
     chatId,
-    friendlyChatId: metadata.friendlyId,
     currentDateTime: now.toLocaleString(undefined, { timeZone: timezone }),
     timezone,
     country: location.country,
@@ -132,15 +128,13 @@ export async function POST(request: NextRequest) {
       tools,
       providerOptions: providerOptions,
       onFinish: async (event) => {
-        // Index any new output files from R2 into the DB.
+        // Index any new workspace files from R2 into the DB.
         // Since the workspace is R2-backed, files are already persisted —
         // this just keeps the DB index in sync without touching the sandbox.
-        if (context.friendlyChatId) {
-          try {
-            await listWorkspaceFiles(userId, chatId, context.friendlyChatId);
-          } catch (syncError) {
-            console.error("Failed to index workspace files", syncError);
-          }
+        try {
+          await listWorkspaceFiles(userId, chatId);
+        } catch (syncError) {
+          console.error("Failed to index workspace files", syncError);
         }
 
         const usage = event.totalUsage;
