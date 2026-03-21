@@ -21,7 +21,15 @@ export const auth = betterAuth<BetterAuthOptions>({
     schema: schema,
   }),
   secret: env.AUTH_SECRET,
-  trustedOrigins: ["exp://"],
+  trustedOrigins: [
+    "exp://",
+    process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : "",
+    process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000",
+  ],
   emailAndPassword: {
     enabled: true,
   },
