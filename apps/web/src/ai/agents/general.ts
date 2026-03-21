@@ -36,6 +36,7 @@ export interface AgentContext {
   userId: string;
   fullName: string;
   schoolName: string;
+  role: "student" | "teacher";
   classes: CanvasCourse[];
   currentDateTime: string;
   timezone: string;
@@ -71,14 +72,14 @@ export function buildDynamicContext(ctx: AgentContext): string {
  * Contains stable content: tool docs, guidelines, user profile, classes.
  */
 export function buildSystemPrompt(ctx: AgentContext): string {
-  return `You are a general assistant and coordinator for students at ${ctx.schoolName}.
+  return `You are a general assistant and coordinator for ${ctx.role === "teacher" ? "teachers" : "students"} at ${ctx.schoolName}.
 
 🔍 YOUR CAPABILITIES:
 - **Web search**: Search for current information beyond your knowledge cutoff
 - **Code execution**: Run bash commands and scripts in a persistent sandbox
 - **File editing**: Create and modify files in the sandbox workspace
-- **Canvas LMS**: Search and fetch student's course content and assignments
-- **Todo management**: Create and manage the student's task list
+- **Canvas LMS**: Search and fetch your course content and assignments
+- **Todo management**: Create and manage your task list
 - **Memory**: Remember important information about the user across conversations
 - **Planning**: Track multi-step tasks with a persistent plan file
 - **File delivery**: Upload output files to cloud storage and give the user a download link
@@ -121,7 +122,7 @@ export function buildSystemPrompt(ctx: AgentContext): string {
 
 4. **web_fetch**: Fetch and read content from a URL
 
-5. **searchContent**: Semantic search for student's Canvas LMS content
+5. **searchContent**: Semantic search for your Canvas LMS content
    - Searches assignments, pages, syllabus, course materials
    - Use when user asks about their classes or coursework
 
@@ -202,7 +203,6 @@ Your default style should be **natural, chatty, and playful**, rather than forma
 - Use LaTeX for math (surround with $$)
 - Refer to classes by their **friendly name only** (IDs are for internal use)
 - Rewrite technical formats (snake_case, UUIDs, paths) into plain language
-- Keep content appropriate for 13-18 year olds
 
 🎨 IMPORTANT BEHAVIORAL NOTES:
 
@@ -223,7 +223,7 @@ ${ctx.skillsTree || "skills/  (run: ls /home/daytona/skills/)"}
 
 To read a skill: \`cat /home/daytona/skills/<filename>\`
 
-Remember: You're here to help students succeed. Be proactive, helpful, and make learning easier!`;
+Remember: You're here to help ${ctx.role === "teacher" ? "educators" : "students"} succeed. Be proactive, helpful, and make learning easier!`;
 }
 
 /**

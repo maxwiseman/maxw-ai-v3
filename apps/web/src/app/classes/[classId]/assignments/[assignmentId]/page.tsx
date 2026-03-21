@@ -80,8 +80,15 @@ export default async function AssignmentPage({
   const authData = await auth.api.getSession({ headers: await headers() });
   if (!authData) return <NotAuthenticated />;
   const params = await paramsPromise;
-  const data = await fetchData({ userId: authData.user.id, ...params });
+  const [data, userRecord] = await Promise.all([
+    fetchData({ userId: authData.user.id, ...params }),
+    db.query.user.findFirst({
+      where: eq(user.id, authData.user.id),
+      columns: { settings: true },
+    }),
+  ]);
   if (typeof data === "string") notFound();
+  const isTeacher = (userRecord?.settings?.role ?? "student") === "teacher";
 
   return (
     <div>
@@ -120,7 +127,7 @@ export default async function AssignmentPage({
       <CanvasHTML className="min-h-96 px-8 pb-8">
         {data?.description?.length === 0 ? "No description" : data.description}
       </CanvasHTML>
-      {data.submission_types.length >= 1 && (
+      {!isTeacher && data.submission_types.length >= 1 && (
         <SubmissionProvider
           classId={params.classId}
           assignmentId={params.assignmentId}

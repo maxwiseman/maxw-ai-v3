@@ -27,7 +27,10 @@ import {
 import { getSandboxIfRunning } from "@/ai/sandbox/sandbox-manager";
 import { getSkillsTree } from "@/ai/sandbox/skills-tree";
 import { getAllCanvasCourses } from "@/app/classes/classes-actions";
+import { db } from "@/db";
+import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
+import { eq } from "drizzle-orm";
 
 export async function POST(request: NextRequest) {
   const location = geolocation(request);
@@ -66,14 +69,17 @@ export async function POST(request: NextRequest) {
 
   const userId = authData.user.id;
   const fullName = authData.user.name;
-  const schoolName = "Harvard University"; // TODO: Get from user settings
 
-  // Load user's classes and skills tree in parallel
-  const [classesResponse, skillsTree] = await Promise.all([
+  // Load user's classes, skills tree, and settings in parallel
+  const [classesResponse, skillsTree, userRecord] = await Promise.all([
     getAllCanvasCourses(),
     getSkillsTree(userId),
+    db.query.user.findFirst({ where: eq(user.id, userId) }),
   ]);
   const classes = typeof classesResponse === "string" ? [] : classesResponse;
+  const settings = userRecord?.settings;
+  const role = settings?.role ?? "student";
+  const schoolName = settings?.schoolName ?? "your school";
 
   // Build agent context
   const now = new Date();
@@ -83,6 +89,7 @@ export async function POST(request: NextRequest) {
     userId,
     fullName,
     schoolName,
+    role,
     classes,
     chatId,
     currentDateTime: now.toLocaleString(undefined, { timeZone: timezone }),
