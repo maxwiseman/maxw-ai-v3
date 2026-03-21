@@ -10,9 +10,17 @@ export const env = createEnv({
     DAYTONA_API_KEY: z.string().min(1),
     UPSTASH_REDIS_REST_URL: z.url(),
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
+    R2_ACCOUNT_ID: z.string().min(1),
+    R2_ACCESS_KEY_ID: z.string().min(1),
+    R2_SECRET_ACCESS_KEY: z.string().min(1),
+    R2_BUCKET_NAME: z.string().min(1),
+    DAYTONA_SNAPSHOT: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_UPSTASH_SEARCH_TOKEN: z.string().optional(),
+    /** Public app origin — used by the sandbox sync script to reach /api/sandbox/sync.
+     *  Not required on Vercel preview/development — VERCEL_URL is used automatically. */
+    NEXT_PUBLIC_SERVER_URL: z.url().optional(),
   },
   // @ts-expect-error -- This does contain all the correct data, it's just not typed
   experimental__runtimeEnv: process.env,

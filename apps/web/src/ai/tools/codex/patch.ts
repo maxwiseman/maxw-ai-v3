@@ -10,7 +10,6 @@ import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 export function createApplyPatchTool(
   chatId: string,
   userId: string,
-  friendlyChatId?: string,
 ) {
   return tool({
     description:
@@ -23,15 +22,13 @@ export function createApplyPatchTool(
         ),
     }),
     execute: async ({ patch }) => {
-      const sandbox = await getOrCreateSandbox(userId, chatId, friendlyChatId);
+      const sandbox = await getOrCreateSandbox(userId, chatId);
 
       // Write the patch to a temp file and apply with `patch` command
       const patchPath = "/tmp/agent.patch";
       await sandbox.fs.uploadFile(Buffer.from(patch), patchPath);
 
-      const workingDir = friendlyChatId
-        ? `/home/daytona/workspace/chat/${friendlyChatId}`
-        : "/home/daytona/workspace";
+      const workingDir = "/home/daytona/workspace";
       const result = await sandbox.process.executeCommand(
         `patch -p1 < "${patchPath}" 2>&1`,
         workingDir,

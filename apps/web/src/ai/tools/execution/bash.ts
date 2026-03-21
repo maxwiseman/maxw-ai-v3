@@ -11,7 +11,6 @@ import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 export function createBashTool(
   chatId: string,
   userId: string,
-  friendlyChatId?: string,
 ) {
   return anthropic.tools.bash_20250124({
     execute: async ({ command, restart }) => {
@@ -20,14 +19,8 @@ export function createBashTool(
       }
 
       try {
-        const sandbox = await getOrCreateSandbox(
-          userId,
-          chatId,
-          friendlyChatId,
-        );
-        const workingDir = friendlyChatId
-          ? `/home/daytona/workspace/chat/${friendlyChatId}`
-          : "/home/daytona/workspace";
+        const sandbox = await getOrCreateSandbox(userId, chatId);
+        const workingDir = "/home/daytona/workspace";
         // Lazily seed Canvas data on first sandbox use this turn
         await seedCanvasData(userId, sandbox);
         const result = await sandbox.process.executeCommand(

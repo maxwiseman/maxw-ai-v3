@@ -33,11 +33,10 @@ function applyInsert(
 export function createTextEditorTool(
   chatId: string,
   userId: string,
-  friendlyChatId?: string,
 ) {
   return anthropic.tools.textEditor_20250728({
     execute: async (action) => {
-      const sandbox = await getOrCreateSandbox(userId, chatId, friendlyChatId);
+      const sandbox = await getOrCreateSandbox(userId, chatId);
 
       switch (action.command) {
         case "view": {
