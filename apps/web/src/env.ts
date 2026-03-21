@@ -16,6 +16,7 @@ export const env = createEnv({
     R2_BUCKET_NAME: z.string().min(1),
     DAYTONA_SNAPSHOT: z.string().optional(),
     OPENAI_API_KEY: z.string().min(1),
+    MISTRAL_API_KEY: z.string().min(1),
   },
   client: {
     NEXT_PUBLIC_UPSTASH_SEARCH_TOKEN: z.string().optional(),

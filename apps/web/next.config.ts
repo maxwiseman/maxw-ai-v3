@@ -1,5 +1,6 @@
 import { config } from "dotenv";
 import type { NextConfig } from "next";
+import { withWorkflow } from "workflow/next";
 
 // Load environment variables from root .env file
 config({ path: "../../.env", quiet: true });
@@ -18,4 +19,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withWorkflow(nextConfig);
