@@ -2,7 +2,7 @@
 
 import type { Icon } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "motion/react";
-import { Shimmer } from "../ai-elements/shimmer";
+import { Shimmer } from "@/components/ai-elements/shimmer";
 
 interface AnimatedStatusProps {
   text: string | null;

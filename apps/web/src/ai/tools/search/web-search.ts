@@ -1,7 +1,7 @@
 import { anthropic } from "@ai-sdk/anthropic";
-import type { AppContext } from "@/ai/agents/shared";
+import type { AgentContext } from "@/ai/agents/general";
 
-export function createWebSearchTool(context: AppContext) {
+export function createWebSearchTool(context: AgentContext) {
   return anthropic.tools.webSearch_20250305({
     userLocation: {
       type: "approximate",

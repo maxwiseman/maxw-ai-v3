@@ -11,7 +11,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type { UserInputQuestion } from "@/ai/tools/codex/user-input";
+import type { UserInputQuestion } from "@/ai/tools/workspace/user-input";
 import {
   type CommandMetadata,
   type CommandSelection,
@@ -39,8 +39,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { InputGroupAddon } from "@/components/ui/input-group";
 import { cn } from "@/lib/utils";
-import { Input } from "../ui/input";
-import { Textarea } from "../ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 export interface ChatInputMessage extends PromptInputMessage {
   agentChoice?: string;

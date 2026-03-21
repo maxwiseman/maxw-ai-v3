@@ -11,12 +11,11 @@ import { searchContentTool } from "../tools/canvas/search-content";
 import {
   createCloseAgentTool,
   createSpawnAgentTool,
-} from "../tools/codex/agents";
-import { createViewImageTool } from "../tools/codex/image";
-import { createApplyPatchTool } from "../tools/codex/patch";
-import { createUpdatePlanTool } from "../tools/codex/plan";
-import { createSearchToolsTool } from "../tools/codex/search-tools";
-import { requestUserInputTool } from "../tools/codex/user-input";
+} from "../tools/workspace/agents";
+import { createViewImageTool } from "../tools/workspace/image";
+import { createApplyPatchTool } from "../tools/workspace/patch";
+import { createUpdatePlanTool } from "../tools/workspace/plan";
+import { requestUserInputTool } from "../tools/workspace/user-input";
 import { createBashTool } from "../tools/execution/bash";
 import { createTextEditorTool } from "../tools/execution/text-editor";
 import { createShareFileTool } from "../tools/sandbox/share-file";
@@ -282,11 +281,6 @@ export function getGeneralAgentTools(ctx: AgentContext): Record<string, Tool> {
     // File delivery to user via Vercel Blob
     share_file: createShareFileTool(ctx.chatId, ctx.userId),
   };
-
-  // search_tools gets the full tool list so it can search by name+description
-  tools.search_tools = createSearchToolsTool(
-    tools as Record<string, { description: string }>,
-  );
 
   return tools;
 }

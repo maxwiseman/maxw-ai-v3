@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import {
   type GenerateTodoInput,
   generateTodo,
-} from "@/app/actions/generate-todo";
+} from "@/app/todo/generate-todo";
 import { useCreateTodo } from "@/app/todo/use-todos";
 import { cn } from "@/lib/utils";
 import { DatePicker } from "./date-picker";

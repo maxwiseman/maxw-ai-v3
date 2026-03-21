@@ -2,12 +2,12 @@
 
 import { IconPencil } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import { getDashboardData } from "@/app/actions/dashboard";
-import { DashboardCard } from "@/components/dashboard/dashboard-card";
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
-import { RecentClasses } from "@/components/dashboard/recent-classes";
-import { TodoSummary } from "@/components/dashboard/todo-summary";
-import { UpcomingAssignments } from "@/components/dashboard/upcoming-assignments";
+import { getDashboardData } from "@/app/dashboard-actions";
+import { DashboardCard } from "@/app/dashboard-card";
+import { DashboardHeader } from "@/app/dashboard-header";
+import { RecentClasses } from "@/app/recent-classes";
+import { TodoSummary } from "@/app/todo-summary";
+import { UpcomingAssignments } from "@/app/upcoming-assignments";
 
 export default function Home() {
   const { data: dashboardData } = useQuery({

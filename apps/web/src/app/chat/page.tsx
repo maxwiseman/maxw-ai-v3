@@ -11,7 +11,7 @@ import {
   type UITools,
 } from "ai";
 import { useMemo, useState } from "react";
-import type { UserInputQuestion } from "@/ai/tools/codex/user-input";
+import type { UserInputQuestion } from "@/ai/tools/workspace/user-input";
 import { toolStatus } from "@/ai/tools/tool-status";
 import { Action, Actions } from "@/components/ai-elements/actions";
 import {
@@ -22,12 +22,12 @@ import { Message, MessageContent } from "@/components/ai-elements/message";
 import { PromptInputProvider } from "@/components/ai-elements/prompt-input";
 import { Response } from "@/components/ai-elements/response";
 import { ShareFileCard, UpdatePlanCard } from "@/components/ai-elements/tool";
-import { AnimatedStatus } from "@/components/chat/animated-status";
-import { ChatInput, type ChatInputMessage } from "@/components/chat/chat-input";
-import { ChatTitle } from "@/components/chat/chat-title";
-import { EmptyState } from "@/components/chat/empty-state";
-import { ChatFilesPanel, useChatFiles } from "@/components/chat/files-panel";
-import { PromptSuggestions } from "@/components/chat/prompt-suggestions";
+import { AnimatedStatus } from "@/app/chat/animated-status";
+import { ChatInput, type ChatInputMessage } from "@/app/chat/chat-input";
+import { ChatTitle } from "@/app/chat/chat-title";
+import { EmptyState } from "@/app/chat/empty-state";
+import { ChatFilesPanel, useChatFiles } from "@/app/chat/files-panel";
+import { PromptSuggestions } from "@/app/chat/prompt-suggestions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
