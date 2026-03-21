@@ -78,7 +78,10 @@ export async function processAndRenameCoursesIfNeeded(
   if (courses.length === 0) return { renamed: [] };
 
   const { object } = await generateObject({
-    model: openai("gpt-4o-mini"),
+    model: openai("gpt-5.4-nano"),
+    providerOptions: {
+      openai: { reasoningEffort: "medium" },
+    },
     schema: z.object({
       courses: z.array(
         z.object({
