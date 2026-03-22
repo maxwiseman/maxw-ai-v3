@@ -3,6 +3,7 @@
 import {
   IconBook,
   IconBrain,
+  IconClipboardCheck,
   IconDeviceDesktop,
   IconFile,
   IconHome,
@@ -133,6 +134,13 @@ export function SearchCommand() {
         keywords: ["tasks", "checklist", "assignments"],
         icon: <IconListCheck />,
         onSelect: () => runCommand(() => router.push("/todo")),
+      },
+      {
+        id: "grading",
+        label: "Grading",
+        keywords: ["grade", "score", "rubric", "exam", "quiz"],
+        icon: <IconClipboardCheck />,
+        onSelect: () => runCommand(() => router.push("/grading")),
       },
     ],
     [runCommand, router],
