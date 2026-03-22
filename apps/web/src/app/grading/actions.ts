@@ -90,7 +90,13 @@ const mcSchema = z.object({
   questionType: z.literal("multiple_choice"),
   details: z.object({
     prompt: z.string(),
-    options: z.array(z.object({ text: z.string(), correct: z.boolean() })),
+    options: z.array(
+      z.object({
+        identifier: z.string().optional(),
+        text: z.string(),
+        correct: z.boolean(),
+      }),
+    ),
   }),
   points: z.number().default(1),
 });
@@ -161,7 +167,7 @@ export async function generateAnswerKey(
 - questionNumber: the question label as a string (e.g. "1", "1B", "2a")
 - questionType: "multiple_choice" for MC and true/false questions, "short_answer" for free-response, "other" for anything else
 - prompt: the question text
-- For multiple_choice: options array with { text, correct } for each choice — mark all correct options
+- For multiple_choice: options array with { identifier, text, correct } — identifier is the option label only (e.g., "A", "B", "C", "D"); if an option reads "D) Jupiter", use identifier "D" and text "Jupiter". Mark all correct options.
 - For short_answer: sampleAnswer, optional explanation, optional criteria (things that must/must not appear)
 - For other: answer, optional explanation
 - points: point value (default 1 if not shown)
@@ -175,7 +181,21 @@ Return every question you find.`,
   ]);
 
   const pagesPerStudent = pdfDoc.getPageCount();
-  const questions = aiResult.output.questions;
+
+  // Fill in missing option identifiers with A, B, C, D…
+  const questions = aiResult.output.questions.map((q) => {
+    if (q.questionType !== "multiple_choice") return q;
+    return {
+      ...q,
+      details: {
+        ...q.details,
+        options: q.details.options.map((opt, i) => ({
+          ...opt,
+          identifier: opt.identifier ?? String.fromCharCode(65 + i),
+        })),
+      },
+    };
+  });
 
   // Delete any existing answer key rows and insert fresh ones
   await db

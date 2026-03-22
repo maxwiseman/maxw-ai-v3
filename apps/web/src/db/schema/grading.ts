@@ -31,6 +31,8 @@ export const gradingSplitModeEnum = pgEnum("grading_split_mode", [
 // ── Question detail shapes (stored as JSONB) ──────────────────────────────────
 
 export type MultipleChoiceOption = {
+  /** Short label shown to students, e.g. "A", "B", "C", "D" */
+  identifier?: string;
   text: string;
   correct: boolean;
 };

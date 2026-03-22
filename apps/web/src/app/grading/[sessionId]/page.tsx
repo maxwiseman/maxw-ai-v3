@@ -52,7 +52,11 @@ export default async function GradingResultsPage({
                   const det = d as unknown as MultipleChoiceDetails;
                   const correct = det.options
                     .filter((o) => o.correct)
-                    .map((o) => o.text);
+                    .map((o, i) =>
+                      o.identifier
+                        ? `${o.identifier}) ${o.text}`
+                        : `${String.fromCharCode(65 + i)}) ${o.text}`,
+                    );
                   answerCell = (
                     <div>
                       <p className="text-muted-foreground text-xs">
@@ -205,7 +209,23 @@ export default async function GradingResultsPage({
                                     : "text-red-700 dark:text-red-400",
                                 )}
                               >
-                                {a.isCorrect ? "✓" : "✗"} {a.givenAnswer}
+                                {a.isCorrect ? "✓" : "✗"} {(() => {
+                                  const q = questionMap.get(a.questionNumber);
+                                  if (q?.questionType === "multiple_choice") {
+                                    const det =
+                                      q.details as MultipleChoiceDetails;
+                                    const match = det.options.find(
+                                      (o, i) =>
+                                        (o.identifier ??
+                                          String.fromCharCode(65 + i)) ===
+                                        a.givenAnswer,
+                                    );
+                                    return match
+                                      ? `${a.givenAnswer}) ${match.text}`
+                                      : a.givenAnswer;
+                                  }
+                                  return a.givenAnswer;
+                                })()}
                               </span>
                             </td>
                             <td className="px-4 py-2 text-muted-foreground">

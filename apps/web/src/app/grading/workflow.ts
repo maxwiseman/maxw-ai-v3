@@ -85,7 +85,7 @@ async function gradeStudentsStep(sessionId: string) {
   const [answerKey, results] = await Promise.all([
     db.query.gradingAnswerKey.findMany({
       where: eq(gradingAnswerKey.sessionId, sessionId),
-      orderBy: asc(gradingAnswerKey.questionNumber),
+      orderBy: asc(gradingAnswerKey.sortOrder),
     }),
     db.query.gradingResult.findMany({
       where: eq(gradingResult.sessionId, sessionId),
@@ -101,12 +101,22 @@ async function gradeStudentsStep(sessionId: string) {
       const pts = `${q.points}pt${q.points !== 1 ? "s" : ""}`;
 
       if (q.questionType === "multiple_choice") {
-        const options = d.options as { text: string; correct: boolean }[];
-        const correct = options
-          .filter((o) => o.correct)
-          .map((o) => o.text)
+        const options = d.options as {
+          identifier?: string;
+          text: string;
+          correct: boolean;
+        }[];
+        const optionList = options
+          .map((o, i) => {
+            const id = o.identifier ?? String.fromCharCode(65 + i);
+            return `${id}) ${o.text}${o.correct ? " (✓)" : ""}`;
+          })
           .join(", ");
-        return `Q${q.questionNumber} [multiple_choice, ${pts}]: ${d.prompt}\nCorrect: ${correct}`;
+        const correctIds = options
+          .filter((o) => o.correct)
+          .map((o, i) => o.identifier ?? String.fromCharCode(65 + i))
+          .join(", ");
+        return `Q${q.questionNumber} [multiple_choice, ${pts}]: ${d.prompt}\nOptions: ${optionList}\nCorrect identifier: ${correctIds}`;
       }
 
       if (q.questionType === "short_answer") {
@@ -160,7 +170,7 @@ async function gradeStudentsStep(sessionId: string) {
                 },
                 {
                   type: "text",
-                  text: `You are grading a student's exam. Here is the answer key:\n\n${answerKeyText}\n\nFor each question, find the student's answer in the attached PDF, determine if it's correct, assign points, and provide brief feedback explaining why it is right or wrong. Use the question number exactly as shown (e.g. "1B"). If you can identify the student's name, include it.`,
+                  text: `You are grading a student's exam. Here is the answer key:\n\n${answerKeyText}\n\nFor each question, find the student's answer in the attached PDF, determine if it's correct, assign points, and provide brief feedback explaining why it is right or wrong. Use the question number exactly as shown (e.g. "1B"). For multiple choice questions, set givenAnswer to the option identifier only (e.g., "A", "B", "C", "D") — not the full option text. If you can identify the student's name, include it.`,
                 },
               ],
             },

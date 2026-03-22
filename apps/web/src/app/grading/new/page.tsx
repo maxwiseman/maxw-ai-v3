@@ -105,6 +105,7 @@ export default function NewGradingPage() {
               questionType: q.questionType,
               details: q.details as AnswerKeyQuestion["details"],
               points: q.points,
+              sortOrder: q.sortOrder,
             })),
           );
         }
@@ -674,8 +675,23 @@ function MultipleChoiceEditor({
               title="Mark as correct"
             />
             <Input
+              className="w-12 text-center"
+              placeholder={String.fromCharCode(65 + oi)}
+              value={opt.identifier ?? ""}
+              onChange={(e) =>
+                setOptions((opts) =>
+                  opts.map((o, j) =>
+                    j === oi
+                      ? { ...o, identifier: e.target.value || undefined }
+                      : o,
+                  ),
+                )
+              }
+              title="Option identifier"
+            />
+            <Input
               className="flex-1"
-              placeholder={`Option ${oi + 1}`}
+              placeholder={`Option ${oi + 1} text`}
               value={opt.text}
               onChange={(e) =>
                 setOptions((opts) =>
@@ -704,7 +720,14 @@ function MultipleChoiceEditor({
           variant="outline"
           size="sm"
           onClick={() =>
-            setOptions((opts) => [...opts, { text: "", correct: false }])
+            setOptions((opts) => [
+              ...opts,
+              {
+                identifier: String.fromCharCode(65 + opts.length),
+                text: "",
+                correct: false,
+              },
+            ])
           }
         >
           + Option
