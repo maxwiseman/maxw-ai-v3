@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,9 @@ import {
   createGradingSession,
   generateAnswerKey,
   getGradingSession,
+  type MultipleChoiceDetails,
+  type OtherDetails,
+  type ShortAnswerDetails,
   updateAnswerKey,
   uploadBlankPdf,
   uploadFullScanAndTrigger,
@@ -37,8 +40,24 @@ type StudentResult = {
   maxScore?: number | null;
 };
 
+// ── Default details per question type ────────────────────────────────────────
+
+function defaultDetails(
+  type: AnswerKeyQuestion["questionType"],
+): AnswerKeyQuestion["details"] {
+  if (type === "multiple_choice")
+    return { prompt: "", options: [] } satisfies MultipleChoiceDetails;
+  if (type === "short_answer")
+    return {
+      prompt: "",
+      sampleAnswer: "",
+      explanation: "",
+      criteria: [],
+    } satisfies ShortAnswerDetails;
+  return { prompt: "", answer: "", explanation: "" } satisfies OtherDetails;
+}
+
 export default function NewGradingPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const resumeSessionId = searchParams.get("session");
 
@@ -55,6 +74,7 @@ export default function NewGradingPage() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Resume a session in progress
+  // biome-ignore lint/correctness/useExhaustiveDependencies: startPolling is stable at mount
   useEffect(() => {
     if (!resumeSessionId) return;
     startTransition(async () => {
@@ -78,10 +98,10 @@ export default function NewGradingPage() {
         if (session.answerKey.length > 0) {
           setQuestions(
             session.answerKey.map((q) => ({
+              id: q.id,
               questionNumber: q.questionNumber,
               questionType: q.questionType,
-              correctAnswer: q.correctAnswer,
-              explanation: q.explanation ?? "",
+              details: q.details as AnswerKeyQuestion["details"],
               points: q.points,
             })),
           );
@@ -94,7 +114,6 @@ export default function NewGradingPage() {
         }
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeSessionId]);
 
   function startPolling(id: string) {
@@ -104,7 +123,7 @@ export default function NewGradingPage() {
       if (!session) return;
 
       if (session.status === "complete") {
-        clearInterval(pollRef.current!);
+        if (pollRef.current) clearInterval(pollRef.current);
         setResults(
           session.results.map((r) => ({
             studentIndex: r.studentIndex,
@@ -115,7 +134,7 @@ export default function NewGradingPage() {
         );
         setStep("results");
       } else if (session.status === "error") {
-        clearInterval(pollRef.current!);
+        if (pollRef.current) clearInterval(pollRef.current);
         setError(session.errorMessage ?? "An error occurred during processing");
         setStep("upload-scan");
       } else if (session.status === "processing") {
@@ -181,24 +200,40 @@ export default function NewGradingPage() {
   }
 
   // ── Step 2: Edit answer key ───────────────────────────────────────────────
-  function updateQuestion(index: number, patch: Partial<AnswerKeyQuestion>) {
+
+  function setQuestion(index: number, q: AnswerKeyQuestion) {
+    setQuestions((prev) => prev.map((old, i) => (i === index ? q : old)));
+  }
+
+  function patchDetails(index: number, patch: Record<string, unknown>) {
     setQuestions((prev) =>
-      prev.map((q, i) => (i === index ? { ...q, ...patch } : q)),
+      prev.map((q, i) =>
+        i === index ? { ...q, details: { ...q.details, ...patch } } : q,
+      ),
+    );
+  }
+
+  function changeType(
+    index: number,
+    newType: AnswerKeyQuestion["questionType"],
+  ) {
+    setQuestions((prev) =>
+      prev.map((q, i) =>
+        i === index
+          ? { ...q, questionType: newType, details: defaultDetails(newType) }
+          : q,
+      ),
     );
   }
 
   function addQuestion() {
-    const nextNum =
-      questions.length > 0
-        ? Math.max(...questions.map((q) => q.questionNumber)) + 1
-        : 1;
     setQuestions((prev) => [
       ...prev,
       {
-        questionNumber: nextNum,
+        id: crypto.randomUUID(),
+        questionNumber: String(prev.length + 1),
         questionType: "short_answer",
-        correctAnswer: "",
-        explanation: "",
+        details: defaultDetails("short_answer"),
         points: 1,
       },
     ]);
@@ -346,66 +381,14 @@ export default function NewGradingPage() {
 
           <div className="space-y-3">
             {questions.map((q, i) => (
-              <div key={i} className="space-y-3 rounded-xl border p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-medium text-sm">
-                    Q{q.questionNumber}
-                  </span>
-                  <Select
-                    value={q.questionType}
-                    onValueChange={(v) =>
-                      updateQuestion(i, {
-                        questionType: v as AnswerKeyQuestion["questionType"],
-                      })
-                    }
-                  >
-                    <SelectTrigger className="w-44">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="multiple_choice">
-                        Multiple Choice
-                      </SelectItem>
-                      <SelectItem value="short_answer">Short Answer</SelectItem>
-                      <SelectItem value="true_false">True / False</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number"
-                    min={1}
-                    className="w-20"
-                    value={q.points}
-                    onChange={(e) =>
-                      updateQuestion(i, { points: Number(e.target.value) })
-                    }
-                  />
-                  <span className="text-muted-foreground text-xs">pts</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeQuestion(i)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    ✕
-                  </Button>
-                </div>
-                <Input
-                  placeholder="Correct answer"
-                  value={q.correctAnswer}
-                  onChange={(e) =>
-                    updateQuestion(i, { correctAnswer: e.target.value })
-                  }
-                  required
-                />
-                <Input
-                  placeholder="Explanation (optional)"
-                  value={q.explanation}
-                  onChange={(e) =>
-                    updateQuestion(i, { explanation: e.target.value })
-                  }
-                />
-              </div>
+              <QuestionEditor
+                key={q.id}
+                question={q}
+                onChange={(updated) => setQuestion(i, updated)}
+                onPatchDetails={(patch) => patchDetails(i, patch)}
+                onChangeType={(type) => changeType(i, type)}
+                onRemove={() => removeQuestion(i)}
+              />
             ))}
           </div>
 
@@ -560,6 +543,275 @@ export default function NewGradingPage() {
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Question editor component ─────────────────────────────────────────────────
+
+function QuestionEditor({
+  question: q,
+  onChange,
+  onPatchDetails,
+  onChangeType,
+  onRemove,
+}: {
+  question: AnswerKeyQuestion;
+  onChange: (q: AnswerKeyQuestion) => void;
+  onPatchDetails: (patch: Record<string, unknown>) => void;
+  onChangeType: (type: AnswerKeyQuestion["questionType"]) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="space-y-3 rounded-xl border p-4">
+      {/* Header row: question number, type, points, remove */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-muted-foreground text-sm">Q</span>
+        <Input
+          className="w-16"
+          placeholder="1"
+          value={q.questionNumber}
+          onChange={(e) => onChange({ ...q, questionNumber: e.target.value })}
+          required
+        />
+        <Select
+          value={q.questionType}
+          onValueChange={(v) =>
+            onChangeType(v as AnswerKeyQuestion["questionType"])
+          }
+        >
+          <SelectTrigger className="w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+            <SelectItem value="short_answer">Short Answer</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input
+          type="number"
+          min={1}
+          className="w-16"
+          value={q.points}
+          onChange={(e) => onChange({ ...q, points: Number(e.target.value) })}
+        />
+        <span className="text-muted-foreground text-xs">pts</span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onRemove}
+          className="ml-auto text-destructive hover:text-destructive"
+        >
+          ✕
+        </Button>
+      </div>
+
+      {/* Type-specific fields */}
+      {q.questionType === "multiple_choice" && (
+        <MultipleChoiceEditor
+          details={q.details as MultipleChoiceDetails}
+          onPatch={onPatchDetails}
+        />
+      )}
+      {q.questionType === "short_answer" && (
+        <ShortAnswerEditor
+          details={q.details as ShortAnswerDetails}
+          onPatch={onPatchDetails}
+        />
+      )}
+      {q.questionType === "other" && (
+        <OtherEditor
+          details={q.details as OtherDetails}
+          onPatch={onPatchDetails}
+        />
+      )}
+    </div>
+  );
+}
+
+function MultipleChoiceEditor({
+  details: d,
+  onPatch,
+}: {
+  details: MultipleChoiceDetails;
+  onPatch: (patch: Record<string, unknown>) => void;
+}) {
+  function setOptions(
+    updater: (
+      opts: MultipleChoiceDetails["options"],
+    ) => MultipleChoiceDetails["options"],
+  ) {
+    onPatch({ options: updater(d.options) });
+  }
+
+  return (
+    <div className="space-y-2">
+      <Input
+        placeholder="Prompt"
+        value={d.prompt}
+        onChange={(e) => onPatch({ prompt: e.target.value })}
+        required
+      />
+      <div className="space-y-1.5 pl-1">
+        {d.options.map((opt, oi) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: options have no stable ID
+          <div key={oi} className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              className="h-4 w-4 cursor-pointer accent-primary"
+              checked={opt.correct}
+              onChange={(e) =>
+                setOptions((opts) =>
+                  opts.map((o, j) =>
+                    j === oi ? { ...o, correct: e.target.checked } : o,
+                  ),
+                )
+              }
+              title="Mark as correct"
+            />
+            <Input
+              className="flex-1"
+              placeholder={`Option ${oi + 1}`}
+              value={opt.text}
+              onChange={(e) =>
+                setOptions((opts) =>
+                  opts.map((o, j) =>
+                    j === oi ? { ...o, text: e.target.value } : o,
+                  ),
+                )
+              }
+              required
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                setOptions((opts) => opts.filter((_, j) => j !== oi))
+              }
+              className="shrink-0 text-muted-foreground"
+            >
+              ✕
+            </Button>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            setOptions((opts) => [...opts, { text: "", correct: false }])
+          }
+        >
+          + Option
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ShortAnswerEditor({
+  details: d,
+  onPatch,
+}: {
+  details: ShortAnswerDetails;
+  onPatch: (patch: Record<string, unknown>) => void;
+}) {
+  function setCriteria(updater: (c: string[]) => string[]) {
+    onPatch({ criteria: updater(d.criteria ?? []) });
+  }
+
+  return (
+    <div className="space-y-2">
+      <Input
+        placeholder="Prompt"
+        value={d.prompt}
+        onChange={(e) => onPatch({ prompt: e.target.value })}
+        required
+      />
+      <Input
+        placeholder="Sample answer"
+        value={d.sampleAnswer}
+        onChange={(e) => onPatch({ sampleAnswer: e.target.value })}
+        required
+      />
+      <Input
+        placeholder="Explanation (optional)"
+        value={d.explanation ?? ""}
+        onChange={(e) => onPatch({ explanation: e.target.value })}
+      />
+      {/* Criteria list */}
+      <div className="space-y-1.5 pl-1">
+        <p className="text-muted-foreground text-xs">
+          Criteria — things that must (or must not) appear in the response:
+        </p>
+        {(d.criteria ?? []).map((c, ci) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: criteria have no stable ID
+          <div key={ci} className="flex items-center gap-2">
+            <Input
+              className="flex-1"
+              placeholder={`Criterion ${ci + 1}`}
+              value={c}
+              onChange={(e) =>
+                setCriteria((prev) =>
+                  prev.map((x, j) => (j === ci ? e.target.value : x)),
+                )
+              }
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                setCriteria((prev) => prev.filter((_, j) => j !== ci))
+              }
+              className="shrink-0 text-muted-foreground"
+            >
+              ✕
+            </Button>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setCriteria((prev) => [...prev, ""])}
+        >
+          + Criterion
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function OtherEditor({
+  details: d,
+  onPatch,
+}: {
+  details: OtherDetails;
+  onPatch: (patch: Record<string, unknown>) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <Input
+        placeholder="Prompt"
+        value={d.prompt}
+        onChange={(e) => onPatch({ prompt: e.target.value })}
+        required
+      />
+      <Input
+        placeholder="Answer"
+        value={d.answer}
+        onChange={(e) => onPatch({ answer: e.target.value })}
+        required
+      />
+      <Input
+        placeholder="Explanation (optional)"
+        value={d.explanation ?? ""}
+        onChange={(e) => onPatch({ explanation: e.target.value })}
+      />
     </div>
   );
 }

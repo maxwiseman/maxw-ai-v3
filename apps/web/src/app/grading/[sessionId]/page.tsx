@@ -1,5 +1,10 @@
 import { notFound } from "next/navigation";
-import type { StudentAnswer } from "@/db/schema/grading";
+import type {
+  MultipleChoiceDetails,
+  OtherDetails,
+  ShortAnswerDetails,
+  StudentAnswer,
+} from "@/db/schema/grading";
 import { cn } from "@/lib/utils";
 import { getGradingSession } from "../actions";
 
@@ -35,26 +40,80 @@ export default async function GradingResultsPage({
                 <th className="px-4 py-2 text-left font-medium">#</th>
                 <th className="px-4 py-2 text-left font-medium">Type</th>
                 <th className="px-4 py-2 text-left font-medium">Answer</th>
-                <th className="px-4 py-2 text-left font-medium">Explanation</th>
                 <th className="px-4 py-2 text-right font-medium">Pts</th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              {session.answerKey.map((q) => (
-                <tr key={q.id}>
-                  <td className="px-4 py-2 text-muted-foreground">
-                    {q.questionNumber}
-                  </td>
-                  <td className="px-4 py-2 capitalize">
-                    {q.questionType.replace(/_/g, " ")}
-                  </td>
-                  <td className="px-4 py-2 font-medium">{q.correctAnswer}</td>
-                  <td className="px-4 py-2 text-muted-foreground">
-                    {q.explanation ?? "—"}
-                  </td>
-                  <td className="px-4 py-2 text-right">{q.points}</td>
-                </tr>
-              ))}
+              {session.answerKey.map((q) => {
+                const d = q.details as Record<string, unknown>;
+                let answerCell: React.ReactNode;
+
+                if (q.questionType === "multiple_choice") {
+                  const det = d as unknown as MultipleChoiceDetails;
+                  const correct = det.options
+                    .filter((o) => o.correct)
+                    .map((o) => o.text);
+                  answerCell = (
+                    <div>
+                      <p className="text-muted-foreground text-xs">
+                        {det.prompt}
+                      </p>
+                      <p className="font-medium">{correct.join(", ") || "—"}</p>
+                    </div>
+                  );
+                } else if (q.questionType === "short_answer") {
+                  const det = d as unknown as ShortAnswerDetails;
+                  answerCell = (
+                    <div className="space-y-0.5">
+                      <p className="text-muted-foreground text-xs">
+                        {det.prompt}
+                      </p>
+                      <p className="font-medium">{det.sampleAnswer}</p>
+                      {det.explanation && (
+                        <p className="text-muted-foreground text-xs">
+                          {det.explanation}
+                        </p>
+                      )}
+                      {det.criteria && det.criteria.length > 0 && (
+                        <ul className="list-disc pl-4 text-muted-foreground text-xs">
+                          {det.criteria.map((c, i) => (
+                            // biome-ignore lint/suspicious/noArrayIndexKey: criteria have no stable ID
+                            <li key={i}>{c}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                } else {
+                  const det = d as unknown as OtherDetails;
+                  answerCell = (
+                    <div className="space-y-0.5">
+                      <p className="text-muted-foreground text-xs">
+                        {det.prompt}
+                      </p>
+                      <p className="font-medium">{det.answer}</p>
+                      {det.explanation && (
+                        <p className="text-muted-foreground text-xs">
+                          {det.explanation}
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <tr key={q.id}>
+                    <td className="px-4 py-2 text-muted-foreground">
+                      {q.questionNumber}
+                    </td>
+                    <td className="px-4 py-2 capitalize">
+                      {q.questionType.replace(/_/g, " ")}
+                    </td>
+                    <td className="px-4 py-2">{answerCell}</td>
+                    <td className="px-4 py-2 text-right">{q.points}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

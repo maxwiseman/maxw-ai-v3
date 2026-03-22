@@ -15,8 +15,11 @@ import {
   type GradingResult,
   type GradingSession,
   gradingAnswerKey,
-  gradingResult,
   gradingSession,
+  type MultipleChoiceDetails,
+  type OtherDetails,
+  type QuestionDetails,
+  type ShortAnswerDetails,
 } from "@/db/schema/grading";
 import { auth } from "@/lib/auth";
 import {
@@ -74,12 +77,54 @@ export async function uploadBlankPdf(
 }
 
 export type AnswerKeyQuestion = {
-  questionNumber: number;
-  questionType: "multiple_choice" | "short_answer" | "true_false";
-  correctAnswer: string;
-  explanation: string;
+  /** Stable UUID — persists across saves so it can be used as a React key */
+  id: string;
+  /** String label, e.g. "1", "1B", "2a" */
+  questionNumber: string;
+  questionType: "multiple_choice" | "short_answer" | "other";
+  details: QuestionDetails;
   points: number;
 };
+
+// Zod schemas for each question type (used in generateObject)
+const mcSchema = z.object({
+  questionNumber: z.string(),
+  questionType: z.literal("multiple_choice"),
+  details: z.object({
+    prompt: z.string(),
+    options: z.array(z.object({ text: z.string(), correct: z.boolean() })),
+  }),
+  points: z.number().default(1),
+});
+
+const saSchema = z.object({
+  questionNumber: z.string(),
+  questionType: z.literal("short_answer"),
+  details: z.object({
+    prompt: z.string(),
+    sampleAnswer: z.string(),
+    explanation: z.string().optional(),
+    criteria: z.array(z.string()).optional(),
+  }),
+  points: z.number().default(1),
+});
+
+const otherSchema = z.object({
+  questionNumber: z.string(),
+  questionType: z.literal("other"),
+  details: z.object({
+    prompt: z.string(),
+    answer: z.string(),
+    explanation: z.string().optional(),
+  }),
+  points: z.number().default(1),
+});
+
+const answerKeySchema = z.object({
+  questions: z.array(
+    z.discriminatedUnion("questionType", [mcSchema, saSchema, otherSchema]),
+  ),
+});
 
 export async function generateAnswerKey(
   sessionId: string,
@@ -113,26 +158,21 @@ export async function generateAnswerKey(
             },
             {
               type: "text" as const,
-              text: "Extract all questions from this answer sheet. For each question provide: its number, type (multiple_choice, short_answer, or true_false), the correct answer, a brief explanation of why it is correct, and the point value (default 1 if not shown). Return all questions you find.",
+              text: `Extract all questions from this answer sheet. For each question provide:
+- questionNumber: the question label as a string (e.g. "1", "1B", "2a")
+- questionType: "multiple_choice" for MC and true/false questions, "short_answer" for free-response, "other" for anything else
+- details: type-specific fields
+  - multiple_choice: { prompt, options: [{ text, correct }] } — mark all correct options
+  - short_answer: { prompt, sampleAnswer, explanation?, criteria? } — criteria are things that must appear (or must not appear) in a correct response
+  - other: { prompt, answer, explanation? }
+- points: point value (default 1 if not shown)
+
+Return every question you find.`,
             },
           ],
         },
       ],
-      schema: z.object({
-        questions: z.array(
-          z.object({
-            questionNumber: z.number(),
-            questionType: z.enum([
-              "multiple_choice",
-              "short_answer",
-              "true_false",
-            ]),
-            correctAnswer: z.string(),
-            explanation: z.string(),
-            points: z.number().default(1),
-          }),
-        ),
-      }),
+      schema: answerKeySchema,
     }),
   ]);
 
@@ -144,17 +184,20 @@ export async function generateAnswerKey(
     .delete(gradingAnswerKey)
     .where(eq(gradingAnswerKey.sessionId, sessionId));
 
+  let inserted: GradingAnswerKey[] = [];
   if (questions.length > 0) {
-    await db.insert(gradingAnswerKey).values(
-      questions.map((q) => ({
-        sessionId,
-        questionNumber: q.questionNumber,
-        questionType: q.questionType,
-        correctAnswer: q.correctAnswer,
-        explanation: q.explanation,
-        points: q.points,
-      })),
-    );
+    inserted = await db
+      .insert(gradingAnswerKey)
+      .values(
+        questions.map((q) => ({
+          sessionId,
+          questionNumber: q.questionNumber,
+          questionType: q.questionType,
+          details: q.details as QuestionDetails,
+          points: q.points,
+        })),
+      )
+      .returning();
   }
 
   await db
@@ -162,7 +205,15 @@ export async function generateAnswerKey(
     .set({ status: "answer_key_ready", pagesPerStudent })
     .where(eq(gradingSession.id, sessionId));
 
-  return { questions };
+  return {
+    questions: inserted.map((row) => ({
+      id: row.id,
+      questionNumber: row.questionNumber,
+      questionType: row.questionType,
+      details: row.details as QuestionDetails,
+      points: row.points,
+    })),
+  };
 }
 
 export async function updateAnswerKey(
@@ -179,11 +230,11 @@ export async function updateAnswerKey(
   if (questions.length > 0) {
     await db.insert(gradingAnswerKey).values(
       questions.map((q) => ({
+        id: q.id,
         sessionId,
         questionNumber: q.questionNumber,
         questionType: q.questionType,
-        correctAnswer: q.correctAnswer,
-        explanation: q.explanation ?? "",
+        details: q.details,
         points: q.points,
       })),
     );
@@ -244,3 +295,11 @@ export async function listGradingSessions(): Promise<GradingSession[]> {
     orderBy: (t, { desc }) => desc(t.createdAt),
   });
 }
+
+// Re-export detail types for convenience in UI files
+export type {
+  MultipleChoiceDetails,
+  ShortAnswerDetails,
+  OtherDetails,
+  QuestionDetails,
+};

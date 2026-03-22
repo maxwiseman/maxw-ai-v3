@@ -20,7 +20,7 @@ export const gradingSessionStatusEnum = pgEnum("grading_session_status", [
 export const gradingQuestionTypeEnum = pgEnum("grading_question_type", [
   "multiple_choice",
   "short_answer",
-  "true_false",
+  "other",
 ]);
 
 export const gradingSplitModeEnum = pgEnum("grading_split_mode", [
@@ -28,8 +28,39 @@ export const gradingSplitModeEnum = pgEnum("grading_split_mode", [
   // future: "similarity" — match page 1 of blank across full scan
 ]);
 
+// ── Question detail shapes (stored as JSONB) ──────────────────────────────────
+
+export type MultipleChoiceOption = {
+  text: string;
+  correct: boolean;
+};
+
+export type MultipleChoiceDetails = {
+  prompt: string;
+  options: MultipleChoiceOption[];
+};
+
+export type ShortAnswerDetails = {
+  prompt: string;
+  sampleAnswer: string;
+  explanation?: string;
+  /** Things that must be present (or absent) in the response */
+  criteria?: string[];
+};
+
+export type OtherDetails = {
+  prompt: string;
+  answer: string;
+  explanation?: string;
+};
+
+export type QuestionDetails =
+  | MultipleChoiceDetails
+  | ShortAnswerDetails
+  | OtherDetails;
+
 export type StudentAnswer = {
-  questionNumber: number;
+  questionNumber: string;
   givenAnswer: string;
   isCorrect: boolean;
   pointsEarned: number;
@@ -62,10 +93,10 @@ export const gradingAnswerKey = pgTable("grading_answer_key", {
   sessionId: text("session_id")
     .notNull()
     .references(() => gradingSession.id, { onDelete: "cascade" }),
-  questionNumber: integer("question_number").notNull(),
+  /** String to support labels like "1B", "2a", etc. */
+  questionNumber: text("question_number").notNull(),
   questionType: gradingQuestionTypeEnum("question_type").notNull(),
-  correctAnswer: text("correct_answer").notNull(),
-  explanation: text("explanation"),
+  details: jsonb("details").$type<QuestionDetails>().notNull(),
   points: integer("points").notNull().default(1),
 });
 

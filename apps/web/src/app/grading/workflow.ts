@@ -93,18 +93,43 @@ async function gradeStudentsStep(sessionId: string) {
   ]);
 
   const maxScore = answerKey.reduce((sum, q) => sum + q.points, 0);
+
+  // Serialize the answer key into a grading rubric string for the model
   const answerKeyText = answerKey
-    .map(
-      (q) =>
-        `Q${q.questionNumber} [${q.questionType}, ${q.points}pt${q.points !== 1 ? "s" : ""}]: ${q.correctAnswer}`,
-    )
-    .join("\n");
+    .map((q) => {
+      const d = q.details as Record<string, unknown>;
+      const pts = `${q.points}pt${q.points !== 1 ? "s" : ""}`;
+
+      if (q.questionType === "multiple_choice") {
+        const options = d.options as { text: string; correct: boolean }[];
+        const correct = options
+          .filter((o) => o.correct)
+          .map((o) => o.text)
+          .join(", ");
+        return `Q${q.questionNumber} [multiple_choice, ${pts}]: ${d.prompt}\nCorrect: ${correct}`;
+      }
+
+      if (q.questionType === "short_answer") {
+        let text = `Q${q.questionNumber} [short_answer, ${pts}]: ${d.prompt}\nSample answer: ${d.sampleAnswer}`;
+        if (d.explanation) text += `\nExplanation: ${d.explanation}`;
+        if (Array.isArray(d.criteria) && d.criteria.length > 0) {
+          text += `\nRequired criteria: ${(d.criteria as string[]).join("; ")}`;
+        }
+        return text;
+      }
+
+      // other
+      let text = `Q${q.questionNumber} [other, ${pts}]: ${d.prompt}\nAnswer: ${d.answer}`;
+      if (d.explanation) text += `\nExplanation: ${d.explanation}`;
+      return text;
+    })
+    .join("\n\n");
 
   const gradingSchema = z.object({
     studentName: z.string().optional(),
     answers: z.array(
       z.object({
-        questionNumber: z.number(),
+        questionNumber: z.string(),
         givenAnswer: z.string(),
         isCorrect: z.boolean(),
         pointsEarned: z.number(),
@@ -119,7 +144,7 @@ async function gradeStudentsStep(sessionId: string) {
       .filter((r) => !r.gradedAt)
       .filter((r) => r.r2Key)
       .map(async (result) => {
-        const signedUrl = await getR2SignedUrl(result.r2Key!, 600);
+        const signedUrl = await getR2SignedUrl(result.r2Key as string, 600);
 
         const { object } = await generateObject({
           model: openai("gpt-5"),
@@ -135,7 +160,7 @@ async function gradeStudentsStep(sessionId: string) {
                 },
                 {
                   type: "text",
-                  text: `You are grading a student's exam. Here is the answer key:\n${answerKeyText}\n\nFor each question, find the student's answer in the attached PDF, determine if it's correct, assign points, and provide brief feedback explaining why it is right or wrong. If you can identify the student's name, include it.`,
+                  text: `You are grading a student's exam. Here is the answer key:\n\n${answerKeyText}\n\nFor each question, find the student's answer in the attached PDF, determine if it's correct, assign points, and provide brief feedback explaining why it is right or wrong. Use the question number exactly as shown (e.g. "1B"). If you can identify the student's name, include it.`,
                 },
               ],
             },
