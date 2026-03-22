@@ -16,10 +16,7 @@ import {
   type GradingSession,
   gradingAnswerKey,
   gradingSession,
-  type MultipleChoiceDetails,
-  type OtherDetails,
   type QuestionDetails,
-  type ShortAnswerDetails,
 } from "@/db/schema/grading";
 import { auth } from "@/lib/auth";
 import {
@@ -295,11 +292,3 @@ export async function listGradingSessions(): Promise<GradingSession[]> {
     orderBy: (t, { desc }) => desc(t.createdAt),
   });
 }
-
-// Re-export detail types for convenience in UI files
-export type {
-  MultipleChoiceDetails,
-  ShortAnswerDetails,
-  OtherDetails,
-  QuestionDetails,
-};

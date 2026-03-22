@@ -12,15 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type {
+  MultipleChoiceDetails,
+  OtherDetails,
+  ShortAnswerDetails,
+} from "@/db/schema/grading";
 import { cn } from "@/lib/utils";
 import {
   type AnswerKeyQuestion,
   createGradingSession,
   generateAnswerKey,
   getGradingSession,
-  type MultipleChoiceDetails,
-  type OtherDetails,
-  type ShortAnswerDetails,
   updateAnswerKey,
   uploadBlankPdf,
   uploadFullScanAndTrigger,
