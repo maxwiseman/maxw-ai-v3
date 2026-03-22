@@ -75,7 +75,6 @@ export const gradingResult = pgTable("grading_result", {
   studentIndex: integer("student_index").notNull(),
   studentName: text("student_name"),
   r2Key: text("r2_key"),
-  rawOcrText: text("raw_ocr_text"),
   score: integer("score"),
   maxScore: integer("max_score"),
   answers: jsonb("answers").$type<StudentAnswer[]>(),

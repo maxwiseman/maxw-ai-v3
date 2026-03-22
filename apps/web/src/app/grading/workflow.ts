@@ -71,56 +71,6 @@ async function splitPdfsStep(sessionId: string) {
   );
 }
 
-async function runOcrStep(sessionId: string) {
-  "use step";
-
-  const { db } = await import("@/db");
-  const { gradingResult } = await import("@/db/schema/grading");
-  const { getR2SignedUrl } = await import("@/ai/sandbox/r2-client");
-  const { env } = await import("@/env");
-  const { eq } = await import("drizzle-orm");
-
-  const results = await db.query.gradingResult.findMany({
-    where: eq(gradingResult.sessionId, sessionId),
-  });
-
-  await Promise.all(
-    results
-      .filter((r) => !r.rawOcrText)
-      .map(async (result) => {
-        if (!result.r2Key) return;
-
-        const signedUrl = await getR2SignedUrl(result.r2Key, 600);
-
-        const res = await fetch("https://api.mistral.ai/v1/ocr", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${env.MISTRAL_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "mistral-ocr-latest",
-            document: { type: "url", url: signedUrl },
-          }),
-        });
-
-        if (!res.ok) {
-          throw new Error(
-            `Mistral OCR failed for student ${result.studentIndex}: ${res.status}`,
-          );
-        }
-
-        const data = (await res.json()) as { pages: { markdown: string }[] };
-        const rawOcrText = data.pages.map((p) => p.markdown).join("\n\n");
-
-        await db
-          .update(gradingResult)
-          .set({ rawOcrText })
-          .where(eq(gradingResult.id, result.id));
-      }),
-  );
-}
-
 async function gradeStudentsStep(sessionId: string) {
   "use step";
 
@@ -130,6 +80,7 @@ async function gradeStudentsStep(sessionId: string) {
   );
   const { openai } = await import("@ai-sdk/openai");
   const { generateObject } = await import("ai");
+  const { getR2SignedUrl } = await import("@/ai/sandbox/r2-client");
   const { eq, asc } = await import("drizzle-orm");
   const z = (await import("zod/v4")).default;
 
@@ -168,12 +119,29 @@ async function gradeStudentsStep(sessionId: string) {
   await Promise.all(
     results
       .filter((r) => !r.gradedAt)
-      .filter((r) => r.rawOcrText)
+      .filter((r) => r.r2Key)
       .map(async (result) => {
+        const signedUrl = await getR2SignedUrl(result.r2Key!, 600);
+
         const { object } = await generateObject({
           model: openai("gpt-5"),
           schema: gradingSchema,
-          prompt: `You are grading a student's exam. Here is the answer key:\n${answerKeyText}\n\nHere is the student's OCR'd exam text:\n${result.rawOcrText}\n\nFor each question, find the student's answer, determine if it's correct, assign points, and provide brief feedback explaining why it is right or wrong. If you can identify the student's name from the text, include it.`,
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "file",
+                  data: new URL(signedUrl),
+                  mimeType: "application/pdf",
+                },
+                {
+                  type: "text",
+                  text: `You are grading a student's exam. Here is the answer key:\n${answerKeyText}\n\nFor each question, find the student's answer in the attached PDF, determine if it's correct, assign points, and provide brief feedback explaining why it is right or wrong. If you can identify the student's name, include it.`,
+                },
+              ],
+            },
+          ],
         });
 
         await db
@@ -235,7 +203,6 @@ export async function gradingWorkflow(sessionId: string) {
   await setStatusProcessingStep(sessionId);
   try {
     await splitPdfsStep(sessionId);
-    await runOcrStep(sessionId);
     await gradeStudentsStep(sessionId);
     await setStatusCompleteStep(sessionId);
   } catch (err) {
