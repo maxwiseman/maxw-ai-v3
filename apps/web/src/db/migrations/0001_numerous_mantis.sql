@@ -1,1 +1,0 @@
-ALTER TABLE "grading_result" DROP COLUMN "raw_ocr_text";

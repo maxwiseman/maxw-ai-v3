@@ -24,9 +24,7 @@ async function splitPdfsStep(sessionId: string) {
   "use step";
 
   const { db } = await import("@/db");
-  const { gradingResult, gradingSession } = await import(
-    "@/db/schema/grading"
-  );
+  const { gradingResult, gradingSession } = await import("@/db/schema/grading");
   const { getR2SignedUrl, putR2Object } = await import(
     "@/ai/sandbox/r2-client"
   );
@@ -133,7 +131,7 @@ async function gradeStudentsStep(sessionId: string) {
                 {
                   type: "file",
                   data: new URL(signedUrl),
-                  mimeType: "application/pdf",
+                  mediaType: "application/pdf",
                 },
                 {
                   type: "text",
