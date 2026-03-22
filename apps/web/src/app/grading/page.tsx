@@ -1,4 +1,11 @@
 import Link from "next/link";
+import {
+  PageHeader,
+  PageHeaderActions,
+  PageHeaderContent,
+  PageHeaderDescription,
+  PageHeaderTitle,
+} from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { listGradingSessions } from "./actions";
 
@@ -25,52 +32,60 @@ export default async function GradingPage() {
   const sessions = await listGradingSessions();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-bold text-2xl">Grading</h1>
-        <Button asChild>
-          <Link href="/grading/new">New Session</Link>
-        </Button>
-      </div>
-
-      {sessions.length === 0 ? (
-        <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
-          <p className="mb-4 text-lg">No grading sessions yet</p>
-          <Button className="text-foreground" asChild variant="outline">
-            <Link href="/grading/new">Start grading</Link>
+    <div className="mx-auto w-full">
+      <PageHeader>
+        <PageHeaderContent>
+          <PageHeaderTitle>Grading</PageHeaderTitle>
+          <PageHeaderDescription>
+            Grade assignments faster than ever before
+          </PageHeaderDescription>
+        </PageHeaderContent>
+        <PageHeaderActions>
+          <Button asChild>
+            <Link href="/grading/new">New Session</Link>
           </Button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {sessions.map((session) => (
-            <Link
-              key={session.id}
-              href={
-                session.status === "complete"
-                  ? `/grading/${session.id}`
-                  : `/grading/new?session=${session.id}`
-              }
-              className="flex items-center justify-between rounded-xl border bg-card p-4 transition-colors hover:bg-accent/50"
-            >
-              <div>
-                <p className="font-medium">{session.title}</p>
-                <p className="text-muted-foreground text-sm">
-                  {new Date(session.createdAt).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </p>
-              </div>
-              <span
-                className={`rounded-full px-2.5 py-0.5 font-medium text-xs ${statusColor[session.status] ?? statusColor.draft}`}
+        </PageHeaderActions>
+      </PageHeader>
+      <div className="space-y-8 px-8">
+        {sessions.length === 0 ? (
+          <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
+            <p className="mb-4 text-lg">No grading sessions yet</p>
+            <Button className="text-foreground" asChild variant="outline">
+              <Link href="/grading/new">Start grading</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {sessions.map((session) => (
+              <Link
+                key={session.id}
+                href={
+                  session.status === "complete"
+                    ? `/grading/${session.id}`
+                    : `/grading/new?session=${session.id}`
+                }
+                className="flex items-center justify-between rounded-xl border bg-card p-4 transition-colors hover:bg-accent/50"
               >
-                {statusLabel[session.status] ?? session.status}
-              </span>
-            </Link>
-          ))}
-        </div>
-      )}
+                <div>
+                  <p className="font-medium">{session.title}</p>
+                  <p className="text-muted-foreground text-sm">
+                    {new Date(session.createdAt).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                </div>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 font-medium text-xs ${statusColor[session.status] ?? statusColor.draft}`}
+                >
+                  {statusLabel[session.status] ?? session.status}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
