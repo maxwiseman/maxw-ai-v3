@@ -12,9 +12,12 @@ const statusLabel: Record<string, string> = {
 
 const statusColor: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
-  answer_key_ready: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  processing: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-  complete: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  answer_key_ready:
+    "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  processing:
+    "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+  complete:
+    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
   error: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
@@ -33,7 +36,7 @@ export default async function GradingPage() {
       {sessions.length === 0 ? (
         <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
           <p className="mb-4 text-lg">No grading sessions yet</p>
-          <Button asChild variant="outline">
+          <Button className="text-foreground" asChild variant="outline">
             <Link href="/grading/new">Start grading</Link>
           </Button>
         </div>
@@ -60,7 +63,7 @@ export default async function GradingPage() {
                 </p>
               </div>
               <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor[session.status] ?? statusColor.draft}`}
+                className={`rounded-full px-2.5 py-0.5 font-medium text-xs ${statusColor[session.status] ?? statusColor.draft}`}
               >
                 {statusLabel[session.status] ?? session.status}
               </span>

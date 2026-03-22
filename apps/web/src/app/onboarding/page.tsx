@@ -21,7 +21,9 @@ export default function OnboardingPage() {
   const [domain, setDomain] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [error, setError] = useState("");
-  const [processingStatus, setProcessingStatus] = useState("Connecting to Canvas...");
+  const [processingStatus, setProcessingStatus] = useState(
+    "Connecting to Canvas...",
+  );
   const [isPending, startTransition] = useTransition();
 
   function handleRoleSelect(selected: Role) {
@@ -33,7 +35,10 @@ export default function OnboardingPage() {
     e.preventDefault();
     setError("");
 
-    const cleanDomain = domain.trim().replace(/^https?:\/\//, "").replace(/\/$/, "");
+    const cleanDomain = domain
+      .trim()
+      .replace(/^https?:\/\//, "")
+      .replace(/\/$/, "");
 
     startTransition(async () => {
       const result = await validateAndFetchCourses(apiKey.trim(), cleanDomain);
@@ -86,29 +91,29 @@ export default function OnboardingPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <button
-              type="button"
+            <Button
+              variant="outline"
               onClick={() => handleRoleSelect("student")}
-              className="flex flex-col items-center gap-3 rounded-xl border-2 border-transparent bg-muted p-8 transition-all hover:border-primary hover:bg-muted/70"
+              className="size-auto flex-col items-center gap-3 whitespace-normal p-8"
             >
               <span className="text-4xl">🎒</span>
               <span className="font-semibold text-lg">Student</span>
               <span className="text-center text-muted-foreground text-sm">
                 Track assignments, study, and get help with coursework
               </span>
-            </button>
+            </Button>
 
-            <button
-              type="button"
+            <Button
+              variant="outline"
               onClick={() => handleRoleSelect("teacher")}
-              className="flex flex-col items-center gap-3 rounded-xl border-2 border-transparent bg-muted p-8 transition-all hover:border-primary hover:bg-muted/70"
+              className="size-auto flex-col items-center gap-3 whitespace-normal p-8"
             >
               <span className="text-4xl">📚</span>
               <span className="font-semibold text-lg">Teacher</span>
               <span className="text-center text-muted-foreground text-sm">
                 Manage courses, track student progress, and create materials
               </span>
-            </button>
+            </Button>
           </div>
         </div>
       </div>
