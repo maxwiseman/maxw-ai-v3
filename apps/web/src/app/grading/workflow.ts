@@ -1,19 +1,4 @@
-import { anthropic } from "@ai-sdk/anthropic";
-import { openai } from "@ai-sdk/openai";
-import { PDFDocument } from "pdf-lib";
-import { generateObject } from "ai";
-import { eq } from "drizzle-orm";
-import z from "zod/v4";
-import { db } from "@/db";
-import {
-  gradingAnswerKey,
-  gradingResult,
-  gradingSession,
-} from "@/db/schema/grading";
-import { env } from "@/env";
-import { getR2SignedUrl, putR2Object } from "@/ai/sandbox/r2-client";
-
-// ─── R2 key helpers ────────────────────────────────────────────────────────
+// ─── R2 key helpers (no Node.js deps, safe at module level) ─────────────────
 
 export function gradingBlankKey(userId: string, sessionId: string) {
   return `users/${userId}/grading/${sessionId}/blank.pdf`;
@@ -31,10 +16,22 @@ export function gradingStudentKey(
   return `users/${userId}/grading/${sessionId}/students/${index}.pdf`;
 }
 
-// ─── Steps (must be in the same file as the workflow) ────────────────────
+// ─── Steps (must be in the same file as the workflow) ────────────────────────
+// All heavy imports are done inside each step via dynamic import() so the
+// Vercel Workflow bundler doesn't see Node.js modules at the module level.
 
 async function splitPdfsStep(sessionId: string) {
   "use step";
+
+  const { db } = await import("@/db");
+  const { gradingResult, gradingSession } = await import(
+    "@/db/schema/grading"
+  );
+  const { getR2SignedUrl, putR2Object } = await import(
+    "@/ai/sandbox/r2-client"
+  );
+  const { PDFDocument } = await import("pdf-lib");
+  const { eq } = await import("drizzle-orm");
 
   const session = await db.query.gradingSession.findFirst({
     where: eq(gradingSession.id, sessionId),
@@ -43,7 +40,6 @@ async function splitPdfsStep(sessionId: string) {
     throw new Error("Session missing required data for splitting");
   }
 
-  // Fetch full scan PDF bytes from R2
   const signedUrl = await getR2SignedUrl(session.fullScanR2Key, 600);
   const pdfBytes = await fetch(signedUrl).then((r) => r.arrayBuffer());
 
@@ -52,7 +48,6 @@ async function splitPdfsStep(sessionId: string) {
   const pagesPerStudent = session.pagesPerStudent;
   const studentCount = Math.floor(totalPages / pagesPerStudent);
 
-  // Split into per-student PDFs and upload each to R2
   await Promise.all(
     Array.from({ length: studentCount }, async (_, i) => {
       const studentPdf = await PDFDocument.create();
@@ -68,11 +63,10 @@ async function splitPdfsStep(sessionId: string) {
       const r2Key = gradingStudentKey(session.userId, sessionId, i);
       await putR2Object(r2Key, Buffer.from(studentBytes), "application/pdf");
 
-      await db.insert(gradingResult).values({
-        sessionId,
-        studentIndex: i,
-        r2Key,
-      }).onConflictDoNothing();
+      await db
+        .insert(gradingResult)
+        .values({ sessionId, studentIndex: i, r2Key })
+        .onConflictDoNothing();
     }),
   );
 }
@@ -80,13 +74,19 @@ async function splitPdfsStep(sessionId: string) {
 async function runOcrStep(sessionId: string) {
   "use step";
 
+  const { db } = await import("@/db");
+  const { gradingResult } = await import("@/db/schema/grading");
+  const { getR2SignedUrl } = await import("@/ai/sandbox/r2-client");
+  const { env } = await import("@/env");
+  const { eq } = await import("drizzle-orm");
+
   const results = await db.query.gradingResult.findMany({
     where: eq(gradingResult.sessionId, sessionId),
   });
 
   await Promise.all(
     results
-      .filter((r) => !r.rawOcrText) // idempotent: skip already OCR'd
+      .filter((r) => !r.rawOcrText)
       .map(async (result) => {
         if (!result.r2Key) return;
 
@@ -110,12 +110,8 @@ async function runOcrStep(sessionId: string) {
           );
         }
 
-        const data = (await res.json()) as {
-          pages: { markdown: string }[];
-        };
-        const rawOcrText = data.pages
-          .map((p) => p.markdown)
-          .join("\n\n");
+        const data = (await res.json()) as { pages: { markdown: string }[] };
+        const rawOcrText = data.pages.map((p) => p.markdown).join("\n\n");
 
         await db
           .update(gradingResult)
@@ -128,10 +124,19 @@ async function runOcrStep(sessionId: string) {
 async function gradeStudentsStep(sessionId: string) {
   "use step";
 
+  const { db } = await import("@/db");
+  const { gradingAnswerKey, gradingResult } = await import(
+    "@/db/schema/grading"
+  );
+  const { openai } = await import("@ai-sdk/openai");
+  const { generateObject } = await import("ai");
+  const { eq, asc } = await import("drizzle-orm");
+  const z = (await import("zod/v4")).default;
+
   const [answerKey, results] = await Promise.all([
     db.query.gradingAnswerKey.findMany({
       where: eq(gradingAnswerKey.sessionId, sessionId),
-      orderBy: (t, { asc }) => asc(t.questionNumber),
+      orderBy: asc(gradingAnswerKey.questionNumber),
     }),
     db.query.gradingResult.findMany({
       where: eq(gradingResult.sessionId, sessionId),
@@ -146,25 +151,25 @@ async function gradeStudentsStep(sessionId: string) {
     )
     .join("\n");
 
+  const gradingSchema = z.object({
+    studentName: z.string().optional(),
+    answers: z.array(
+      z.object({
+        questionNumber: z.number(),
+        givenAnswer: z.string(),
+        isCorrect: z.boolean(),
+        pointsEarned: z.number(),
+        feedback: z.string(),
+      }),
+    ),
+    totalScore: z.number(),
+  });
+
   await Promise.all(
     results
-      .filter((r) => !r.gradedAt) // idempotent: skip already graded
+      .filter((r) => !r.gradedAt)
       .filter((r) => r.rawOcrText)
       .map(async (result) => {
-        const gradingSchema = z.object({
-          studentName: z.string().optional(),
-          answers: z.array(
-            z.object({
-              questionNumber: z.number(),
-              givenAnswer: z.string(),
-              isCorrect: z.boolean(),
-              pointsEarned: z.number(),
-              feedback: z.string(),
-            }),
-          ),
-          totalScore: z.number(),
-        });
-
         const { object } = await generateObject({
           model: openai("gpt-5"),
           schema: gradingSchema,
@@ -185,10 +190,14 @@ async function gradeStudentsStep(sessionId: string) {
   );
 }
 
-// ─── Workflow ─────────────────────────────────────────────────────────────
+// ─── Workflow ─────────────────────────────────────────────────────────────────
 
 export async function gradingWorkflow(sessionId: string) {
   "use workflow";
+
+  const { db } = await import("@/db");
+  const { gradingSession } = await import("@/db/schema/grading");
+  const { eq } = await import("drizzle-orm");
 
   try {
     await db
