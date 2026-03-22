@@ -1,7 +1,7 @@
 "use server";
 
 import { anthropic } from "@ai-sdk/anthropic";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { PDFDocument } from "pdf-lib";
@@ -83,45 +83,49 @@ export type AnswerKeyQuestion = {
   points: number;
 };
 
-// Zod schemas for each question type (used in generateObject)
-const mcSchema = z.object({
+// Flat schema for answer key extraction — Anthropic does not support oneOf/discriminated unions.
+// Type-specific fields are optional; we construct the typed details object in code based on questionType.
+const flatQuestionSchema = z.object({
   questionNumber: z.string(),
-  questionType: z.literal("multiple_choice"),
-  details: z.object({
-    prompt: z.string(),
-    options: z.array(z.object({ text: z.string(), correct: z.boolean() })),
-  }),
+  questionType: z.enum(["multiple_choice", "short_answer", "other"]),
   points: z.number().default(1),
-});
-
-const saSchema = z.object({
-  questionNumber: z.string(),
-  questionType: z.literal("short_answer"),
-  details: z.object({
-    prompt: z.string(),
-    sampleAnswer: z.string(),
-    explanation: z.string().optional(),
-    criteria: z.array(z.string()).optional(),
-  }),
-  points: z.number().default(1),
-});
-
-const otherSchema = z.object({
-  questionNumber: z.string(),
-  questionType: z.literal("other"),
-  details: z.object({
-    prompt: z.string(),
-    answer: z.string(),
-    explanation: z.string().optional(),
-  }),
-  points: z.number().default(1),
+  prompt: z.string(),
+  // multiple_choice only
+  options: z
+    .array(z.object({ text: z.string(), correct: z.boolean() }))
+    .optional(),
+  // short_answer only
+  sampleAnswer: z.string().optional(),
+  explanation: z.string().optional(),
+  criteria: z.array(z.string()).optional(),
+  // other only
+  answer: z.string().optional(),
 });
 
 const answerKeySchema = z.object({
-  questions: z.array(
-    z.discriminatedUnion("questionType", [mcSchema, saSchema, otherSchema]),
-  ),
+  questions: z.array(flatQuestionSchema),
 });
+
+type FlatQuestion = z.infer<typeof flatQuestionSchema>;
+
+function buildDetails(q: FlatQuestion): QuestionDetails {
+  if (q.questionType === "multiple_choice") {
+    return { prompt: q.prompt, options: q.options ?? [] };
+  }
+  if (q.questionType === "short_answer") {
+    return {
+      prompt: q.prompt,
+      sampleAnswer: q.sampleAnswer ?? "",
+      explanation: q.explanation,
+      criteria: q.criteria,
+    };
+  }
+  return {
+    prompt: q.prompt,
+    answer: q.answer ?? "",
+    explanation: q.explanation,
+  };
+}
 
 export async function generateAnswerKey(
   sessionId: string,
@@ -142,8 +146,9 @@ export async function generateAnswerKey(
 
   const [pdfDoc, aiResult] = await Promise.all([
     PDFDocument.load(pdfBytes),
-    generateObject({
+    generateText({
       model: anthropic("claude-sonnet-4-6"),
+      output: Output.object({ schema: answerKeySchema }),
       messages: [
         {
           role: "user",
@@ -158,10 +163,10 @@ export async function generateAnswerKey(
               text: `Extract all questions from this answer sheet. For each question provide:
 - questionNumber: the question label as a string (e.g. "1", "1B", "2a")
 - questionType: "multiple_choice" for MC and true/false questions, "short_answer" for free-response, "other" for anything else
-- details: type-specific fields
-  - multiple_choice: { prompt, options: [{ text, correct }] } — mark all correct options
-  - short_answer: { prompt, sampleAnswer, explanation?, criteria? } — criteria are things that must appear (or must not appear) in a correct response
-  - other: { prompt, answer, explanation? }
+- prompt: the question text
+- For multiple_choice: options array with { text, correct } for each choice — mark all correct options
+- For short_answer: sampleAnswer, optional explanation, optional criteria (things that must/must not appear)
+- For other: answer, optional explanation
 - points: point value (default 1 if not shown)
 
 Return every question you find.`,
@@ -169,12 +174,11 @@ Return every question you find.`,
           ],
         },
       ],
-      schema: answerKeySchema,
     }),
   ]);
 
   const pagesPerStudent = pdfDoc.getPageCount();
-  const questions = aiResult.object.questions;
+  const questions = aiResult.output.questions;
 
   // Delete any existing answer key rows and insert fresh ones
   await db
@@ -190,7 +194,7 @@ Return every question you find.`,
           sessionId,
           questionNumber: q.questionNumber,
           questionType: q.questionType,
-          details: q.details as QuestionDetails,
+          details: buildDetails(q),
           points: q.points,
         })),
       )

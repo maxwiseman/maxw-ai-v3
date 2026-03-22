@@ -77,7 +77,7 @@ async function gradeStudentsStep(sessionId: string) {
     "@/db/schema/grading"
   );
   const { openai } = await import("@ai-sdk/openai");
-  const { generateObject } = await import("ai");
+  const { Output, generateText } = await import("ai");
   const { getR2SignedUrl } = await import("@/ai/sandbox/r2-client");
   const { eq, asc } = await import("drizzle-orm");
   const z = (await import("zod/v4")).default;
@@ -146,9 +146,9 @@ async function gradeStudentsStep(sessionId: string) {
       .map(async (result) => {
         const signedUrl = await getR2SignedUrl(result.r2Key as string, 600);
 
-        const { object } = await generateObject({
+        const { output: object } = await generateText({
           model: openai("gpt-5"),
-          schema: gradingSchema,
+          output: Output.object({ schema: gradingSchema }),
           messages: [
             {
               role: "user",
