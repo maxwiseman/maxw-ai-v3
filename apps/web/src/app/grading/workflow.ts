@@ -190,37 +190,59 @@ async function gradeStudentsStep(sessionId: string) {
   );
 }
 
+// ─── Status steps ─────────────────────────────────────────────────────────────
+
+async function setStatusProcessingStep(sessionId: string) {
+  "use step";
+  const { db } = await import("@/db");
+  const { gradingSession } = await import("@/db/schema/grading");
+  const { eq } = await import("drizzle-orm");
+  await db
+    .update(gradingSession)
+    .set({ status: "processing" })
+    .where(eq(gradingSession.id, sessionId));
+}
+
+async function setStatusCompleteStep(sessionId: string) {
+  "use step";
+  const { db } = await import("@/db");
+  const { gradingSession } = await import("@/db/schema/grading");
+  const { eq } = await import("drizzle-orm");
+  await db
+    .update(gradingSession)
+    .set({ status: "complete" })
+    .where(eq(gradingSession.id, sessionId));
+}
+
+async function setStatusErrorStep(sessionId: string, errorMessage: string) {
+  "use step";
+  const { db } = await import("@/db");
+  const { gradingSession } = await import("@/db/schema/grading");
+  const { eq } = await import("drizzle-orm");
+  await db
+    .update(gradingSession)
+    .set({ status: "error", errorMessage })
+    .where(eq(gradingSession.id, sessionId));
+}
+
 // ─── Workflow ─────────────────────────────────────────────────────────────────
+// "use workflow" functions are sandboxed: no Node.js APIs, no DB, no network.
+// They may only call step functions and perform pure control flow.
 
 export async function gradingWorkflow(sessionId: string) {
   "use workflow";
 
-  const { db } = await import("@/db");
-  const { gradingSession } = await import("@/db/schema/grading");
-  const { eq } = await import("drizzle-orm");
-
+  await setStatusProcessingStep(sessionId);
   try {
-    await db
-      .update(gradingSession)
-      .set({ status: "processing" })
-      .where(eq(gradingSession.id, sessionId));
-
     await splitPdfsStep(sessionId);
     await runOcrStep(sessionId);
     await gradeStudentsStep(sessionId);
-
-    await db
-      .update(gradingSession)
-      .set({ status: "complete" })
-      .where(eq(gradingSession.id, sessionId));
+    await setStatusCompleteStep(sessionId);
   } catch (err) {
-    await db
-      .update(gradingSession)
-      .set({
-        status: "error",
-        errorMessage: err instanceof Error ? err.message : String(err),
-      })
-      .where(eq(gradingSession.id, sessionId));
+    await setStatusErrorStep(
+      sessionId,
+      err instanceof Error ? err.message : String(err),
+    );
     throw err;
   }
 }
