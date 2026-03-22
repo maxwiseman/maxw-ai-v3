@@ -65,6 +65,8 @@ export type StudentAnswer = {
   questionNumber: string;
   givenAnswer: string;
   isCorrect: boolean;
+  /** True when the model couldn't confidently read the student's answer */
+  isUnclear?: boolean;
   pointsEarned: number;
   feedback: string;
 };

@@ -143,6 +143,7 @@ export default async function GradingResultsPage({
                 (questionMap.get(a.questionNumber)?.sortOrder ?? 0) -
                 (questionMap.get(b.questionNumber)?.sortOrder ?? 0),
             );
+            const unclearCount = answers.filter((a) => a.isUnclear).length;
 
             return (
               <details key={result.id} className="rounded-xl border">
@@ -154,6 +155,11 @@ export default async function GradingResultsPage({
                     <span className="font-medium">
                       {result.studentName ?? "Unknown Student"}
                     </span>
+                    {unclearCount > 0 && (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-700 text-xs dark:bg-amber-900/40 dark:text-amber-400">
+                        {unclearCount} unclear
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="text-sm">
@@ -197,39 +203,52 @@ export default async function GradingResultsPage({
                       </thead>
                       <tbody className="divide-y">
                         {answers.map((a) => (
-                          <tr key={a.questionNumber}>
+                          <tr
+                            key={a.questionNumber}
+                            className={
+                              a.isUnclear
+                                ? "bg-amber-50 dark:bg-amber-950/20"
+                                : undefined
+                            }
+                          >
                             <td className="px-4 py-2 text-muted-foreground">
                               {a.questionNumber}
                             </td>
                             <td className="px-4 py-2">
-                              <span
-                                className={cn(
-                                  "inline-flex items-center gap-1",
-                                  a.isCorrect
-                                    ? "text-green-700 dark:text-green-400"
-                                    : "text-red-700 dark:text-red-400",
-                                )}
-                              >
-                                {a.isCorrect ? "✓" : "✗"} {(() => {
-                                  const q = questionMap.get(a.questionNumber);
-                                  if (q?.questionType === "multiple_choice") {
-                                    const det =
-                                      q.details as MultipleChoiceDetails;
-                                    const match = det.options.find(
-                                      (o, i) =>
-                                        (o.identifier ??
-                                          String.fromCharCode(65 + i)) ===
-                                        a.givenAnswer,
-                                    );
-                                    if (!match) return a.givenAnswer;
-                                    return a.givenAnswer.toLowerCase() ===
-                                      match.text.toLowerCase()
-                                      ? match.text
-                                      : `${a.givenAnswer}) ${match.text}`;
-                                  }
-                                  return a.givenAnswer;
-                                })()}
-                              </span>
+                              {a.isUnclear ? (
+                                <span className="inline-flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400">
+                                  ? Unclear
+                                </span>
+                              ) : (
+                                <span
+                                  className={cn(
+                                    "inline-flex items-center gap-1",
+                                    a.isCorrect
+                                      ? "text-green-700 dark:text-green-400"
+                                      : "text-red-700 dark:text-red-400",
+                                  )}
+                                >
+                                  {a.isCorrect ? "✓" : "✗"} {(() => {
+                                    const q = questionMap.get(a.questionNumber);
+                                    if (q?.questionType === "multiple_choice") {
+                                      const det =
+                                        q.details as MultipleChoiceDetails;
+                                      const match = det.options.find(
+                                        (o, i) =>
+                                          (o.identifier ??
+                                            String.fromCharCode(65 + i)) ===
+                                          a.givenAnswer,
+                                      );
+                                      if (!match) return a.givenAnswer;
+                                      return a.givenAnswer.toLowerCase() ===
+                                        match.text.toLowerCase()
+                                        ? match.text
+                                        : `${a.givenAnswer}) ${match.text}`;
+                                    }
+                                    return a.givenAnswer;
+                                  })()}
+                                </span>
+                              )}
                             </td>
                             <td className="px-4 py-2 text-muted-foreground">
                               {a.feedback}

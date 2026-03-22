@@ -142,6 +142,11 @@ async function gradeStudentsStep(sessionId: string) {
         questionNumber: z.string(),
         givenAnswer: z.string(),
         isCorrect: z.boolean(),
+        /**
+         * Set to true when the answer is illegible or ambiguous. When true,
+         * isCorrect must be false and pointsEarned must be 0.
+         */
+        isUnclear: z.boolean().optional(),
         pointsEarned: z.number(),
         feedback: z.string(),
       }),
@@ -170,7 +175,7 @@ async function gradeStudentsStep(sessionId: string) {
                 },
                 {
                   type: "text",
-                  text: `You are grading a student's exam. Here is the answer key:\n\n${answerKeyText}\n\nFor each question, find the student's answer in the attached PDF, determine if it's correct, assign points, and provide brief feedback explaining why it is right or wrong. Use the question number exactly as shown (e.g. "1B"). For multiple choice questions, set givenAnswer to the option identifier only (e.g., "A", "B", "C", "D") — not the full option text. If you can identify the student's name, include it.`,
+                  text: `You are grading a student's exam. Here is the answer key:\n\n${answerKeyText}\n\nFor each question, find the student's answer in the attached PDF, determine if it's correct, assign points, and provide brief feedback explaining why it is right or wrong. Use the question number exactly as shown (e.g. "1B"). For multiple choice questions, set givenAnswer to the option identifier only (e.g., "A", "B", "C", "D") — not the full option text.\n\nIMPORTANT: If you cannot confidently determine what the student wrote or selected for a question (illegible handwriting, ambiguous marks, missing answer, etc.), set isUnclear to true, isCorrect to false, pointsEarned to 0, and use the feedback field to describe why it is unclear. Do NOT guess the correct answer when you are uncertain. If you can identify the student's name, include it.`,
                 },
               ],
             },
