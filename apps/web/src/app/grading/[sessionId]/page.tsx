@@ -52,11 +52,12 @@ export default async function GradingResultsPage({
                   const det = d as unknown as MultipleChoiceDetails;
                   const correct = det.options
                     .filter((o) => o.correct)
-                    .map((o, i) =>
-                      o.identifier
-                        ? `${o.identifier}) ${o.text}`
-                        : `${String.fromCharCode(65 + i)}) ${o.text}`,
-                    );
+                    .map((o, i) => {
+                      const id = o.identifier ?? String.fromCharCode(65 + i);
+                      return id.toLowerCase() === o.text.toLowerCase()
+                        ? o.text
+                        : `${id}) ${o.text}`;
+                    });
                   answerCell = (
                     <div>
                       <p className="text-muted-foreground text-xs">
@@ -220,9 +221,11 @@ export default async function GradingResultsPage({
                                           String.fromCharCode(65 + i)) ===
                                         a.givenAnswer,
                                     );
-                                    return match
-                                      ? `${a.givenAnswer}) ${match.text}`
-                                      : a.givenAnswer;
+                                    if (!match) return a.givenAnswer;
+                                    return a.givenAnswer.toLowerCase() ===
+                                      match.text.toLowerCase()
+                                      ? match.text
+                                      : `${a.givenAnswer}) ${match.text}`;
                                   }
                                   return a.givenAnswer;
                                 })()}
