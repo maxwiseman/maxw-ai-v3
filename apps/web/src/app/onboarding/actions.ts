@@ -64,7 +64,10 @@ export async function validateAndFetchCourses(
       courses: data.map((c) => ({ id: c.id, name: c.name })),
     };
   } catch {
-    return { success: false, error: "Could not reach Canvas — check the domain" };
+    return {
+      success: false,
+      error: "Could not reach Canvas — check the domain",
+    };
   }
 }
 
@@ -122,7 +125,9 @@ Return JSON with the courses array, each with id, needsRename (boolean), and sug
               Authorization: `Bearer ${canvasApiKey}`,
               "Content-Type": "application/x-www-form-urlencoded",
             },
-            body: new URLSearchParams({ nickname: c.suggestedName! }).toString(),
+            body: new URLSearchParams({
+              nickname: c.suggestedName!,
+            }).toString(),
           },
         );
 

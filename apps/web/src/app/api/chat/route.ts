@@ -11,6 +11,7 @@ import {
   ToolLoopAgent,
   type UIMessage,
 } from "ai";
+import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import type { NextRequest } from "next/server";
 import {
@@ -30,7 +31,6 @@ import { getAllCanvasCourses } from "@/app/classes/classes-actions";
 import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
-import { eq } from "drizzle-orm";
 
 export async function POST(request: NextRequest) {
   const location = geolocation(request);

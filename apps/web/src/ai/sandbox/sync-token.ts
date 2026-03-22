@@ -24,10 +24,16 @@ export function createSyncToken(
   expiresInMs = 8 * 60 * 60 * 1000,
 ): string {
   const payload = Buffer.from(
-    JSON.stringify({ userId, chatId, exp: Date.now() + expiresInMs } satisfies SyncTokenPayload),
+    JSON.stringify({
+      userId,
+      chatId,
+      exp: Date.now() + expiresInMs,
+    } satisfies SyncTokenPayload),
   ).toString("base64url");
 
-  const sig = createHmac("sha256", env.AUTH_SECRET).update(payload).digest("base64url");
+  const sig = createHmac("sha256", env.AUTH_SECRET)
+    .update(payload)
+    .digest("base64url");
 
   return `${payload}.${sig}`;
 }
@@ -47,8 +53,15 @@ export function verifySyncToken(token: string): SyncTokenPayload | null {
     .digest("base64url");
 
   try {
-    if (!timingSafeEqual(Buffer.from(sigB64, "base64url"), Buffer.from(expectedSig, "base64url"))) {
-      console.error("[sync-token] Signature mismatch — AUTH_SECRET likely differs between token creation and verification");
+    if (
+      !timingSafeEqual(
+        Buffer.from(sigB64, "base64url"),
+        Buffer.from(expectedSig, "base64url"),
+      )
+    ) {
+      console.error(
+        "[sync-token] Signature mismatch — AUTH_SECRET likely differs between token creation and verification",
+      );
       return null;
     }
   } catch (e) {
@@ -58,7 +71,9 @@ export function verifySyncToken(token: string): SyncTokenPayload | null {
 
   let payload: SyncTokenPayload;
   try {
-    payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString()) as SyncTokenPayload;
+    payload = JSON.parse(
+      Buffer.from(payloadB64, "base64url").toString(),
+    ) as SyncTokenPayload;
   } catch (e) {
     console.error("[sync-token] Failed to parse payload:", e);
     return null;
@@ -74,7 +89,10 @@ export function verifySyncToken(token: string): SyncTokenPayload | null {
   }
 
   if (payload.exp < Date.now()) {
-    console.error("[sync-token] Token expired at", new Date(payload.exp).toISOString());
+    console.error(
+      "[sync-token] Token expired at",
+      new Date(payload.exp).toISOString(),
+    );
     return null;
   }
 

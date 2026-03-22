@@ -7,10 +7,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 
-export function createUpdatePlanTool(
-  chatId: string,
-  userId: string,
-) {
+export function createUpdatePlanTool(chatId: string, userId: string) {
   return tool({
     description:
       "Write or update a structured plan file in the workspace. Use this to track multi-step tasks, record progress, and organize work. The plan persists across turns.",

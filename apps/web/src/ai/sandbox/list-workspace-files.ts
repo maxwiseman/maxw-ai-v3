@@ -142,9 +142,7 @@ export async function getWorkspaceFilesForStream(
   const files = await db
     .select()
     .from(sandboxFile)
-    .where(
-      and(eq(sandboxFile.userId, userId), eq(sandboxFile.chatId, chatId)),
-    )
+    .where(and(eq(sandboxFile.userId, userId), eq(sandboxFile.chatId, chatId)))
     .orderBy(desc(sandboxFile.createdAt));
 
   return files.map((f) => ({

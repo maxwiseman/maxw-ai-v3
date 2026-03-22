@@ -8,8 +8,12 @@
  */
 
 import { Redis } from "@upstash/redis";
-import { GLOBAL_SKILLS_PREFIX, listR2Objects, userSkillsPrefix } from "./r2-client";
 import { env } from "@/env";
+import {
+  GLOBAL_SKILLS_PREFIX,
+  listR2Objects,
+  userSkillsPrefix,
+} from "./r2-client";
 
 const redis = new Redis({
   url: env.UPSTASH_REDIS_REST_URL,
@@ -61,7 +65,9 @@ export async function getSkillsTree(userId: string): Promise<string> {
 
   const lines = [...all.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([name, source]) => `  ${name}${source === "user" ? "  [yours]" : ""}`);
+    .map(
+      ([name, source]) => `  ${name}${source === "user" ? "  [yours]" : ""}`,
+    );
 
   const tree = `skills/\n${lines.join("\n")}`;
   await redis.set(CACHE_KEY(userId), tree, { ex: CACHE_TTL });

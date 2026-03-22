@@ -22,7 +22,11 @@ import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
-export default function Sidebar({ isTeacher = false }: { isTeacher?: boolean }) {
+export default function Sidebar({
+  isTeacher = false,
+}: {
+  isTeacher?: boolean;
+}) {
   const pathname = usePathname();
 
   return (

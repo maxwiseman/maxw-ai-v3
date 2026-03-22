@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
+import type { StudentAnswer } from "@/db/schema/grading";
 import { cn } from "@/lib/utils";
 import { getGradingSession } from "../actions";
-import type { StudentAnswer } from "@/db/schema/grading";
 
 export default async function GradingResultsPage({
   params,
@@ -20,8 +20,8 @@ export default async function GradingResultsPage({
         <h1 className="font-bold text-2xl">{session.title}</h1>
         <p className="mt-1 text-muted-foreground text-sm">
           {session.results.length} student
-          {session.results.length !== 1 ? "s" : ""} graded ·{" "}
-          {maxScore} point{maxScore !== 1 ? "s" : ""} total
+          {session.results.length !== 1 ? "s" : ""} graded · {maxScore} point
+          {maxScore !== 1 ? "s" : ""} total
         </p>
       </div>
 
@@ -90,7 +90,9 @@ export default async function GradingResultsPage({
                       className={cn(
                         "font-semibold text-sm",
                         pct >= 90 && "text-green-600 dark:text-green-400",
-                        pct >= 70 && pct < 90 && "text-yellow-600 dark:text-yellow-400",
+                        pct >= 70 &&
+                          pct < 90 &&
+                          "text-yellow-600 dark:text-yellow-400",
                         pct < 70 && "text-red-600 dark:text-red-400",
                       )}
                     >
@@ -106,9 +108,15 @@ export default async function GradingResultsPage({
                     <thead className="bg-muted/30">
                       <tr>
                         <th className="px-4 py-2 text-left font-medium">Q#</th>
-                        <th className="px-4 py-2 text-left font-medium">Given Answer</th>
-                        <th className="px-4 py-2 text-left font-medium">Feedback</th>
-                        <th className="px-4 py-2 text-right font-medium">Points</th>
+                        <th className="px-4 py-2 text-left font-medium">
+                          Given Answer
+                        </th>
+                        <th className="px-4 py-2 text-left font-medium">
+                          Feedback
+                        </th>
+                        <th className="px-4 py-2 text-right font-medium">
+                          Points
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">

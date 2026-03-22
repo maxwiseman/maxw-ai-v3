@@ -46,7 +46,9 @@ export const gradingSession = pgTable("grading_session", {
   blankPdfR2Key: text("blank_pdf_r2_key"),
   fullScanR2Key: text("full_scan_r2_key"),
   pagesPerStudent: integer("pages_per_student"),
-  splitMode: gradingSplitModeEnum("split_mode").notNull().default("fixed_pages"),
+  splitMode: gradingSplitModeEnum("split_mode")
+    .notNull()
+    .default("fixed_pages"),
   errorMessage: text("error_message"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

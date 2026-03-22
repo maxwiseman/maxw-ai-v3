@@ -1,24 +1,24 @@
 "use server";
 
 import { anthropic } from "@ai-sdk/anthropic";
-import { PDFDocument } from "pdf-lib";
 import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
+import { PDFDocument } from "pdf-lib";
 import { start } from "workflow/api";
 import z from "zod/v4";
+import { getR2SignedUrl, putR2Object } from "@/ai/sandbox/r2-client";
 import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import {
-  gradingAnswerKey,
-  gradingResult,
-  gradingSession,
   type GradingAnswerKey,
   type GradingResult,
   type GradingSession,
+  gradingAnswerKey,
+  gradingResult,
+  gradingSession,
 } from "@/db/schema/grading";
 import { auth } from "@/lib/auth";
-import { getR2SignedUrl, putR2Object } from "@/ai/sandbox/r2-client";
 import {
   gradingBlankKey,
   gradingFullScanKey,
@@ -213,9 +213,7 @@ export async function uploadFullScanAndTrigger(
   return { success: true };
 }
 
-export async function getGradingSession(
-  sessionId: string,
-): Promise<
+export async function getGradingSession(sessionId: string): Promise<
   | (GradingSession & {
       answerKey: GradingAnswerKey[];
       results: GradingResult[];

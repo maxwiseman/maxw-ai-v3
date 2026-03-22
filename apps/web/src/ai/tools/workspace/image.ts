@@ -23,10 +23,7 @@ export interface ViewImageResult {
   message: string;
 }
 
-export function createViewImageTool(
-  chatId: string,
-  userId: string,
-) {
+export function createViewImageTool(chatId: string, userId: string) {
   return tool({
     description:
       "Read an image file from the sandbox filesystem and return it as a base64 data URL. Useful for viewing charts, diagrams, screenshots, or any image the agent has created or downloaded.",

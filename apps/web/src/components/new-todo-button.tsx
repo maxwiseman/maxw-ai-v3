@@ -3,10 +3,7 @@
 import { IconPlus } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import {
-  type GenerateTodoInput,
-  generateTodo,
-} from "@/app/todo/generate-todo";
+import { type GenerateTodoInput, generateTodo } from "@/app/todo/generate-todo";
 import { useCreateTodo } from "@/app/todo/use-todos";
 import { cn } from "@/lib/utils";
 import { DatePicker } from "./date-picker";

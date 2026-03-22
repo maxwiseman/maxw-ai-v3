@@ -14,16 +14,21 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
+  type AnswerKeyQuestion,
   createGradingSession,
   generateAnswerKey,
   getGradingSession,
   updateAnswerKey,
   uploadBlankPdf,
   uploadFullScanAndTrigger,
-  type AnswerKeyQuestion,
 } from "../actions";
 
-type Step = "upload-blank" | "review-key" | "upload-scan" | "processing" | "results";
+type Step =
+  | "upload-blank"
+  | "review-key"
+  | "upload-scan"
+  | "processing"
+  | "results";
 
 type StudentResult = {
   studentIndex: number;
@@ -66,7 +71,10 @@ export default function NewGradingPage() {
           })),
         );
         setStep("results");
-      } else if (session.status === "processing" || session.status === "answer_key_ready") {
+      } else if (
+        session.status === "processing" ||
+        session.status === "answer_key_ready"
+      ) {
         if (session.answerKey.length > 0) {
           setQuestions(
             session.answerKey.map((q) => ({
@@ -86,7 +94,7 @@ export default function NewGradingPage() {
         }
       }
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeSessionId]);
 
   function startPolling(id: string) {
@@ -151,7 +159,10 @@ export default function NewGradingPage() {
         setSessionId(sid);
       }
 
-      const uploadResult = await uploadBlankPdf(sid, await blankFile.arrayBuffer());
+      const uploadResult = await uploadBlankPdf(
+        sid,
+        await blankFile.arrayBuffer(),
+      );
       if ("error" in uploadResult) {
         setError(uploadResult.error);
         return;
@@ -253,9 +264,10 @@ export default function NewGradingPage() {
           <li key={s.key} className="flex items-center gap-2">
             <span
               className={cn(
-                "flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold",
+                "flex h-6 w-6 items-center justify-center rounded-full font-semibold text-xs",
                 i < stepIndex && "bg-primary text-primary-foreground",
-                i === stepIndex && "bg-primary text-primary-foreground ring-2 ring-primary/30",
+                i === stepIndex &&
+                  "bg-primary text-primary-foreground ring-2 ring-primary/30",
                 i > stepIndex && "bg-muted text-muted-foreground",
               )}
             >
@@ -311,7 +323,11 @@ export default function NewGradingPage() {
 
           {error && <ErrorBox>{error}</ErrorBox>}
 
-          <Button type="submit" disabled={isPending || !blankFile} className="w-full">
+          <Button
+            type="submit"
+            disabled={isPending || !blankFile}
+            className="w-full"
+          >
             {isPending ? statusText || "Analyzing…" : "Continue"}
           </Button>
         </form>
@@ -332,7 +348,9 @@ export default function NewGradingPage() {
             {questions.map((q, i) => (
               <div key={i} className="space-y-3 rounded-xl border p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-medium text-sm">Q{q.questionNumber}</span>
+                  <span className="font-medium text-sm">
+                    Q{q.questionNumber}
+                  </span>
                   <Select
                     value={q.questionType}
                     onValueChange={(v) =>
@@ -345,7 +363,9 @@ export default function NewGradingPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                      <SelectItem value="multiple_choice">
+                        Multiple Choice
+                      </SelectItem>
                       <SelectItem value="short_answer">Short Answer</SelectItem>
                       <SelectItem value="true_false">True / False</SelectItem>
                     </SelectContent>
@@ -452,7 +472,11 @@ export default function NewGradingPage() {
             >
               Back
             </Button>
-            <Button type="submit" disabled={isPending || !fullScanFile} className="flex-1">
+            <Button
+              type="submit"
+              disabled={isPending || !fullScanFile}
+              className="flex-1"
+            >
               {isPending ? statusText || "Uploading…" : "Grade"}
             </Button>
           </div>
@@ -514,8 +538,12 @@ export default function NewGradingPage() {
                       <td
                         className={cn(
                           "px-4 py-3 text-right font-medium",
-                          pct != null && pct >= 90 && "text-green-600 dark:text-green-400",
-                          pct != null && pct < 60 && "text-red-600 dark:text-red-400",
+                          pct != null &&
+                            pct >= 90 &&
+                            "text-green-600 dark:text-green-400",
+                          pct != null &&
+                            pct < 60 &&
+                            "text-red-600 dark:text-red-400",
                         )}
                       >
                         {pct != null ? `${pct}%` : "—"}

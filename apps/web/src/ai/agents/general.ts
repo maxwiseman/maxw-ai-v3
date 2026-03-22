@@ -8,14 +8,6 @@ import type { Tool } from "ai";
 import type { CanvasCourse } from "@/types/canvas";
 import { getClassAssignmentsTool } from "../tools/canvas/get-class-assignments";
 import { searchContentTool } from "../tools/canvas/search-content";
-import {
-  createCloseAgentTool,
-  createSpawnAgentTool,
-} from "../tools/workspace/agents";
-import { createViewImageTool } from "../tools/workspace/image";
-import { createApplyPatchTool } from "../tools/workspace/patch";
-import { createUpdatePlanTool } from "../tools/workspace/plan";
-import { requestUserInputTool } from "../tools/workspace/user-input";
 import { createBashTool } from "../tools/execution/bash";
 import { createTextEditorTool } from "../tools/execution/text-editor";
 import { createShareFileTool } from "../tools/sandbox/share-file";
@@ -26,6 +18,14 @@ import {
   getTodosTool,
   updateTodoTool,
 } from "../tools/todo/manage-todos";
+import {
+  createCloseAgentTool,
+  createSpawnAgentTool,
+} from "../tools/workspace/agents";
+import { createViewImageTool } from "../tools/workspace/image";
+import { createApplyPatchTool } from "../tools/workspace/patch";
+import { createUpdatePlanTool } from "../tools/workspace/plan";
+import { requestUserInputTool } from "../tools/workspace/user-input";
 import { executeMemoryCommand } from "../utils/memory-helpers";
 
 /**
