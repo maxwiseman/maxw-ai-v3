@@ -1,6 +1,6 @@
 "use server";
 
-import { anthropic } from "@ai-sdk/anthropic";
+import { openai } from "@ai-sdk/openai";
 import { generateText, Output } from "ai";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
@@ -81,51 +81,48 @@ export type AnswerKeyQuestion = {
   questionType: "multiple_choice" | "short_answer" | "other";
   details: QuestionDetails;
   points: number;
+  /** Position in the original exam; used for stable ordering */
+  sortOrder: number;
 };
 
-// Flat schema for answer key extraction — Anthropic does not support oneOf/discriminated unions.
-// Type-specific fields are optional; we construct the typed details object in code based on questionType.
-const flatQuestionSchema = z.object({
+const mcSchema = z.object({
   questionNumber: z.string(),
-  questionType: z.enum(["multiple_choice", "short_answer", "other"]),
+  questionType: z.literal("multiple_choice"),
+  details: z.object({
+    prompt: z.string(),
+    options: z.array(z.object({ text: z.string(), correct: z.boolean() })),
+  }),
   points: z.number().default(1),
-  prompt: z.string(),
-  // multiple_choice only
-  options: z
-    .array(z.object({ text: z.string(), correct: z.boolean() }))
-    .optional(),
-  // short_answer only
-  sampleAnswer: z.string().optional(),
-  explanation: z.string().optional(),
-  criteria: z.array(z.string()).optional(),
-  // other only
-  answer: z.string().optional(),
+});
+
+const saSchema = z.object({
+  questionNumber: z.string(),
+  questionType: z.literal("short_answer"),
+  details: z.object({
+    prompt: z.string(),
+    sampleAnswer: z.string(),
+    explanation: z.string().optional(),
+    criteria: z.array(z.string()).optional(),
+  }),
+  points: z.number().default(1),
+});
+
+const otherSchema = z.object({
+  questionNumber: z.string(),
+  questionType: z.literal("other"),
+  details: z.object({
+    prompt: z.string(),
+    answer: z.string(),
+    explanation: z.string().optional(),
+  }),
+  points: z.number().default(1),
 });
 
 const answerKeySchema = z.object({
-  questions: z.array(flatQuestionSchema),
+  questions: z.array(
+    z.discriminatedUnion("questionType", [mcSchema, saSchema, otherSchema]),
+  ),
 });
-
-type FlatQuestion = z.infer<typeof flatQuestionSchema>;
-
-function buildDetails(q: FlatQuestion): QuestionDetails {
-  if (q.questionType === "multiple_choice") {
-    return { prompt: q.prompt, options: q.options ?? [] };
-  }
-  if (q.questionType === "short_answer") {
-    return {
-      prompt: q.prompt,
-      sampleAnswer: q.sampleAnswer ?? "",
-      explanation: q.explanation,
-      criteria: q.criteria,
-    };
-  }
-  return {
-    prompt: q.prompt,
-    answer: q.answer ?? "",
-    explanation: q.explanation,
-  };
-}
 
 export async function generateAnswerKey(
   sessionId: string,
@@ -147,7 +144,7 @@ export async function generateAnswerKey(
   const [pdfDoc, aiResult] = await Promise.all([
     PDFDocument.load(pdfBytes),
     generateText({
-      model: anthropic("claude-sonnet-4-6"),
+      model: openai("gpt-5.4"),
       output: Output.object({ schema: answerKeySchema }),
       messages: [
         {
@@ -190,12 +187,13 @@ Return every question you find.`,
     inserted = await db
       .insert(gradingAnswerKey)
       .values(
-        questions.map((q) => ({
+        questions.map((q, i) => ({
           sessionId,
           questionNumber: q.questionNumber,
           questionType: q.questionType,
-          details: buildDetails(q),
+          details: q.details as QuestionDetails,
           points: q.points,
+          sortOrder: i,
         })),
       )
       .returning();
@@ -213,6 +211,7 @@ Return every question you find.`,
       questionType: row.questionType,
       details: row.details as QuestionDetails,
       points: row.points,
+      sortOrder: row.sortOrder,
     })),
   };
 }
@@ -230,13 +229,14 @@ export async function updateAnswerKey(
 
   if (questions.length > 0) {
     await db.insert(gradingAnswerKey).values(
-      questions.map((q) => ({
+      questions.map((q, i) => ({
         id: q.id,
         sessionId,
         questionNumber: q.questionNumber,
         questionType: q.questionType,
         details: q.details,
         points: q.points,
+        sortOrder: i,
       })),
     );
   }
@@ -278,7 +278,7 @@ export async function getGradingSession(sessionId: string): Promise<
   const session = await db.query.gradingSession.findFirst({
     where: eq(gradingSession.id, sessionId),
     with: {
-      answerKey: { orderBy: (t, { asc }) => asc(t.questionNumber) },
+      answerKey: { orderBy: (t, { asc }) => asc(t.sortOrder) },
       results: { orderBy: (t, { asc }) => asc(t.studentIndex) },
     },
   });

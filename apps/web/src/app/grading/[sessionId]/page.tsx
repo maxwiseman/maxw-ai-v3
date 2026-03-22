@@ -122,95 +122,109 @@ export default async function GradingResultsPage({
       {/* Student results */}
       <section className="space-y-4">
         <h2 className="font-semibold text-lg">Student Results</h2>
-        {session.results.map((result) => {
-          const pct =
-            result.maxScore && result.score != null
-              ? Math.round((result.score / result.maxScore) * 100)
-              : null;
-          const answers = (result.answers ?? []) as StudentAnswer[];
-
-          return (
-            <details key={result.id} className="rounded-xl border">
-              <summary className="flex cursor-pointer items-center justify-between p-4 hover:bg-muted/25">
-                <div className="flex items-center gap-3">
-                  <span className="text-muted-foreground text-sm">
-                    #{result.studentIndex + 1}
-                  </span>
-                  <span className="font-medium">
-                    {result.studentName ?? "Unknown Student"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm">
-                    {result.score ?? "—"}/{result.maxScore ?? maxScore}
-                  </span>
-                  {pct != null && (
-                    <span
-                      className={cn(
-                        "font-semibold text-sm",
-                        pct >= 90 && "text-green-600 dark:text-green-400",
-                        pct >= 70 &&
-                          pct < 90 &&
-                          "text-yellow-600 dark:text-yellow-400",
-                        pct < 70 && "text-red-600 dark:text-red-400",
-                      )}
-                    >
-                      {pct}%
-                    </span>
-                  )}
-                </div>
-              </summary>
-
-              {answers.length > 0 && (
-                <div className="border-t">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/30">
-                      <tr>
-                        <th className="px-4 py-2 text-left font-medium">Q#</th>
-                        <th className="px-4 py-2 text-left font-medium">
-                          Given Answer
-                        </th>
-                        <th className="px-4 py-2 text-left font-medium">
-                          Feedback
-                        </th>
-                        <th className="px-4 py-2 text-right font-medium">
-                          Points
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {answers.map((a) => (
-                        <tr key={a.questionNumber}>
-                          <td className="px-4 py-2 text-muted-foreground">
-                            {a.questionNumber}
-                          </td>
-                          <td className="px-4 py-2">
-                            <span
-                              className={cn(
-                                "inline-flex items-center gap-1",
-                                a.isCorrect
-                                  ? "text-green-700 dark:text-green-400"
-                                  : "text-red-700 dark:text-red-400",
-                              )}
-                            >
-                              {a.isCorrect ? "✓" : "✗"} {a.givenAnswer}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 text-muted-foreground">
-                            {a.feedback}
-                          </td>
-                          <td className="px-4 py-2 text-right">
-                            {a.pointsEarned}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </details>
+        {(() => {
+          const questionMap = new Map(
+            session.answerKey.map((q) => [q.questionNumber, q]),
           );
-        })}
+          return session.results.map((result) => {
+            const pct =
+              result.maxScore && result.score != null
+                ? Math.round((result.score / result.maxScore) * 100)
+                : null;
+            const answers = [
+              ...((result.answers ?? []) as StudentAnswer[]),
+            ].sort(
+              (a, b) =>
+                (questionMap.get(a.questionNumber)?.sortOrder ?? 0) -
+                (questionMap.get(b.questionNumber)?.sortOrder ?? 0),
+            );
+
+            return (
+              <details key={result.id} className="rounded-xl border">
+                <summary className="flex cursor-pointer items-center justify-between p-4 hover:bg-muted/25">
+                  <div className="flex items-center gap-3">
+                    <span className="text-muted-foreground text-sm">
+                      #{result.studentIndex + 1}
+                    </span>
+                    <span className="font-medium">
+                      {result.studentName ?? "Unknown Student"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm">
+                      {result.score ?? "—"}/{result.maxScore ?? maxScore}
+                    </span>
+                    {pct != null && (
+                      <span
+                        className={cn(
+                          "font-semibold text-sm",
+                          pct >= 90 && "text-green-600 dark:text-green-400",
+                          pct >= 70 &&
+                            pct < 90 &&
+                            "text-yellow-600 dark:text-yellow-400",
+                          pct < 70 && "text-red-600 dark:text-red-400",
+                        )}
+                      >
+                        {pct}%
+                      </span>
+                    )}
+                  </div>
+                </summary>
+
+                {answers.length > 0 && (
+                  <div className="border-t">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/30">
+                        <tr>
+                          <th className="px-4 py-2 text-left font-medium">
+                            Q#
+                          </th>
+                          <th className="px-4 py-2 text-left font-medium">
+                            Given Answer
+                          </th>
+                          <th className="px-4 py-2 text-left font-medium">
+                            Feedback
+                          </th>
+                          <th className="px-4 py-2 text-right font-medium">
+                            Points
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {answers.map((a) => (
+                          <tr key={a.questionNumber}>
+                            <td className="px-4 py-2 text-muted-foreground">
+                              {a.questionNumber}
+                            </td>
+                            <td className="px-4 py-2">
+                              <span
+                                className={cn(
+                                  "inline-flex items-center gap-1",
+                                  a.isCorrect
+                                    ? "text-green-700 dark:text-green-400"
+                                    : "text-red-700 dark:text-red-400",
+                                )}
+                              >
+                                {a.isCorrect ? "✓" : "✗"} {a.givenAnswer}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2 text-muted-foreground">
+                              {a.feedback}
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              {a.pointsEarned}/
+                              {questionMap.get(a.questionNumber)?.points ?? "?"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </details>
+            );
+          });
+        })()}
       </section>
     </div>
   );

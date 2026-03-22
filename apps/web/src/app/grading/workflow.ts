@@ -147,7 +147,7 @@ async function gradeStudentsStep(sessionId: string) {
         const signedUrl = await getR2SignedUrl(result.r2Key as string, 600);
 
         const { output: object } = await generateText({
-          model: openai("gpt-5"),
+          model: openai("gpt-5.4"),
           output: Output.object({ schema: gradingSchema }),
           messages: [
             {

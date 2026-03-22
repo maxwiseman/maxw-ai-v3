@@ -98,6 +98,8 @@ export const gradingAnswerKey = pgTable("grading_answer_key", {
   questionType: gradingQuestionTypeEnum("question_type").notNull(),
   details: jsonb("details").$type<QuestionDetails>().notNull(),
   points: integer("points").notNull().default(1),
+  /** Position in the original exam; used for stable sort since questionNumber is a string */
+  sortOrder: integer("sort_order").notNull().default(0),
 });
 
 export const gradingResult = pgTable("grading_result", {
