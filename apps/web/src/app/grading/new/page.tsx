@@ -238,6 +238,7 @@ export default function NewGradingPage() {
         questionType: "short_answer",
         details: defaultDetails("short_answer"),
         points: 1,
+        sortOrder: prev.length,
       },
     ]);
   }
