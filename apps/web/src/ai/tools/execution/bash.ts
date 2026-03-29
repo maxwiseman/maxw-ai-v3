@@ -8,10 +8,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { seedCanvasData } from "@/ai/sandbox/data-seeder";
 import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 
-export function createBashTool(
-  chatId: string,
-  userId: string,
-) {
+export function createBashTool(chatId: string, userId: string) {
   return anthropic.tools.bash_20250124({
     execute: async ({ command, restart }) => {
       if (restart) {

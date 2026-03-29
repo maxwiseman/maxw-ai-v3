@@ -1,6 +1,7 @@
 "use client";
 import {
   IconBrain,
+  IconClipboardCheck,
   IconHome,
   IconListCheck,
   IconMessageCircle,
@@ -21,7 +22,11 @@ import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
-export default function Sidebar() {
+export default function Sidebar({
+  isTeacher = false,
+}: {
+  isTeacher?: boolean;
+}) {
   const pathname = usePathname();
 
   return (
@@ -59,6 +64,14 @@ export default function Sidebar() {
               label="Todo List"
               isActive={pathname.startsWith("/todo")}
             />
+            {isTeacher && (
+              <SidebarButton
+                icon={<IconClipboardCheck className="size-4.5" />}
+                href="/grading"
+                label="Grading"
+                isActive={pathname.startsWith("/grading")}
+              />
+            )}
           </nav>
         </div>
       </div>

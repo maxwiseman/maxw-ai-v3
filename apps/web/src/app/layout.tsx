@@ -3,7 +3,7 @@ import { EB_Garamond, Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
 import Header from "@/components/header";
 import Providers from "@/components/providers";
-import Sidebar from "@/components/sidebar";
+import SidebarWithRole from "@/components/sidebar-with-role";
 import "../index.css";
 import Script from "next/script";
 
@@ -58,7 +58,7 @@ export default function RootLayout({
             <div className="grid size-full md:grid-cols-[auto_1fr]">
               <Suspense fallback={<div />}>
                 <div className="hidden md:contents">
-                  <Sidebar />
+                  <SidebarWithRole />
                 </div>
               </Suspense>
               <div className="flex h-full flex-col">

@@ -27,6 +27,8 @@ bun db:generate      # Generate migration files
 bun db:migrate       # Run migrations (production)
 ```
 
+**Important**: Never run `bun db:generate` or `bun db:migrate`. Only modify the schema files — the user handles migration generation and execution manually.
+
 ### Code Quality
 ```bash
 bun check            # Run Biome formatting and linting with auto-fix

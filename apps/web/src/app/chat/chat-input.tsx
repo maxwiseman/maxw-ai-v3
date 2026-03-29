@@ -37,10 +37,10 @@ import {
   usePromptInputController,
 } from "@/components/ai-elements/prompt-input";
 import { Button } from "@/components/ui/button";
-import { InputGroupAddon } from "@/components/ui/input-group";
-import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { InputGroupAddon } from "@/components/ui/input-group";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 export interface ChatInputMessage extends PromptInputMessage {
   agentChoice?: string;

@@ -27,6 +27,7 @@ import {
 import { getSandboxIfRunning } from "@/ai/sandbox/sandbox-manager";
 import { getSkillsTree } from "@/ai/sandbox/skills-tree";
 import { getAllCanvasCourses } from "@/app/classes/classes-actions";
+import { getUserSettings } from "@/lib/user-settings";
 import { auth } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
@@ -66,7 +67,6 @@ export async function POST(request: NextRequest) {
 
   const userId = authData.user.id;
   const fullName = authData.user.name;
-  const schoolName = "Harvard University"; // TODO: Get from user settings
 
   // Load user's classes and skills tree in parallel
   const [classesResponse, skillsTree] = await Promise.all([
@@ -74,6 +74,9 @@ export async function POST(request: NextRequest) {
     getSkillsTree(userId),
   ]);
   const classes = typeof classesResponse === "string" ? [] : classesResponse;
+  const settings = getUserSettings(authData.user);
+  const role = settings?.role ?? "student";
+  const schoolName = settings?.schoolName ?? "your school";
 
   // Build agent context
   const now = new Date();
@@ -83,6 +86,7 @@ export async function POST(request: NextRequest) {
     userId,
     fullName,
     schoolName,
+    role,
     classes,
     chatId,
     currentDateTime: now.toLocaleString(undefined, { timeZone: timezone }),

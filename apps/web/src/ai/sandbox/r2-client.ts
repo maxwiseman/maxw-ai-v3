@@ -39,7 +39,11 @@ export function userSkillKey(userId: string, filename: string): string {
 }
 
 /** Build an R2 object key for a file inside a chat's workspace. */
-export function r2Key(userId: string, chatId: string, ...parts: string[]): string {
+export function r2Key(
+  userId: string,
+  chatId: string,
+  ...parts: string[]
+): string {
   return `users/${userId}/chats/${chatId}/workspace/${parts.join("/")}`;
 }
 

@@ -14,12 +14,16 @@
  */
 
 import path from "node:path";
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { type NextRequest, NextResponse } from "next/server";
 import {
-  GLOBAL_SKILLS_PREFIX,
   chatWorkspacePrefix,
+  GLOBAL_SKILLS_PREFIX,
   listR2Objects,
   r2,
   r2Key,
@@ -45,14 +49,19 @@ function sanitizePath(rawPath: string): string | null {
   // Normalize resolves all `.` and `..` components; stripping the leading `/`
   // means a path that escapes the root will start with `..` after normalization.
   const normalized = path.posix.normalize("/" + rawPath.trim()).slice(1);
-  if (!normalized || normalized.startsWith("..") || normalized.startsWith("/")) return null;
+  if (!normalized || normalized.startsWith("..") || normalized.startsWith("/"))
+    return null;
   return normalized;
 }
 
 const presign = (key: string) =>
-  getSignedUrl(r2, new GetObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }), {
-    expiresIn: PRESIGN_TTL_SECONDS,
-  });
+  getSignedUrl(
+    r2,
+    new GetObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }),
+    {
+      expiresIn: PRESIGN_TTL_SECONDS,
+    },
+  );
 
 /**
  * POST — upload
@@ -61,10 +70,15 @@ const presign = (key: string) =>
  */
 export async function POST(req: NextRequest) {
   const token = extractToken(req);
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!token)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const claims = verifySyncToken(token);
-  if (!claims) return NextResponse.json({ error: "Invalid or expired token" }, { status: 401 });
+  if (!claims)
+    return NextResponse.json(
+      { error: "Invalid or expired token" },
+      { status: 401 },
+    );
 
   let body: { files?: unknown };
   try {
@@ -116,19 +130,26 @@ export async function POST(req: NextRequest) {
  */
 export async function GET(req: NextRequest) {
   const token = extractToken(req);
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!token)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const claims = verifySyncToken(token);
-  if (!claims) return NextResponse.json({ error: "Invalid or expired token" }, { status: 401 });
+  if (!claims)
+    return NextResponse.json(
+      { error: "Invalid or expired token" },
+      { status: 401 },
+    );
 
   const workspacePrefix = chatWorkspacePrefix(claims.userId, claims.chatId);
   const userSkillPrefix = userSkillsPrefix(claims.userId);
 
-  const [globalObjects, userSkillObjects, workspaceObjects] = await Promise.all([
-    listR2Objects(GLOBAL_SKILLS_PREFIX),
-    listR2Objects(userSkillPrefix),
-    listR2Objects(workspacePrefix),
-  ]);
+  const [globalObjects, userSkillObjects, workspaceObjects] = await Promise.all(
+    [
+      listR2Objects(GLOBAL_SKILLS_PREFIX),
+      listR2Objects(userSkillPrefix),
+      listR2Objects(workspacePrefix),
+    ],
+  );
 
   const globalFiles = await Promise.all(
     globalObjects.map(async (obj) => ({
@@ -155,7 +176,9 @@ export async function GET(req: NextRequest) {
   );
 
   // Process in priority order: globals first, user skills override, workspace files last
-  return NextResponse.json({ files: [...globalFiles, ...userSkillFiles, ...workspaceFiles] });
+  return NextResponse.json({
+    files: [...globalFiles, ...userSkillFiles, ...workspaceFiles],
+  });
 }
 
 /**
@@ -164,10 +187,15 @@ export async function GET(req: NextRequest) {
  */
 export async function DELETE(req: NextRequest) {
   const token = extractToken(req);
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!token)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const claims = verifySyncToken(token);
-  if (!claims) return NextResponse.json({ error: "Invalid or expired token" }, { status: 401 });
+  if (!claims)
+    return NextResponse.json(
+      { error: "Invalid or expired token" },
+      { status: 401 },
+    );
 
   let body: { path?: unknown };
   try {
@@ -180,12 +208,15 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Invalid path" }, { status: 400 });
 
   const safePath = sanitizePath(body.path);
-  if (!safePath) return NextResponse.json({ error: "Invalid path" }, { status: 400 });
+  if (!safePath)
+    return NextResponse.json({ error: "Invalid path" }, { status: 400 });
 
   const key = safePath.startsWith("skills/")
     ? userSkillKey(claims.userId, safePath.slice("skills/".length))
     : r2Key(claims.userId, claims.chatId, safePath);
-  await r2.send(new DeleteObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }));
+  await r2.send(
+    new DeleteObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }),
+  );
 
   if (safePath.startsWith("skills/")) await invalidateSkillsTree(claims.userId);
 

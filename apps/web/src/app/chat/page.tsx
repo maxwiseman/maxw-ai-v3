@@ -11,8 +11,14 @@ import {
   type UITools,
 } from "ai";
 import { useMemo, useState } from "react";
-import type { UserInputQuestion } from "@/ai/tools/workspace/user-input";
 import { toolStatus } from "@/ai/tools/tool-status";
+import type { UserInputQuestion } from "@/ai/tools/workspace/user-input";
+import { AnimatedStatus } from "@/app/chat/animated-status";
+import { ChatInput, type ChatInputMessage } from "@/app/chat/chat-input";
+import { ChatTitle } from "@/app/chat/chat-title";
+import { EmptyState } from "@/app/chat/empty-state";
+import { ChatFilesPanel, useChatFiles } from "@/app/chat/files-panel";
+import { PromptSuggestions } from "@/app/chat/prompt-suggestions";
 import { Action, Actions } from "@/components/ai-elements/actions";
 import {
   Conversation,
@@ -22,12 +28,6 @@ import { Message, MessageContent } from "@/components/ai-elements/message";
 import { PromptInputProvider } from "@/components/ai-elements/prompt-input";
 import { Response } from "@/components/ai-elements/response";
 import { ShareFileCard, UpdatePlanCard } from "@/components/ai-elements/tool";
-import { AnimatedStatus } from "@/app/chat/animated-status";
-import { ChatInput, type ChatInputMessage } from "@/app/chat/chat-input";
-import { ChatTitle } from "@/app/chat/chat-title";
-import { EmptyState } from "@/app/chat/empty-state";
-import { ChatFilesPanel, useChatFiles } from "@/app/chat/files-panel";
-import { PromptSuggestions } from "@/app/chat/prompt-suggestions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -133,78 +133,78 @@ export default function ChatPage() {
           </EmptyState>
         ) : (
           <>
-          <Conversation>
-            <div className="absolute inset-x-0 top-0 z-10 flex h-10 items-center justify-center bg-background/90 backdrop-blur-sm">
-              <ChatTitle />
-              {/* Files panel toggle */}
-              <div className="absolute right-2 flex items-center">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative size-7"
-                  onClick={() => setFilesOpen((o) => !o)}
-                  title="Output files"
-                >
-                  <IconFolder className="size-4" />
-                  {files.length > 0 && (
-                    <span className="-top-0.5 -right-0.5 absolute flex size-3.5 items-center justify-center rounded-full bg-primary font-semibold text-[9px] text-primary-foreground leading-none">
-                      {files.length > 9 ? "9+" : files.length}
-                    </span>
-                  )}
-                </Button>
-              </div>
-            </div>
-            <div className="pointer-events-none absolute inset-0 z-10 flex h-full w-full flex-col justify-end">
-              <div className="w-full bg-linear-to-t from-[1.25rem] from-background to-transparent">
-                <div className="mx-auto w-full max-w-2xl">
-                  <PromptSuggestions delay={1} />
-                  <ChatInput
-                    className="pointer-events-auto mx-auto w-full"
-                    text=""
-                    hasMessages={true}
-                    onSubmit={handleSubmit}
-                    setText={() => {}}
-                    setUseWebSearch={setWebSearch}
-                    useWebSearch={webSearch}
-                    status={status as ChatStatus}
-                    pendingQuestion={pendingQuestion}
-                  />
+            <Conversation>
+              <div className="absolute inset-x-0 top-0 z-10 flex h-10 items-center justify-center bg-background/90 backdrop-blur-sm">
+                <ChatTitle />
+                {/* Files panel toggle */}
+                <div className="absolute right-2 flex items-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative size-7"
+                    onClick={() => setFilesOpen((o) => !o)}
+                    title="Output files"
+                  >
+                    <IconFolder className="size-4" />
+                    {files.length > 0 && (
+                      <span className="-top-0.5 -right-0.5 absolute flex size-3.5 items-center justify-center rounded-full bg-primary font-semibold text-[9px] text-primary-foreground leading-none">
+                        {files.length > 9 ? "9+" : files.length}
+                      </span>
+                    )}
+                  </Button>
                 </div>
               </div>
-            </div>
-            <ConversationContent
-              className={cn(
-                "mx-auto max-w-3xl pt-10 transition-[padding-bottom]",
-                (pendingQuestion?.questions.length ?? 0) > 0
-                  ? "pb-96"
-                  : "pb-64",
-              )}
-            >
-              {messages.map((msg) => (
-                <ChatMessage key={msg.id} msg={msg} status={status} />
-              ))}
-              {status === "error" && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      {error?.name ?? "An unknown error occurred"}
-                    </CardTitle>
-                    <CardDescription>
-                      {error?.message}
-                      <br />
-                      {error?.cause as string | undefined}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              )}
-            </ConversationContent>
-          </Conversation>
-          {/* Push-sidebar files panel */}
-          <ChatFilesPanel
-            files={files}
-            open={filesOpen}
-            onClose={() => setFilesOpen(false)}
-          />
+              <div className="pointer-events-none absolute inset-0 z-10 flex h-full w-full flex-col justify-end">
+                <div className="w-full bg-linear-to-t from-[1.25rem] from-background to-transparent">
+                  <div className="mx-auto w-full max-w-2xl">
+                    <PromptSuggestions delay={1} />
+                    <ChatInput
+                      className="pointer-events-auto mx-auto w-full"
+                      text=""
+                      hasMessages={true}
+                      onSubmit={handleSubmit}
+                      setText={() => {}}
+                      setUseWebSearch={setWebSearch}
+                      useWebSearch={webSearch}
+                      status={status as ChatStatus}
+                      pendingQuestion={pendingQuestion}
+                    />
+                  </div>
+                </div>
+              </div>
+              <ConversationContent
+                className={cn(
+                  "mx-auto max-w-3xl pt-10 transition-[padding-bottom]",
+                  (pendingQuestion?.questions.length ?? 0) > 0
+                    ? "pb-96"
+                    : "pb-64",
+                )}
+              >
+                {messages.map((msg) => (
+                  <ChatMessage key={msg.id} msg={msg} status={status} />
+                ))}
+                {status === "error" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>
+                        {error?.name ?? "An unknown error occurred"}
+                      </CardTitle>
+                      <CardDescription>
+                        {error?.message}
+                        <br />
+                        {error?.cause as string | undefined}
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                )}
+              </ConversationContent>
+            </Conversation>
+            {/* Push-sidebar files panel */}
+            <ChatFilesPanel
+              files={files}
+              open={filesOpen}
+              onClose={() => setFilesOpen(false)}
+            />
           </>
         )}
       </div>
