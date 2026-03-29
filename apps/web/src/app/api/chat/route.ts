@@ -11,7 +11,6 @@ import {
   ToolLoopAgent,
   type UIMessage,
 } from "ai";
-import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import type { NextRequest } from "next/server";
 import {
@@ -28,8 +27,6 @@ import {
 import { getSandboxIfRunning } from "@/ai/sandbox/sandbox-manager";
 import { getSkillsTree } from "@/ai/sandbox/skills-tree";
 import { getAllCanvasCourses } from "@/app/classes/classes-actions";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
@@ -70,14 +67,13 @@ export async function POST(request: NextRequest) {
   const userId = authData.user.id;
   const fullName = authData.user.name;
 
-  // Load user's classes, skills tree, and settings in parallel
-  const [classesResponse, skillsTree, userRecord] = await Promise.all([
+  // Load user's classes and skills tree in parallel
+  const [classesResponse, skillsTree] = await Promise.all([
     getAllCanvasCourses(),
     getSkillsTree(userId),
-    db.query.user.findFirst({ where: eq(user.id, userId) }),
   ]);
   const classes = typeof classesResponse === "string" ? [] : classesResponse;
-  const settings = userRecord?.settings;
+  const settings = authData.user.settings;
   const role = settings?.role ?? "student";
   const schoolName = settings?.schoolName ?? "your school";
 

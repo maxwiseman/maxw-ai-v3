@@ -80,15 +80,10 @@ export default async function AssignmentPage({
   const authData = await auth.api.getSession({ headers: await headers() });
   if (!authData) return <NotAuthenticated />;
   const params = await paramsPromise;
-  const [data, userRecord] = await Promise.all([
-    fetchData({ userId: authData.user.id, ...params }),
-    db.query.user.findFirst({
-      where: eq(user.id, authData.user.id),
-      columns: { settings: true },
-    }),
-  ]);
+  const data = await fetchData({ userId: authData.user.id, ...params });
   if (typeof data === "string") notFound();
-  const isTeacher = (userRecord?.settings?.role ?? "student") === "teacher";
+  const isTeacher =
+    (authData.user.settings?.role ?? "student") === "teacher";
 
   return (
     <div>
