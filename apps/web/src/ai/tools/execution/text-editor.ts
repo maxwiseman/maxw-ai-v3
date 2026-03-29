@@ -30,10 +30,7 @@ function applyInsert(
   return lines.join("\n");
 }
 
-export function createTextEditorTool(
-  chatId: string,
-  userId: string,
-) {
+export function createTextEditorTool(chatId: string, userId: string) {
   return anthropic.tools.textEditor_20250728({
     execute: async (action) => {
       const sandbox = await getOrCreateSandbox(userId, chatId);

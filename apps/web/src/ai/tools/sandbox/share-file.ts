@@ -8,7 +8,7 @@
 
 import { tool } from "ai";
 import { z } from "zod";
-import { r2Key, putR2Object, getR2SignedUrl } from "@/ai/sandbox/r2-client";
+import { getR2SignedUrl, putR2Object, r2Key } from "@/ai/sandbox/r2-client";
 import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 import { db } from "@/db";
 import { sandboxFile } from "@/db/schema/sandbox-files";
@@ -60,10 +60,7 @@ export interface ShareFileResult {
 
 const WORKSPACE_ROOT = "/home/daytona/workspace";
 
-export function createShareFileTool(
-  chatId: string,
-  userId: string,
-) {
+export function createShareFileTool(chatId: string, userId: string) {
   return tool({
     description:
       "Upload a file from the sandbox to cloud storage and return a relative download URL. Use this to deliver output files (reports, PDFs, data exports, scripts, etc.) to the user so they can download them. The returned url field is a relative path (e.g. /api/sandbox-files/abc123) — always use it exactly as-is in markdown links without adding any domain or hostname.",

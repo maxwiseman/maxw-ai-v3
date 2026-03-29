@@ -75,7 +75,9 @@ async function createSandbox(userId: string, chatId: string): Promise<Sandbox> {
     },
   });
 
-  console.log(`[sandbox] sandbox ${sandbox.id} created in ${Date.now() - t0}ms`);
+  console.log(
+    `[sandbox] sandbox ${sandbox.id} created in ${Date.now() - t0}ms`,
+  );
   return sandbox;
 }
 

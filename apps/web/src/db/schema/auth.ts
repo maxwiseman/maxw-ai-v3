@@ -12,7 +12,10 @@ export const user = pgTable("user", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
-  settings: jsonb("settings").$type<UserSettings>().default({ role: "student" }).notNull(),
+  settings: jsonb("settings")
+    .$type<UserSettings>()
+    .default({ role: "student" })
+    .notNull(),
 });
 
 export const session = pgTable("session", {

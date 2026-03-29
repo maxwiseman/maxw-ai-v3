@@ -7,10 +7,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 
-export function createApplyPatchTool(
-  chatId: string,
-  userId: string,
-) {
+export function createApplyPatchTool(chatId: string, userId: string) {
   return tool({
     description:
       "Apply a unified diff patch to one or more files in the sandbox. Accepts standard unified diff format (as produced by `diff -u` or `git diff`). Use this for precise multi-line edits when you know exactly what the before/after should look like.",
