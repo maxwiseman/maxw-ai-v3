@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
+import { getUserSettings } from "@/lib/user-settings";
 import type { CanvasAssignment } from "@/types/canvas";
 import { SubmissionProvider } from "./submission-provider";
 
@@ -82,8 +83,8 @@ export default async function AssignmentPage({
   const params = await paramsPromise;
   const data = await fetchData({ userId: authData.user.id, ...params });
   if (typeof data === "string") notFound();
-  const isTeacher =
-    (authData.user.settings?.role ?? "student") === "teacher";
+  const settings = getUserSettings(authData.user);
+  const isTeacher = (settings?.role ?? "student") === "teacher";
 
   return (
     <div>

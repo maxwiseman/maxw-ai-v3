@@ -27,6 +27,7 @@ import {
 import { getSandboxIfRunning } from "@/ai/sandbox/sandbox-manager";
 import { getSkillsTree } from "@/ai/sandbox/skills-tree";
 import { getAllCanvasCourses } from "@/app/classes/classes-actions";
+import { getUserSettings } from "@/lib/user-settings";
 import { auth } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
     getSkillsTree(userId),
   ]);
   const classes = typeof classesResponse === "string" ? [] : classesResponse;
-  const settings = authData.user.settings;
+  const settings = getUserSettings(authData.user);
   const role = settings?.role ?? "student";
   const schoolName = settings?.schoolName ?? "your school";
 
