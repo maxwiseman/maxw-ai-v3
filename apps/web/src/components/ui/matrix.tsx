@@ -1,5 +1,7 @@
+"use client";
+
 import * as React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -21,6 +23,7 @@ interface MatrixProps extends React.HTMLAttributes<HTMLDivElement> {
   loop?: boolean;
   size?: number;
   gap?: number;
+  blur?: number;
   palette?: {
     on: string;
     off: string;
@@ -55,6 +58,7 @@ function useAnimation(
     autoplay: boolean;
     loop: boolean;
     onFrame?: (index: number) => void;
+    enabled?: boolean;
   },
 ): { frameIndex: number; isPlaying: boolean } {
   const [frameIndex, setFrameIndex] = useState(0);
@@ -64,7 +68,12 @@ function useAnimation(
   const accumulatorRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!frames || frames.length === 0 || !isPlaying) {
+    if (
+      options.enabled === false ||
+      !frames ||
+      frames.length === 0 ||
+      !isPlaying
+    ) {
       return;
     }
 
@@ -107,14 +116,21 @@ function useAnimation(
         cancelAnimationFrame(frameIdRef.current);
       }
     };
-  }, [frames, isPlaying, options.fps, options.loop, options.onFrame]);
+  }, [
+    frames,
+    isPlaying,
+    options.fps,
+    options.loop,
+    options.onFrame,
+    options.enabled,
+  ]);
 
   useEffect(() => {
     setFrameIndex(0);
     setIsPlaying(options.autoplay);
     lastTimeRef.current = 0;
     accumulatorRef.current = 0;
-  }, [frames, options.autoplay]);
+  }, [frames, options.autoplay, options.enabled]);
 
   return { frameIndex, isPlaying };
 }
@@ -425,6 +441,7 @@ export const Matrix = React.forwardRef<HTMLDivElement, MatrixProps>(
       loop = true,
       size = 10,
       gap = 2,
+      blur = 2,
       palette = {
         on: "currentColor",
         off: "var(--muted-foreground)",
@@ -439,12 +456,25 @@ export const Matrix = React.forwardRef<HTMLDivElement, MatrixProps>(
     },
     ref,
   ) => {
+    const instanceId = useId().replace(/:/g, "");
+    const gradientOnId = `matrix-pixel-on-${instanceId}`;
+    const gradientOffId = `matrix-pixel-off-${instanceId}`;
+    const glowId = `matrix-glow-${instanceId}`;
+    const cssAnimationMode =
+      !pattern && mode !== "vu" && !!frames && frames.length > 0 && autoplay;
+
     const { frameIndex } = useAnimation(frames, {
       fps,
       autoplay: autoplay && !pattern,
       loop,
       onFrame,
+      enabled: !cssAnimationMode,
     });
+
+    const normalizedFrames = useMemo(() => {
+      if (!frames || frames.length === 0) return [];
+      return frames.map((frame) => ensureFrameSize(frame, rows, cols));
+    }, [frames, rows, cols]);
 
     const currentFrame = useMemo(() => {
       if (mode === "vu" && levels && levels.length > 0) {
@@ -456,11 +486,21 @@ export const Matrix = React.forwardRef<HTMLDivElement, MatrixProps>(
       }
 
       if (frames && frames.length > 0) {
-        return ensureFrameSize(frames[frameIndex] || frames[0], rows, cols);
+        const index = cssAnimationMode ? 0 : frameIndex;
+        return ensureFrameSize(frames[index] || frames[0], rows, cols);
       }
 
       return ensureFrameSize([], rows, cols);
-    }, [pattern, frames, frameIndex, rows, cols, mode, levels]);
+    }, [
+      pattern,
+      frames,
+      frameIndex,
+      rows,
+      cols,
+      mode,
+      levels,
+      cssAnimationMode,
+    ]);
 
     const cellPositions = useMemo(() => {
       const positions: CellPosition[][] = [];
@@ -486,6 +526,55 @@ export const Matrix = React.forwardRef<HTMLDivElement, MatrixProps>(
     }, [rows, cols, size, gap]);
 
     const isAnimating = !pattern && frames && frames.length > 0;
+
+    const keyframeStyle = useMemo(() => {
+      if (!cssAnimationMode || normalizedFrames.length === 0) return "";
+
+      const totalDuration = normalizedFrames.length / Math.max(fps, 1);
+      let css = "";
+
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const animationName = `matrix-kf-${instanceId}-${row}-${col}`;
+          css += `@keyframes ${animationName}{`;
+
+          for (let i = 0; i < normalizedFrames.length; i++) {
+            const start = (i / normalizedFrames.length) * 100;
+            const value = normalizedFrames[i]?.[row]?.[col] ?? 0;
+            const opacity = clamp(brightness * value);
+            const isActive = opacity > 0.5;
+            const isOn = opacity > 0.05;
+            const scale = isActive ? 1.1 : 1;
+            const offOpacity = isOn ? 1 : 0.2;
+            const finalOpacity = isOn ? opacity : 0.1;
+
+            css += `${start.toFixed(4)}%{opacity:${finalOpacity};transform:scale(${scale});--matrix-off-opacity:${offOpacity};}`;
+          }
+
+          const firstValue = normalizedFrames[0]?.[row]?.[col] ?? 0;
+          const firstOpacity = clamp(brightness * firstValue);
+          const firstIsActive = firstOpacity > 0.5;
+          const firstIsOn = firstOpacity > 0.05;
+          const firstScale = firstIsActive ? 1.1 : 1;
+          const firstOffOpacity = firstIsOn ? 1 : 0.2;
+          const firstFinalOpacity = firstIsOn ? firstOpacity : 0.1;
+
+          css += `100%{opacity:${firstFinalOpacity};transform:scale(${firstScale});--matrix-off-opacity:${firstOffOpacity};}`;
+          css += `}.matrix-pixel-${row}-${col}{animation:${animationName} ${totalDuration}s linear ${loop ? "infinite" : "1"};}`;
+        }
+      }
+
+      return css;
+    }, [
+      cssAnimationMode,
+      normalizedFrames,
+      fps,
+      rows,
+      cols,
+      brightness,
+      loop,
+      instanceId,
+    ]);
 
     return (
       <div
@@ -513,13 +602,13 @@ export const Matrix = React.forwardRef<HTMLDivElement, MatrixProps>(
           style={{ overflow: "visible" }}
         >
           <defs>
-            <radialGradient id="matrix-pixel-on" cx="50%" cy="50%" r="50%">
+            <radialGradient id={gradientOnId} cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor="currentColor" stopOpacity="1" />
               <stop offset="70%" stopColor="currentColor" stopOpacity="0.85" />
               <stop offset="100%" stopColor="currentColor" stopOpacity="0.6" />
             </radialGradient>
 
-            <radialGradient id="matrix-pixel-off" cx="50%" cy="50%" r="50%">
+            <radialGradient id={gradientOffId} cx="50%" cy="50%" r="50%">
               <stop
                 offset="0%"
                 stopColor="var(--muted-foreground)"
@@ -532,14 +621,8 @@ export const Matrix = React.forwardRef<HTMLDivElement, MatrixProps>(
               />
             </radialGradient>
 
-            <filter
-              id="matrix-glow"
-              x="-50%"
-              y="-50%"
-              width="200%"
-              height="200%"
-            >
-              <feGaussianBlur stdDeviation="2" result="blur" />
+            <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation={blur} result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
           </defs>
@@ -547,13 +630,17 @@ export const Matrix = React.forwardRef<HTMLDivElement, MatrixProps>(
           <style>
             {`
               .matrix-pixel {
-                transition: opacity 300ms ease-out, transform 150ms ease-out;
+                transition: opacity 300ms ease-out, transform 150ms ease-out, filter 150ms ease-out;
                 transform-origin: center;
                 transform-box: fill-box;
               }
               .matrix-pixel-active {
-                filter: url(#matrix-glow);
+                filter: url(#${glowId});
               }
+              .matrix-pixel-off {
+                opacity: var(--matrix-off-opacity, 0.2);
+              }
+              ${keyframeStyle}
             `}
           </style>
 
@@ -566,8 +653,8 @@ export const Matrix = React.forwardRef<HTMLDivElement, MatrixProps>(
               const isActive = opacity > 0.5;
               const isOn = opacity > 0.05;
               const fill = isOn
-                ? "url(#matrix-pixel-on)"
-                : "url(#matrix-pixel-off)";
+                ? `url(#${gradientOnId})`
+                : `url(#${gradientOffId})`;
 
               const scale = isActive ? 1.1 : 1;
               const radius = (size / 2) * 0.9;
@@ -577,8 +664,9 @@ export const Matrix = React.forwardRef<HTMLDivElement, MatrixProps>(
                   key={`${rowIndex}-${colIndex}`}
                   className={cn(
                     "matrix-pixel",
-                    isActive && "matrix-pixel-active",
-                    !isOn && "opacity-20 dark:opacity-[0.1]",
+                    (isActive || cssAnimationMode) && "matrix-pixel-active",
+                    !isOn && "matrix-pixel-off dark:opacity-[0.1]",
+                    cssAnimationMode && `matrix-pixel-${rowIndex}-${colIndex}`,
                   )}
                   cx={pos.x + size / 2}
                   cy={pos.y + size / 2}
