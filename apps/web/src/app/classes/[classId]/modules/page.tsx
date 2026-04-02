@@ -14,7 +14,6 @@ import {
 import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
-import type { Prefetch } from "next/dist/build/segment-config/app/app-segment-config";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -42,7 +41,7 @@ import type {
   CanvasModuleItemType,
 } from "@/types/canvas";
 
-export const unstable_prefetch: Prefetch = {
+export const unstable_prefetch = {
   mode: "runtime",
   samples: [
     {

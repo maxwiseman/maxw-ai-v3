@@ -4,7 +4,6 @@ import { IconNotebook } from "@tabler/icons-react";
 // import { useModulesState } from "../../modules-store";
 import { eq } from "drizzle-orm";
 import { cacheLife } from "next/cache";
-import type { Prefetch } from "next/dist/build/segment-config/app/app-segment-config";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -26,7 +25,7 @@ import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
 import type { CanvasAssignment } from "@/types/canvas";
 
-export const unstable_prefetch: Prefetch = {
+export const unstable_prefetch = {
   mode: "runtime",
   samples: [
     {

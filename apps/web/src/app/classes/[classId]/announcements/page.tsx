@@ -3,7 +3,6 @@
 import { IconBell } from "@tabler/icons-react";
 import { eq } from "drizzle-orm";
 import { cacheLife } from "next/cache";
-import type { Prefetch } from "next/dist/build/segment-config/app/app-segment-config";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { CanvasHTML } from "@/components/canvas-html";
@@ -31,7 +30,7 @@ import type {
   CanvasDiscussionTopic,
 } from "@/types/canvas";
 
-export const unstable_prefetch: Prefetch = {
+export const unstable_prefetch = {
   mode: "runtime",
   samples: [
     {
