@@ -28,6 +28,10 @@ function getSyncApiUrl(): string {
     const vercelUrl = process.env.VERCEL_URL;
     if (vercelUrl) return `https://${vercelUrl}`;
   }
+  if (vercelEnv === "production") {
+    const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    if (vercelUrl) return `https://${vercelUrl}`;
+  }
   if (env.NEXT_PUBLIC_SERVER_URL) return env.NEXT_PUBLIC_SERVER_URL;
   throw new Error(
     "NEXT_PUBLIC_SERVER_URL is not set. Required for non-Vercel deployments.",
