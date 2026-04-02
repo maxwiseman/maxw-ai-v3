@@ -12,7 +12,6 @@ export const chatMetadata = pgTable("chat_metadata", {
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  friendlyId: text("friendly_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

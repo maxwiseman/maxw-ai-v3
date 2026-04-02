@@ -3,7 +3,7 @@
  * Implements filesystem-like operations for virtual memory files
  */
 
-import { and, eq, like, sql } from "drizzle-orm";
+import { and, eq, like } from "drizzle-orm";
 import { db } from "@/db";
 import { memory } from "@/db/schema/memory";
 
@@ -33,15 +33,6 @@ function isFilePath(path: string): boolean {
   const parts = path.split("/");
   const lastPart = parts[parts.length - 1];
   return lastPart.includes(".");
-}
-
-/**
- * Get parent directory from path
- */
-function getParentDir(path: string): string {
-  const parts = path.split("/");
-  parts.pop();
-  return parts.join("/") || "/memories";
 }
 
 /**

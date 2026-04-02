@@ -10,6 +10,7 @@ import { getClassAssignmentsTool } from "../tools/canvas/get-class-assignments";
 import { searchContentTool } from "../tools/canvas/search-content";
 import { createBashTool } from "../tools/execution/bash";
 import { createTextEditorTool } from "../tools/execution/text-editor";
+import { createWebFetchTool } from "../tools/fetch/web-fetch";
 import { createShareFileTool } from "../tools/sandbox/share-file";
 import { createStudySetTool } from "../tools/study/flashcards";
 import {
@@ -26,7 +27,6 @@ import { createViewImageTool } from "../tools/workspace/image";
 import { createApplyPatchTool } from "../tools/workspace/patch";
 import { createUpdatePlanTool } from "../tools/workspace/plan";
 import { requestUserInputTool } from "../tools/workspace/user-input";
-import { createWebFetchTool } from "../tools/fetch/web-fetch";
 import { executeMemoryCommand } from "../utils/memory-helpers";
 
 /**
@@ -122,9 +122,11 @@ export function buildSystemPrompt(ctx: AgentContext): string {
    - Location-aware (uses user's location from request context)
 
 4. **web_fetch**: Fetch and read content from a URL
-   - Google Workspace URLs are automatically rewritten to export URLs (Docs→md, Sheets→csv, Slides→pdf) — no need to transform them manually
-   - Responses that are binary or exceed 20,000 characters are automatically saved to \`/tmp/web_fetch/<filename>\` in the sandbox instead of being returned directly — use \`bash\` to read or search the file
-   - Pass \`save_to_sandbox: true\` to always offload to the sandbox (useful for large documents you plan to process)
+   - **Google Workspace URLs**: Always transform before fetching — never use \`/edit\`, \`/view\`, or \`/preview\` suffixes:
+     - **Google Docs** (\`docs.google.com/document/d/{id}/...\`) → \`https://docs.google.com/document/d/{id}/export?format=md\`
+     - **Google Sheets** (\`docs.google.com/spreadsheets/d/{id}/...\`) → \`https://docs.google.com/spreadsheets/d/{id}/export?format=csv\`
+     - **Google Slides** (\`docs.google.com/presentation/d/{id}/...\`) → \`https://docs.google.com/presentation/d/{id}/export?format=pdf\`
+   - These export URLs return plain content that can be parsed directly, whereas \`/edit\` and \`/view\` require JavaScript rendering
 5. **searchContent**: Semantic search for your Canvas LMS content
    - Searches assignments, pages, syllabus, course materials
    - Use when user asks about their classes or coursework

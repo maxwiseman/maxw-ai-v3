@@ -1,45 +1,10 @@
-import { randomInt } from "crypto";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { chatMetadata } from "@/db/schema/chat";
 
-const ADJECTIVES = [
-  "calm",
-  "brave",
-  "lunar",
-  "rustic",
-  "gentle",
-  "curious",
-  "bright",
-  "wild",
-  "steady",
-  "crisp",
-];
-
-const NOUNS = [
-  "falcon",
-  "orchid",
-  "harbor",
-  "ember",
-  "voyage",
-  "stream",
-  "canyon",
-  "harbinger",
-  "atlas",
-  "compass",
-];
-
-function generateFriendlyId(): string {
-  const adjective = ADJECTIVES[randomInt(0, ADJECTIVES.length)];
-  const noun = NOUNS[randomInt(0, NOUNS.length)];
-  const token = randomInt(100, 1000);
-  return `${adjective}-${noun}-${token}`;
-}
-
 export interface ChatMetadata {
   chatId: string;
   userId: string;
-  friendlyId: string;
 }
 
 export async function getOrCreateChatMetadata(
@@ -56,14 +21,11 @@ export async function getOrCreateChatMetadata(
     return existing[0];
   }
 
-  const friendlyId = generateFriendlyId();
-
   try {
     await db.insert(chatMetadata).values({
       id: crypto.randomUUID(),
       chatId,
       userId,
-      friendlyId,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
