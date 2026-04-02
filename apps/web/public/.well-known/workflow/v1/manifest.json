@@ -1,0 +1,69 @@
+{
+  "version": "1.0.0",
+  "steps": {
+    "node_modules/.bun/workflow@4.2.0-beta.76+3f2b52736fe77286/node_modules/workflow/dist/internal/builtins.js": {
+      "__builtin_response_array_buffer": {
+        "stepId": "__builtin_response_array_buffer"
+      },
+      "__builtin_response_json": {
+        "stepId": "__builtin_response_json"
+      },
+      "__builtin_response_text": {
+        "stepId": "__builtin_response_text"
+      }
+    },
+    "src/app/grading/workflow.ts": {
+      "gradeStudentsStep": {
+        "stepId": "step//./src/app/grading/workflow//gradeStudentsStep"
+      },
+      "setStatusCompleteStep": {
+        "stepId": "step//./src/app/grading/workflow//setStatusCompleteStep"
+      },
+      "setStatusErrorStep": {
+        "stepId": "step//./src/app/grading/workflow//setStatusErrorStep"
+      },
+      "setStatusProcessingStep": {
+        "stepId": "step//./src/app/grading/workflow//setStatusProcessingStep"
+      },
+      "splitPdfsStep": {
+        "stepId": "step//./src/app/grading/workflow//splitPdfsStep"
+      }
+    }
+  },
+  "workflows": {
+    "src/app/grading/workflow.ts": {
+      "gradingWorkflow": {
+        "workflowId": "workflow//./src/app/grading/workflow//gradingWorkflow",
+        "graph": {
+          "nodes": [
+            {
+              "id": "start",
+              "type": "workflowStart",
+              "data": {
+                "label": "Start: gradingWorkflow",
+                "nodeKind": "workflow_start"
+              }
+            },
+            {
+              "id": "end",
+              "type": "workflowEnd",
+              "data": {
+                "label": "Return",
+                "nodeKind": "workflow_end"
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "e_start_end",
+              "source": "start",
+              "target": "end",
+              "type": "default"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "classes": {}
+}

@@ -10,7 +10,7 @@ import {
   type UIMessage,
   type UITools,
 } from "ai";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toolStatus } from "@/ai/tools/tool-status";
 import type { UserInputQuestion } from "@/ai/tools/workspace/user-input";
 import { AnimatedStatus } from "@/app/chat/animated-status";
@@ -40,14 +40,23 @@ import { cn } from "@/lib/utils";
 const CHAT_ID = "main-chat";
 
 export default function ChatPage() {
+  const [model, setModel] = useState("claude-sonnet-4-6");
+  // Keep a ref so the transport's body function always reads the latest model
+  // without needing to recreate the transport (which useChat wouldn't pick up).
+  const modelRef = useRef(model);
+  modelRef.current = model;
+
+  const [transport] = useState(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        body: () => ({ id: CHAT_ID, model: modelRef.current }),
+      }),
+  );
+
   const { messages, sendMessage, status, error, stop } = useChat({
     id: CHAT_ID,
-    transport: new DefaultChatTransport({
-      api: "/api/chat",
-      body: {
-        id: CHAT_ID,
-      },
-    }),
+    transport,
     onError: (err) => {
       console.error("useChat error:", err);
     },
@@ -129,6 +138,8 @@ export default function ChatPage() {
               useWebSearch={webSearch}
               status={status as ChatStatus}
               pendingQuestion={pendingQuestion}
+              model={model}
+              onModelChange={setModel}
             />
           </EmptyState>
         ) : (
@@ -168,6 +179,8 @@ export default function ChatPage() {
                       useWebSearch={webSearch}
                       status={status as ChatStatus}
                       pendingQuestion={pendingQuestion}
+                      model={model}
+                      onModelChange={setModel}
                     />
                   </div>
                 </div>

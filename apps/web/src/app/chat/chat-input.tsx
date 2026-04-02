@@ -47,6 +47,11 @@ export interface ChatInputMessage extends PromptInputMessage {
   toolChoice?: string;
 }
 
+const MODELS: { id: string; label: string }[] = [
+  { id: "claude-sonnet-4-6", label: "Claude" },
+  { id: "gpt-5.4", label: "GPT-5.4" },
+];
+
 interface ChatInputProps {
   text?: string;
   setText?: (text: string) => void;
@@ -63,6 +68,8 @@ interface ChatInputProps {
     reset: string;
     code?: string;
   } | null;
+  model?: string;
+  onModelChange?: (model: string) => void;
   className?: string;
 }
 
@@ -424,6 +431,8 @@ function ChatInputInner({
   hasMessages,
   pendingQuestion,
   rateLimit,
+  model,
+  onModelChange,
   selection,
 }: Omit<ChatInputProps, "text"> & {
   selection: CommandSelection;
@@ -504,13 +513,29 @@ function ChatInputInner({
             }}
             textareaRef={textareaRef}
           />
-          <PromptInputButton
+          {/*<PromptInputButton
             onClick={() => setUseWebSearch(!useWebSearch)}
             variant={useWebSearch ? "secondary" : "ghost"}
           >
             <GlobeIcon size={16} />
             <span>Search</span>
-          </PromptInputButton>
+          </PromptInputButton>*/}
+          {onModelChange && (
+            <PromptInputButton
+              onClick={() => {
+                const currentIndex = MODELS.findIndex((m) => m.id === model);
+                const next = MODELS[(currentIndex + 1) % MODELS.length];
+                onModelChange(next.id);
+              }}
+              variant="ghost"
+              title="Switch model"
+              size="sm"
+            >
+              <span>
+                {MODELS.find((m) => m.id === model)?.label ?? model ?? "Claude"}
+              </span>
+            </PromptInputButton>
+          )}
         </PromptInputTools>
         <PromptInputSubmit
           disabled={
@@ -547,6 +572,8 @@ export function ChatInput({
   hasMessages,
   pendingQuestion,
   rateLimit,
+  model,
+  onModelChange,
   className,
 }: ChatInputProps) {
   const [metadata, setMetadata] = useState<CommandMetadata>({
@@ -576,6 +603,8 @@ export function ChatInput({
           hasMessages={hasMessages}
           pendingQuestion={pendingQuestion}
           rateLimit={rateLimit}
+          model={model}
+          onModelChange={onModelChange}
           selection={selection}
         />
       </PromptCommands>

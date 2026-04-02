@@ -1,5 +1,5 @@
 import { type AnthropicProviderOptions, anthropic } from "@ai-sdk/anthropic";
-import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
+import { openai } from "@ai-sdk/openai";
 import { geolocation } from "@vercel/functions";
 import {
   convertToModelMessages,
@@ -17,7 +17,7 @@ import {
   type AgentContext,
   buildDynamicContext,
   buildSystemPrompt,
-  getGeneralAgentTools,
+  getToolsForProvider,
 } from "@/ai/agents/general";
 import {
   getWorkspaceFilesForStream,
@@ -27,16 +27,24 @@ import {
 import { getSandboxIfRunning } from "@/ai/sandbox/sandbox-manager";
 import { getSkillsTree } from "@/ai/sandbox/skills-tree";
 import { getAllCanvasCourses } from "@/app/classes/classes-actions";
-import { getUserSettings } from "@/lib/user-settings";
 import { auth } from "@/lib/auth";
+import { getUserSettings } from "@/lib/user-settings";
 
 export async function POST(request: NextRequest) {
   const location = geolocation(request);
 
   // Get request data
-  const body: { messages: UIMessage[]; id: string; trigger: string } =
-    await request.json();
-  const { messages, id: chatId } = body;
+  const body: {
+    messages: UIMessage[];
+    id: string;
+    trigger: string;
+    model?: string;
+  } = await request.json();
+  const {
+    messages,
+    id: chatId,
+    model: requestedModel = "claude-sonnet-4-6",
+  } = body;
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     return new Response(
@@ -47,6 +55,8 @@ export async function POST(request: NextRequest) {
       },
     );
   }
+
+  console.log("model", requestedModel);
 
   if (!chatId) {
     return new Response(JSON.stringify({ error: "No chat ID provided" }), {
@@ -81,6 +91,9 @@ export async function POST(request: NextRequest) {
   // Build agent context
   const now = new Date();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const provider: "anthropic" | "openai" = requestedModel.startsWith("claude")
+    ? "anthropic"
+    : "openai";
 
   const context: AgentContext = {
     userId,
@@ -89,6 +102,7 @@ export async function POST(request: NextRequest) {
     role,
     classes,
     chatId,
+    provider,
     currentDateTime: now.toLocaleString(undefined, { timeZone: timezone }),
     timezone,
     country: location.country,
@@ -97,25 +111,23 @@ export async function POST(request: NextRequest) {
     skillsTree,
   };
 
-  // Get tools configured for this context
-  const tools = getGeneralAgentTools(context);
+  // Get tools configured for this context and provider
+  const tools = getToolsForProvider(context);
 
-  // Build provider options
-  const providerOptions = {
-    anthropic: {
-      thinking: {
-        type: "enabled" as const,
-        budgetTokens: 10000,
-      },
-      cacheControl: {
-        type: "ephemeral",
-        ttl: "1h",
-      },
-    },
-  } satisfies {
-    anthropic?: AnthropicProviderOptions;
-    openai?: OpenAIResponsesProviderOptions;
+  // Select model instance and provider options based on requested model
+  const modelInstance =
+    provider === "openai"
+      ? openai.responses(requestedModel)
+      : anthropic(requestedModel);
+
+  const anthropicProviderOptions: AnthropicProviderOptions = {
+    thinking: { type: "enabled" as const, budgetTokens: 10000 },
+    cacheControl: { type: "ephemeral", ttl: "1h" },
   };
+  const providerOptions =
+    provider === "anthropic"
+      ? { anthropic: anthropicProviderOptions }
+      : ({} as { anthropic?: AnthropicProviderOptions });
 
   try {
     // Convert UI messages to model messages
@@ -142,22 +154,27 @@ export async function POST(request: NextRequest) {
     });
 
     const agent = new ToolLoopAgent({
-      model: anthropic("claude-sonnet-4-6"),
+      model: modelInstance,
       instructions,
       tools,
       providerOptions: providerOptions,
       onFinish: async (event) => {
         const usage = event.totalUsage;
         const inputTokens = usage.inputTokens ?? 0;
-        const cachedTokens = usage.inputTokenDetails.cacheReadTokens ?? 0;
-        const cacheWrites = usage.inputTokenDetails.cacheWriteTokens ?? 0;
-        const cachedPercent = inputTokens
-          ? Math.round((cachedTokens / inputTokens) * 100)
-          : 0;
-
-        console.info(
-          `Claude cache for chat ${chatId}: ${cachedTokens}/${inputTokens} input tokens cached (${cachedPercent}%) and ${cacheWrites} tokens written to the cache.`,
-        );
+        if (provider === "anthropic") {
+          const cachedTokens = usage.inputTokenDetails.cacheReadTokens ?? 0;
+          const cacheWrites = usage.inputTokenDetails.cacheWriteTokens ?? 0;
+          const cachedPercent = inputTokens
+            ? Math.round((cachedTokens / inputTokens) * 100)
+            : 0;
+          console.info(
+            `Claude cache for chat ${chatId}: ${cachedTokens}/${inputTokens} input tokens cached (${cachedPercent}%) and ${cacheWrites} tokens written to the cache.`,
+          );
+        } else {
+          console.info(
+            `OpenAI (${requestedModel}) usage for chat ${chatId}: ${inputTokens} input tokens, ${usage.outputTokens ?? 0} output tokens.`,
+          );
+        }
 
         // Force a sync from the sandbox (if it was used this turn) so R2
         // has the latest files before we index them into the DB.

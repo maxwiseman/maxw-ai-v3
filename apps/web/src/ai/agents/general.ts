@@ -4,12 +4,19 @@
  */
 
 import { anthropic } from "@ai-sdk/anthropic";
+import { openai } from "@ai-sdk/openai";
 import type { Tool } from "ai";
 import type { CanvasCourse } from "@/types/canvas";
 import { getClassAssignmentsTool } from "../tools/canvas/get-class-assignments";
 import { searchContentTool } from "../tools/canvas/search-content";
-import { createBashTool } from "../tools/execution/bash";
-import { createTextEditorTool } from "../tools/execution/text-editor";
+import {
+  createBashTool,
+  createShellToolOpenAI,
+} from "../tools/execution/bash";
+import {
+  createTextEditorTool,
+  createTextEditorToolOpenAI,
+} from "../tools/execution/text-editor";
 import { createWebFetchTool } from "../tools/fetch/web-fetch";
 import { createShareFileTool } from "../tools/sandbox/share-file";
 import { createStudySetTool } from "../tools/study/flashcards";
@@ -24,6 +31,7 @@ import {
   createSpawnAgentTool,
 } from "../tools/workspace/agents";
 import { createViewImageTool } from "../tools/workspace/image";
+import { createMemoryTool } from "../tools/workspace/memory";
 import { createApplyPatchTool } from "../tools/workspace/patch";
 import { createUpdatePlanTool } from "../tools/workspace/plan";
 import { requestUserInputTool } from "../tools/workspace/user-input";
@@ -42,6 +50,7 @@ export interface AgentContext {
   currentDateTime: string;
   timezone: string;
   chatId: string;
+  provider: "anthropic" | "openai";
   country?: string;
   city?: string;
   region?: string;
@@ -73,6 +82,8 @@ export function buildDynamicContext(ctx: AgentContext): string {
  * Contains stable content: tool docs, guidelines, user profile, classes.
  */
 export function buildSystemPrompt(ctx: AgentContext): string {
+  const bashToolName = ctx.provider === "openai" ? "shell" : "bash";
+
   return `You are a general assistant and coordinator for ${ctx.role === "teacher" ? "teachers" : "students"} at ${ctx.schoolName}.
 
 🔍 YOUR CAPABILITIES:
@@ -98,7 +109,7 @@ export function buildSystemPrompt(ctx: AgentContext): string {
 
 🛠️ YOUR TOOLS:
 
-1. **bash**: Run shell commands in a persistent sandbox
+1. **${bashToolName}**: Run shell commands in a persistent sandbox
    - Working directory: /home/daytona/workspace
    - Python, Node.js, and common tools available
    - **Document tools pre-installed**: \`typst\` (modern typesetting), \`pdflatex\`/\`xelatex\`/\`lualatex\` (LaTeX), \`libreoffice --headless\` (DOCX/XLSX/PPTX conversions)
@@ -176,7 +187,7 @@ export function buildSystemPrompt(ctx: AgentContext): string {
 
 19. **close_agent**: Stop and delete a sub-agent's sandbox
 
-20. **agent-browser** (via bash): Headless browser automation inside the sandbox
+20. **agent-browser** (via ${bashToolName}): Headless browser automation inside the sandbox
     - Use when the user wants to visit a URL, fill a form, scrape content, or take a screenshot
     - See the agent-browser skill reference below for full command docs
 
@@ -231,25 +242,69 @@ To read a skill: \`cat /home/daytona/skills/<filename>\`
 Remember: You're here to help ${ctx.role === "teacher" ? "educators" : "students"} succeed. Be proactive, helpful, and make learning easier!`;
 }
 
+/** Tools shared by all providers */
+function buildSharedTools(ctx: AgentContext): Record<string, Tool> {
+  return {
+    web_fetch: createWebFetchTool(ctx.chatId, ctx.userId),
+    searchContent: searchContentTool,
+    getClassAssignments: getClassAssignmentsTool,
+    getTodos: getTodosTool,
+    createTodo: createTodoTool,
+    updateTodo: updateTodoTool,
+    deleteTodo: deleteTodoTool,
+    createStudySet: createStudySetTool,
+    update_plan: createUpdatePlanTool(ctx.chatId, ctx.userId),
+    apply_patch: createApplyPatchTool(ctx.chatId, ctx.userId),
+    view_image: createViewImageTool(ctx.chatId, ctx.userId),
+    request_user_input: requestUserInputTool,
+    spawn_agent: createSpawnAgentTool(),
+    close_agent: createCloseAgentTool(),
+    share_file: createShareFileTool(ctx.chatId, ctx.userId),
+  };
+}
+
 /**
- * Get tools configured for the general agent
+ * Get tools configured for the given provider.
+ * Native tools are used wherever available; custom tool() wrappers fill the gaps.
  */
-export function getGeneralAgentTools(ctx: AgentContext): Record<string, Tool> {
-  const tools: Record<string, Tool> = {
-    // Bash execution in Daytona sandbox
+export function getToolsForProvider(ctx: AgentContext): Record<string, Tool> {
+  const shared = buildSharedTools(ctx);
+
+  if (ctx.provider === "openai") {
+    return {
+      ...shared,
+      // OpenAI native shell tool, Daytona-backed (cast to bridge SDK generic mismatch)
+      shell: createShellToolOpenAI(ctx.chatId, ctx.userId) as unknown as Tool,
+      // Custom text editor (OpenAI has no native equivalent)
+      str_replace_based_edit_tool: createTextEditorToolOpenAI(
+        ctx.chatId,
+        ctx.userId,
+      ),
+      // Custom memory tool (OpenAI has no native equivalent)
+      memory: createMemoryTool(ctx.userId),
+      // OpenAI native web search (cast to Tool to bridge SDK version mismatch)
+      web_search: openai.tools.webSearch({
+        userLocation: {
+          type: "approximate",
+          city: ctx.city,
+          country: ctx.country,
+          region: ctx.region,
+          timezone: ctx.timezone,
+        },
+      }) as unknown as Tool,
+    };
+  }
+
+  // Anthropic (default) — all native tools
+  return {
+    ...shared,
     bash: createBashTool(ctx.chatId, ctx.userId),
-
-    // File editing in sandbox
     str_replace_based_edit_tool: createTextEditorTool(ctx.chatId, ctx.userId),
-
-    // Memory tool for persistent user information (filesystem-like interface)
     memory: anthropic.tools.memory_20250818({
       execute: async (action) => {
         return await executeMemoryCommand(ctx.userId, action);
       },
     }),
-
-    // Web search with location awareness
     web_search: anthropic.tools.webSearch_20250305({
       userLocation: {
         type: "approximate",
@@ -259,33 +314,13 @@ export function getGeneralAgentTools(ctx: AgentContext): Record<string, Tool> {
         timezone: ctx.timezone,
       },
     }),
-
-    web_fetch: createWebFetchTool(ctx.chatId, ctx.userId),
-
-    // Canvas LMS content search
-    searchContent: searchContentTool,
-    getClassAssignments: getClassAssignmentsTool,
-
-    // Todo management
-    getTodos: getTodosTool,
-    createTodo: createTodoTool,
-    updateTodo: updateTodoTool,
-    deleteTodo: deleteTodoTool,
-
-    // Study set creation
-    createStudySet: createStudySetTool,
-
-    // Codex CLI-inspired tools
-    update_plan: createUpdatePlanTool(ctx.chatId, ctx.userId),
-    apply_patch: createApplyPatchTool(ctx.chatId, ctx.userId),
-    view_image: createViewImageTool(ctx.chatId, ctx.userId),
-    request_user_input: requestUserInputTool,
-    spawn_agent: createSpawnAgentTool(),
-    close_agent: createCloseAgentTool(),
-
-    // File delivery to user via Vercel Blob
-    share_file: createShareFileTool(ctx.chatId, ctx.userId),
   };
+}
 
-  return tools;
+/**
+ * @deprecated Use getToolsForProvider instead.
+ * Kept for any callers that haven't been migrated.
+ */
+export function getGeneralAgentTools(ctx: AgentContext): Record<string, Tool> {
+  return getToolsForProvider(ctx);
 }
