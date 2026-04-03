@@ -69,6 +69,10 @@ export const toolStatus: Record<string, { icon: Icon; text: string }> = {
     icon: IconTerminal,
     text: "Running shell commands",
   },
+  shell: {
+    icon: IconTerminal,
+    text: "Running shell commands",
+  },
   str_replace_based_edit_tool: {
     icon: IconEdit,
     text: "Editing files",

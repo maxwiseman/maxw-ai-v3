@@ -65,7 +65,7 @@ export function createViewImageTool(chatId: string, userId: string) {
         type: "content",
         value: [
           { type: "text", text: output.message },
-          { type: "image-data", data, mediaType },
+          { type: "media", data, mediaType },
         ],
       };
     },
