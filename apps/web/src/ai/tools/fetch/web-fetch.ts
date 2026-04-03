@@ -3,10 +3,10 @@
  *
  * Wraps native HTTP fetch with two enhancements:
  *  1. Google Workspace URL transformation — /edit and /view are rewritten to
- *     export URLs that return parseable content (md, csv, pdf).
- *  2. Sandbox offload — responses that are binary or exceed the character
- *     threshold are written to the sandbox filesystem instead of being
- *     returned directly, keeping the context window clean.
+ *     export URLs that return parseable content (pdf, csv).
+ *  2. Multimodal passthrough — images and PDFs within the size limit are
+ *     returned as native media content parts so the model can read them
+ *     directly. Larger binaries are offloaded to the sandbox filesystem.
  */
 
 import { tool } from "ai";
@@ -16,12 +16,19 @@ import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 /** Responses larger than this (in chars) are offloaded to the sandbox. */
 const CHAR_THRESHOLD = 20_000;
 
-/** MIME type prefixes that are treated as binary and always offloaded. */
+/**
+ * Multimodal binaries up to this size (bytes) are returned inline as base64
+ * media content parts. Larger files are offloaded to the sandbox instead.
+ */
+const MULTIMODAL_SIZE_LIMIT = 5 * 1024 * 1024; // 5 MB
+
+/** MIME type prefixes that should be passed multimodally when small enough. */
+const MULTIMODAL_MIME_PREFIXES = ["image/", "application/pdf"];
+
+/** All other binary MIME type prefixes are always offloaded to the sandbox. */
 const BINARY_MIME_PREFIXES = [
-  "image/",
   "audio/",
   "video/",
-  "application/pdf",
   "application/octet-stream",
   "application/zip",
   "application/gzip",
@@ -29,16 +36,23 @@ const BINARY_MIME_PREFIXES = [
 
 function isBinary(contentType: string): boolean {
   const ct = contentType.toLowerCase();
-  return BINARY_MIME_PREFIXES.some((prefix) => ct.startsWith(prefix));
+  return (
+    BINARY_MIME_PREFIXES.some((p) => ct.startsWith(p)) ||
+    MULTIMODAL_MIME_PREFIXES.some((p) => ct.startsWith(p))
+  );
+}
+
+function isMultimodal(contentType: string): boolean {
+  const ct = contentType.toLowerCase();
+  return MULTIMODAL_MIME_PREFIXES.some((p) => ct.startsWith(p));
 }
 
 /**
  * Rewrite Google Workspace edit/view/preview URLs to export URLs so that the
- * fetched content is plain text or a binary document rather than an
- * interactive JS-rendered page.
+ * fetched content is a binary document rather than an interactive JS-rendered page.
  */
 function transformGoogleWorkspaceUrl(url: string): string {
-  // Google Docs  → export as Markdown
+  // Google Docs  → export as PDF
   const docMatch = url.match(
     /^(https:\/\/docs\.google\.com\/document\/d\/[^/]+)\/.*/,
   );
@@ -67,13 +81,8 @@ function transformGoogleWorkspaceUrl(url: string): string {
 
 /** Derive a safe filename from a URL and content type. */
 function deriveFilename(url: string, contentType: string): string {
-  // Try to pull the last path segment
   let name = url.split("?")[0].split("/").filter(Boolean).pop() ?? "fetched";
-
-  // Strip any existing extension so we can assign the right one
   name = name.replace(/\.[^.]+$/, "");
-
-  // Sanitize to filesystem-safe chars
   name = name.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
 
   const ct = contentType.toLowerCase();
@@ -91,32 +100,62 @@ function deriveFilename(url: string, contentType: string): string {
   return `${name}.bin`;
 }
 
+async function offloadToSandbox(
+  buffer: Buffer,
+  url: string,
+  transformedUrl: string,
+  contentType: string,
+  userId: string,
+  chatId: string,
+): Promise<string> {
+  const filename = deriveFilename(transformedUrl, contentType);
+  const sandboxPath = `/tmp/web_fetch/${filename}`;
+
+  const sandbox = await getOrCreateSandbox(userId, chatId);
+  await sandbox.process.executeCommand(
+    "mkdir -p /tmp/web_fetch",
+    "/",
+    undefined,
+    10,
+  );
+  await sandbox.fs.uploadFile(buffer, sandboxPath);
+
+  const urlNote =
+    transformedUrl !== url ? `\n(URL was rewritten from ${url})` : "";
+  return `Content saved to sandbox at ${sandboxPath} (${buffer.length.toLocaleString()} bytes, ${contentType}).${urlNote}\nUse the view_file tool to view it, or the bash tool to process it.`;
+}
+
+interface MultimodalResult {
+  url: string;
+  mimeType: string;
+  /** base64-encoded content */
+  data: string;
+}
+
+type FetchResult = string | MultimodalResult;
+
 export function createWebFetchTool(chatId: string, userId: string) {
   return tool({
     description: `Fetch content from a URL and return it.
 
 Google Workspace URLs are automatically rewritten to export URLs:
-- Google Docs  → /export?format=md   (Markdown)
+- Google Docs  → /export?format=pdf  (PDF)
 - Google Sheets → /export?format=csv  (CSV)
 - Google Slides → /export?format=pdf  (PDF)
 
-If the response is binary (e.g. a PDF) or exceeds ${CHAR_THRESHOLD.toLocaleString()} characters,
-the content is saved to the sandbox at /tmp/web_fetch/<filename> instead of
-being returned directly. Use the bash tool to read or search the saved file.
-Set save_to_sandbox to true to always offload to the sandbox regardless of size.`,
+Images and PDFs up to 5 MB are returned as native multimodal content so you can read them directly.
+Larger binaries and unsupported types are saved to the sandbox at /tmp/web_fetch/<filename>.
+Set save_to_sandbox to true to always offload to the sandbox regardless of type or size.`,
     inputSchema: z.object({
       url: z.string().describe("The URL to fetch."),
       save_to_sandbox: z
         .boolean()
         .optional()
         .describe(
-          "If true, always save the response to the sandbox instead of returning it directly. Useful for large documents you plan to process with bash.",
+          "If true, always save the response to the sandbox instead of returning it directly.",
         ),
     }),
-    execute: async ({
-      url,
-      save_to_sandbox,
-    }): Promise<string> => {
+    execute: async ({ url, save_to_sandbox }): Promise<FetchResult> => {
       const transformedUrl = transformGoogleWorkspaceUrl(url);
 
       let response: Response;
@@ -136,75 +175,96 @@ Set save_to_sandbox to true to always offload to the sandbox regardless of size.
         return `HTTP ${response.status} ${response.statusText} for ${transformedUrl}`;
       }
 
-      const contentType = response.headers.get("content-type") ?? "application/octet-stream";
+      const contentType =
+        response.headers.get("content-type") ?? "application/octet-stream";
       const binary = isBinary(contentType);
 
-      // Decide whether to offload before reading the body
-      const shouldOffload = save_to_sandbox === true || binary;
-
-      if (shouldOffload) {
-        // Stream body into sandbox
+      if (save_to_sandbox === true || (binary && !isMultimodal(contentType))) {
+        // Always-offload path: non-multimodal binary, or user explicitly requested sandbox
         const buffer = Buffer.from(await response.arrayBuffer());
-        const filename = deriveFilename(transformedUrl, contentType);
-        const sandboxPath = `/tmp/web_fetch/${filename}`;
-
         try {
-          const sandbox = await getOrCreateSandbox(userId, chatId);
-          await sandbox.process.executeCommand(
-            "mkdir -p /tmp/web_fetch",
-            "/",
-            undefined,
-            10,
+          return await offloadToSandbox(
+            buffer,
+            url,
+            transformedUrl,
+            contentType,
+            userId,
+            chatId,
           );
-          await sandbox.fs.uploadFile(buffer, sandboxPath);
         } catch (err) {
           return `Fetched content (${buffer.length.toLocaleString()} bytes) but failed to save to sandbox: ${err instanceof Error ? err.message : String(err)}`;
         }
+      }
 
-        const urlNote =
-          transformedUrl !== url
-            ? `\n(URL was rewritten from ${url})`
-            : "";
-        return `Content saved to sandbox at ${sandboxPath} (${buffer.length.toLocaleString()} bytes, ${contentType}).${urlNote}\nUse the bash tool to read or process it, e.g.: \`cat ${sandboxPath}\``;
+      if (isMultimodal(contentType)) {
+        const buffer = Buffer.from(await response.arrayBuffer());
+
+        if (buffer.length > MULTIMODAL_SIZE_LIMIT) {
+          // Too large for multimodal — offload instead
+          try {
+            return await offloadToSandbox(
+              buffer,
+              url,
+              transformedUrl,
+              contentType,
+              userId,
+              chatId,
+            );
+          } catch (err) {
+            return `Fetched ${buffer.length.toLocaleString()} bytes but failed to save to sandbox: ${err instanceof Error ? err.message : String(err)}`;
+          }
+        }
+
+        // Strip parameters from content type (e.g. "image/png; charset=utf-8" → "image/png")
+        const mimeType = contentType.split(";")[0].trim();
+        return {
+          url: transformedUrl,
+          mimeType,
+          data: buffer.toString("base64"),
+        };
       }
 
       // Read as text
       const text = await response.text();
 
       if (text.length > CHAR_THRESHOLD) {
-        // Too large — offload the text we already read
         const buffer = Buffer.from(text, "utf-8");
-        const filename = deriveFilename(transformedUrl, contentType);
-        const sandboxPath = `/tmp/web_fetch/${filename}`;
-
         try {
-          const sandbox = await getOrCreateSandbox(userId, chatId);
-          await sandbox.process.executeCommand(
-            "mkdir -p /tmp/web_fetch",
-            "/",
-            undefined,
-            10,
+          return await offloadToSandbox(
+            buffer,
+            url,
+            transformedUrl,
+            contentType,
+            userId,
+            chatId,
           );
-          await sandbox.fs.uploadFile(buffer, sandboxPath);
         } catch (err) {
-          // Fall back to returning a truncated version
           const truncated = text.slice(0, CHAR_THRESHOLD);
           return `[Content truncated — sandbox save failed: ${err instanceof Error ? err.message : String(err)}]\n\n${truncated}`;
         }
-
-        const urlNote =
-          transformedUrl !== url
-            ? `\n(URL was rewritten from ${url})`
-            : "";
-        return `Content was too long (${text.length.toLocaleString()} chars) and has been saved to the sandbox at ${sandboxPath}.${urlNote}\nUse the bash tool to read or search it, e.g.:\n\`\`\`\ncat ${sandboxPath}\ngrep -n "keyword" ${sandboxPath}\n\`\`\``;
       }
 
-      // Short enough — return directly
       const urlNote =
-        transformedUrl !== url
-          ? `\n<!-- URL rewritten from ${url} -->\n`
-          : "";
+        transformedUrl !== url ? `\n<!-- URL rewritten from ${url} -->\n` : "";
       return `${urlNote}${text}`;
+    },
+
+    toModelOutput: ({ output }) => {
+      if (typeof output === "string") {
+        return { type: "text", value: output };
+      }
+
+      return {
+        type: "content",
+        value: [
+          { type: "text", text: `Fetched: ${output.url}` },
+          {
+            type: "media",
+            data: output.data,
+            mediaType: output.mimeType as `${string}/${string}`,
+          },
+        ],
+      };
     },
   });
 }
