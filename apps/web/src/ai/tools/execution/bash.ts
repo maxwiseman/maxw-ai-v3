@@ -19,7 +19,7 @@ function truncateOutput(text: string, label: string): string {
   return (
     `Error: ${label} was too large (${text.length.toLocaleString()} characters). ` +
     `The limit is ${MAX_OUTPUT_CHARS.toLocaleString()} characters. ` +
-    `Use head/tail/grep to read specific portions, or pipe through a filter.`
+    "Use head/tail/grep to read specific portions, or pipe through a filter."
   );
 }
 

@@ -176,7 +176,6 @@ export function createTextEditorToolOpenAI(chatId: string, userId: string) {
     description:
       "Create and edit files in the sandbox. Use 'view' to read a file with line numbers, 'create' to create a new file, 'str_replace' to replace a unique string in a file, or 'insert' to insert text at a specific line.",
     inputSchema: textEditorParams,
-    execute: async (action) =>
-      executeFileAction(userId, chatId, action),
+    execute: async (action) => executeFileAction(userId, chatId, action),
   });
 }

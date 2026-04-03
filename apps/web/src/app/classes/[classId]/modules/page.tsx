@@ -141,7 +141,6 @@ function ModuleItem({
 }) {
   const Icon = moduleItemIcons[item.type] ?? IconFileDots;
 
-  console.log(item);
   if (classId === undefined) return;
 
   if (item.type === "SubHeader")

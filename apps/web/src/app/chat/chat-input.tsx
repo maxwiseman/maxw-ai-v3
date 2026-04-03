@@ -2,7 +2,7 @@
 "use client";
 
 import type { ChatStatus } from "ai";
-import { ChevronLeftIcon, ChevronRightIcon, GlobeIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   type RefObject,
@@ -56,8 +56,6 @@ interface ChatInputProps {
   text?: string;
   setText?: (text: string) => void;
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
-  useWebSearch: boolean;
-  setUseWebSearch: (value: boolean) => void;
   onSubmit: (message: ChatInputMessage) => void;
   status?: ChatStatus;
   hasMessages: boolean;
@@ -125,13 +123,13 @@ function QuestionBody({
   q,
   currentAnswer,
   currentOther,
-  isLast,
-  isSingleMCNoOther,
+  isLast: _isLast,
+  isSingleMCNoOther: _isSingleMCNoOther,
   onMCSelect,
   onOtherSelect,
   onAnswerChange,
   onKeyDown,
-  formatAndSend,
+  formatAndSend: _formatAndSend,
 }: {
   q: UserInputQuestion;
   currentAnswer: string;
@@ -424,8 +422,6 @@ function PendingQuestionsWidget({
 function ChatInputInner({
   setText,
   textareaRef,
-  useWebSearch,
-  setUseWebSearch,
   onSubmit,
   status,
   hasMessages,
@@ -441,10 +437,6 @@ function ChatInputInner({
   const controller = usePromptInputController();
 
   const handleSubmit = (message: PromptInputMessage) => {
-    console.log("ChatInput handleSubmit:", message);
-    console.log("Controller value:", controller.textInput.value);
-    console.log("Status:", status);
-
     // Merge message with command selection
     onSubmit({
       ...message,
@@ -513,13 +505,6 @@ function ChatInputInner({
             }}
             textareaRef={textareaRef}
           />
-          {/*<PromptInputButton
-            onClick={() => setUseWebSearch(!useWebSearch)}
-            variant={useWebSearch ? "secondary" : "ghost"}
-          >
-            <GlobeIcon size={16} />
-            <span>Search</span>
-          </PromptInputButton>*/}
           {onModelChange && (
             <PromptInputButton
               onClick={() => {
@@ -544,17 +529,6 @@ function ChatInputInner({
             rateLimit?.code === "RATE_LIMIT_EXCEEDED"
           }
           status={status}
-          onClick={() => {
-            console.log("Submit button clicked");
-            console.log("Text value:", controller.textInput.value);
-            console.log("Status:", status);
-            console.log(
-              "Disabled:",
-              (!controller.textInput.value.trim() && !status) ||
-                status === "streaming" ||
-                rateLimit?.code === "RATE_LIMIT_EXCEEDED",
-            );
-          }}
         />
       </PromptInputToolbar>
     </PromptInput>
@@ -565,8 +539,6 @@ export function ChatInput({
   text: _text,
   setText,
   textareaRef,
-  useWebSearch,
-  setUseWebSearch,
   onSubmit,
   status,
   hasMessages,
@@ -596,8 +568,6 @@ export function ChatInput({
         <ChatInputInner
           setText={setText}
           textareaRef={textareaRef}
-          useWebSearch={useWebSearch}
-          setUseWebSearch={setUseWebSearch}
           onSubmit={onSubmit}
           status={status}
           hasMessages={hasMessages}

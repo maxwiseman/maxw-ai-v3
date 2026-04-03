@@ -9,15 +9,13 @@ import type { Tool } from "ai";
 import type { CanvasCourse } from "@/types/canvas";
 import { getClassAssignmentsTool } from "../tools/canvas/get-class-assignments";
 import { searchContentTool } from "../tools/canvas/search-content";
-import {
-  createBashTool,
-  createShellToolOpenAI,
-} from "../tools/execution/bash";
+import { createBashTool, createShellToolOpenAI } from "../tools/execution/bash";
 import {
   createTextEditorTool,
   createTextEditorToolOpenAI,
 } from "../tools/execution/text-editor";
 import { createWebFetchTool } from "../tools/fetch/web-fetch";
+import { withOutputLimit } from "../tools/output-limit";
 import { createShareFileTool } from "../tools/sandbox/share-file";
 import { createStudySetTool } from "../tools/study/flashcards";
 import {
@@ -34,7 +32,6 @@ import { createViewImageTool } from "../tools/workspace/image";
 import { createMemoryTool } from "../tools/workspace/memory";
 import { createApplyPatchTool } from "../tools/workspace/patch";
 import { createUpdatePlanTool } from "../tools/workspace/plan";
-import { withOutputLimit } from "../tools/output-limit";
 import { requestUserInputTool } from "../tools/workspace/user-input";
 import { executeMemoryCommand } from "../utils/memory-helpers";
 

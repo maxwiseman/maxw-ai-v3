@@ -60,16 +60,8 @@ export default function ChatPage() {
     onError: (err) => {
       console.error("useChat error:", err);
     },
-    onFinish: (message) => {
-      console.log("useChat finished:", message);
-    },
-    // onResponse: (response) => {
-    //   console.log("useChat response:", response);
-    // },
   });
-  console.log("messages:", messages);
 
-  const [webSearch, setWebSearch] = useState(false);
   const [filesOpen, setFilesOpen] = useState(false);
   const files = useChatFiles(messages);
 
@@ -99,9 +91,6 @@ export default function ChatPage() {
   }, [messages, status]);
 
   const handleSubmit = (message: ChatInputMessage) => {
-    console.log("handleSubmit called with:", message);
-    console.log("Current status:", status);
-
     // If currently streaming, stop instead of submitting
     if (status === "streaming") {
       stop();
@@ -109,7 +98,6 @@ export default function ChatPage() {
     }
 
     if (!(message.text || message.files)) {
-      console.log("No text or attachments, returning");
       return;
     }
 
@@ -134,8 +122,6 @@ export default function ChatPage() {
               hasMessages={false}
               onSubmit={handleSubmit}
               setText={() => {}}
-              setUseWebSearch={setWebSearch}
-              useWebSearch={webSearch}
               status={status as ChatStatus}
               pendingQuestion={pendingQuestion}
               model={model}
@@ -175,8 +161,6 @@ export default function ChatPage() {
                       hasMessages={true}
                       onSubmit={handleSubmit}
                       setText={() => {}}
-                      setUseWebSearch={setWebSearch}
-                      useWebSearch={webSearch}
                       status={status as ChatStatus}
                       pendingQuestion={pendingQuestion}
                       model={model}

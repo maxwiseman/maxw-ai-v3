@@ -9,8 +9,8 @@
 import * as nodePath from "node:path";
 import { tool } from "ai";
 import { z } from "zod";
-import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 import type { Sandbox } from "@/ai/sandbox/sandbox-manager";
+import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 
 /** Maximum characters of text content returned from a single view_file call. */
 const MAX_TEXT_CHARS = 100_000;
@@ -137,8 +137,7 @@ async function extractImages(
     // Step 3: strip the definition lines so they don't appear in the output
     processed = processed.replace(
       /^\[([^\]]+)\]:\s+<?data:[^>\n]+(?:\n[A-Za-z0-9+/=]+)*>?[ \t]*\n?/gm,
-      (_, label: string) =>
-        refDataMap.has(label.toLowerCase()) ? "" : _,
+      (_, label: string) => (refDataMap.has(label.toLowerCase()) ? "" : _),
     );
   }
 
@@ -168,16 +167,18 @@ async function extractImages(
   }
 
   for (const { full, alt, src } of mdFileMatches) {
-    const absPath = src.startsWith("/")
-      ? src
-      : nodePath.resolve(baseDir, src);
+    const absPath = src.startsWith("/") ? src : nodePath.resolve(baseDir, src);
     const ext = absPath.split(".").pop()?.toLowerCase() ?? "";
     const mimeType = MEDIA_TYPES[ext];
     if (!mimeType || mimeType === "application/pdf") continue;
     try {
       const buf = await sandbox.fs.downloadFile(absPath);
       const placeholder = nextPlaceholder(alt);
-      images.push({ placeholder, data: buf.toString("base64"), mediaType: mimeType });
+      images.push({
+        placeholder,
+        data: buf.toString("base64"),
+        mediaType: mimeType,
+      });
       processed = processed.replace(full, placeholder);
     } catch {
       // File not accessible — leave reference as-is
@@ -194,16 +195,18 @@ async function extractImages(
   }
 
   for (const { full, src } of htmlFileMatches) {
-    const absPath = src.startsWith("/")
-      ? src
-      : nodePath.resolve(baseDir, src);
+    const absPath = src.startsWith("/") ? src : nodePath.resolve(baseDir, src);
     const ext = absPath.split(".").pop()?.toLowerCase() ?? "";
     const mimeType = MEDIA_TYPES[ext];
     if (!mimeType || mimeType === "application/pdf") continue;
     try {
       const buf = await sandbox.fs.downloadFile(absPath);
       const placeholder = nextPlaceholder();
-      images.push({ placeholder, data: buf.toString("base64"), mediaType: mimeType });
+      images.push({
+        placeholder,
+        data: buf.toString("base64"),
+        mediaType: mimeType,
+      });
       processed = processed.replace(full, placeholder);
     } catch {
       // File not accessible — leave reference as-is
@@ -250,7 +253,7 @@ export function createViewImageTool(chatId: string, userId: string) {
           return (
             `Error: File content was too large (${content.length.toLocaleString()} characters after image extraction). ` +
             `The limit is ${MAX_TEXT_CHARS.toLocaleString()} characters. ` +
-            `Use the bash tool with head/tail/grep to read specific portions of the file.`
+            "Use the bash tool with head/tail/grep to read specific portions of the file."
           );
         }
 
@@ -273,7 +276,13 @@ export function createViewImageTool(chatId: string, userId: string) {
       if (/[\x00-\x08\x0E-\x1F]/.test(text)) {
         return `Unsupported file type ".${ext}". Only images (PNG, JPEG, GIF, WebP), PDFs, and text-based files are supported.`;
       }
-      return { path, mimeType: "text/plain", content: text, isText: true, images: [] };
+      return {
+        path,
+        mimeType: "text/plain",
+        content: text,
+        isText: true,
+        images: [],
+      };
     },
 
     toModelOutput: ({ output }) => {
@@ -285,7 +294,12 @@ export function createViewImageTool(chatId: string, userId: string) {
         const parts: Array<
           | { type: "text"; text: string }
           | { type: "media"; data: string; mediaType: `${string}/${string}` }
-        > = [{ type: "text", text: `Contents of ${output.path}:\n\n${output.content}` }];
+        > = [
+          {
+            type: "text",
+            text: `Contents of ${output.path}:\n\n${output.content}`,
+          },
+        ];
 
         for (const img of output.images) {
           parts.push({ type: "text", text: img.placeholder });

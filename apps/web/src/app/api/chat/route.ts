@@ -5,7 +5,6 @@ import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
-  type ModelMessage,
   type SystemModelMessage,
   smoothStream,
   ToolLoopAgent,
@@ -59,8 +58,6 @@ export async function POST(request: NextRequest) {
       },
     );
   }
-
-  console.log("model", requestedModel);
 
   if (!chatId) {
     return new Response(JSON.stringify({ error: "No chat ID provided" }), {

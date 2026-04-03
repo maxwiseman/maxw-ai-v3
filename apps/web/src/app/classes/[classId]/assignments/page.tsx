@@ -53,15 +53,12 @@ export default async function ClassAssignmentsPage({
   if (!authData) return <NotAuthenticated />;
 
   const params = await paramsPromise;
-  // const { modulesByClass, setModulesByClass } = useModulesState();
   const data = await fetchData({
     userId: authData.user.id,
     classId: params.classId,
   });
 
   if (typeof data === "string") notFound();
-
-  console.log(data);
 
   return (
     <div>
@@ -71,10 +68,6 @@ export default async function ClassAssignmentsPage({
         </PageHeaderContent>
       </PageHeader>
       <Accordion
-        // defaultValue={modulesByClass[params.classId]}
-        // onValueChange={(newVal) =>
-        //   setModulesByClass({ [params.classId]: newVal })
-        // }
         className="space-y-2 px-8 pb-8"
         type="multiple"
         defaultValue={["upcoming", "past", "undated"]}

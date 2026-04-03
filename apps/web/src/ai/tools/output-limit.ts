@@ -16,7 +16,10 @@ type AnyTool = Record<string, any>;
 
 const MAX_CHARS = 100_000;
 
-export function withOutputLimit(toolObj: AnyTool, maxChars = MAX_CHARS): AnyTool {
+export function withOutputLimit(
+  toolObj: AnyTool,
+  maxChars = MAX_CHARS,
+): AnyTool {
   const originalExecute = toolObj.execute;
   if (typeof originalExecute !== "function") return toolObj;
 
@@ -26,13 +29,15 @@ export function withOutputLimit(toolObj: AnyTool, maxChars = MAX_CHARS): AnyTool
     ...toolObj,
     execute: async (...args: unknown[]) => {
       // biome-ignore lint/suspicious/noExplicitAny: forwarding variadic args
-      const result = await (originalExecute as (...a: any[]) => Promise<unknown>)(...args);
+      const result = await (
+        originalExecute as (...a: any[]) => Promise<unknown>
+      )(...args);
 
       if (typeof result === "string" && result.length > maxChars) {
         return (
           `Error: Tool output was too large (${result.length.toLocaleString()} characters). ` +
           `The limit is ${maxChars.toLocaleString()} characters. ` +
-          `Use a more targeted approach to retrieve only the data you need.`
+          "Use a more targeted approach to retrieve only the data you need."
         );
       }
 
@@ -44,7 +49,7 @@ export function withOutputLimit(toolObj: AnyTool, maxChars = MAX_CHARS): AnyTool
           return (
             `Error: Tool output was too large (${serialized.length.toLocaleString()} characters serialized). ` +
             `The limit is ${(maxChars * 2).toLocaleString()} characters. ` +
-            `Use a more targeted approach to retrieve only the data you need.`
+            "Use a more targeted approach to retrieve only the data you need."
           );
         }
       }

@@ -23,7 +23,9 @@ const memoryParams = z.object({
   view_range: z
     .array(z.number())
     .optional()
-    .describe("Line range [start, end] — two numbers, only for view command on a file"),
+    .describe(
+      "Line range [start, end] — two numbers, only for view command on a file",
+    ),
   file_text: z
     .string()
     .optional()
@@ -68,7 +70,6 @@ Operations:
 
 All paths must start with /memories. Check memory before asking the user to repeat information. Proactively save important facts the user shares.`,
     inputSchema: memoryParams,
-    execute: async (action) =>
-      executeMemoryCommand(userId, action),
+    execute: async (action) => executeMemoryCommand(userId, action),
   });
 }
