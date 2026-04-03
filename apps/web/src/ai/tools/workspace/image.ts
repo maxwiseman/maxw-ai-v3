@@ -68,10 +68,11 @@ export interface ViewFileResult {
  * base64 data + MIME type for each image found.
  *
  * Handles:
- *  - Markdown data URIs:  ![alt](data:image/png;base64,...)
- *  - HTML data URIs:      <img src="data:image/png;base64,...">
- *  - Markdown file refs:  ![alt](./relative.png) or ![alt](/abs/path.png)
- *  - HTML file refs:      <img src="./relative.png">
+ *  - Markdown inline data URI:     ![alt](data:image/png;base64,...)
+ *  - Markdown reference data URI:  ![][imageN]  +  [imageN]: <data:image/png;base64,...>
+ *  - HTML data URIs:               <img src="data:image/png;base64,...">
+ *  - Markdown file refs:           ![alt](./relative.png)
+ *  - HTML file refs:               <img src="./relative.png">
  */
 async function extractImages(
   text: string,
@@ -87,7 +88,7 @@ async function extractImages(
     return alt?.trim() ? `[image-${n}: ${alt.trim()}]` : `[image-${n}]`;
   };
 
-  // --- Markdown data URI: ![alt](data:mime;base64,DATA) ---
+  // --- Markdown inline data URI: ![alt](data:mime;base64,DATA) ---
   let processed = text.replace(
     /!\[([^\]]*)\]\(data:([^;)]+);base64,([A-Za-z0-9+/=\r\n]+)\)/g,
     (_, alt: string, mimeType: string, rawData: string) => {
@@ -100,6 +101,43 @@ async function extractImages(
       return placeholder;
     },
   );
+
+  // --- Markdown reference-style data URIs ---
+  // Step 1: build a map of label → {mimeType, data} from definitions like:
+  //   [imageN]: <data:image/png;base64,XXXX>
+  // The base64 payload may span multiple lines.
+  const refDataMap = new Map<string, { mimeType: string; data: string }>();
+  const refDefRe =
+    /^\[([^\]]+)\]:\s+<?data:([^;>\s]+);base64,([A-Za-z0-9+/=\s]+)>?[ \t]*$/gm;
+  let m: RegExpExecArray | null;
+  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex iteration
+  while ((m = refDefRe.exec(processed)) !== null) {
+    refDataMap.set(m[1].toLowerCase(), {
+      mimeType: m[2].trim(),
+      data: m[3].replace(/\s/g, ""),
+    });
+  }
+
+  if (refDataMap.size > 0) {
+    // Step 2: replace usages ![alt][label] or ![][label] with placeholders
+    processed = processed.replace(
+      /!\[([^\]]*)\]\[([^\]]+)\]/g,
+      (full, alt: string, label: string) => {
+        const ref = refDataMap.get(label.toLowerCase());
+        if (!ref) return full;
+        const placeholder = nextPlaceholder(alt);
+        images.push({ placeholder, data: ref.data, mediaType: ref.mimeType });
+        return placeholder;
+      },
+    );
+
+    // Step 3: strip the definition lines so they don't appear in the output
+    processed = processed.replace(
+      /^\[([^\]]+)\]:\s+<?data:[^>\n]+(?:\n[A-Za-z0-9+/=]+)*>?[ \t]*\n?/gm,
+      (_, label: string) =>
+        refDataMap.has(label.toLowerCase()) ? "" : _,
+    );
+  }
 
   // --- HTML img data URI: <img ...src="data:mime;base64,DATA"...> ---
   processed = processed.replace(
@@ -116,10 +154,8 @@ async function extractImages(
   );
 
   // --- Markdown file reference: ![alt](path) ---
-  // Collect matches first, then resolve asynchronously
   const mdFileMatches: Array<{ full: string; alt: string; src: string }> = [];
   const mdFileRe = /!\[([^\]]*)\]\((?!data:)([^)]+)\)/g;
-  let m: RegExpExecArray | null;
   // biome-ignore lint/suspicious/noAssignInExpressions: standard regex iteration
   while ((m = mdFileRe.exec(processed)) !== null) {
     const src = m[2].split(" ")[0]; // strip optional title: ![alt](path "title")
@@ -134,7 +170,7 @@ async function extractImages(
       : nodePath.resolve(baseDir, src);
     const ext = absPath.split(".").pop()?.toLowerCase() ?? "";
     const mimeType = MEDIA_TYPES[ext];
-    if (!mimeType || mimeType === "application/pdf") continue; // only inline images
+    if (!mimeType || mimeType === "application/pdf") continue;
     try {
       const buf = await sandbox.fs.downloadFile(absPath);
       const placeholder = nextPlaceholder(alt);
@@ -147,7 +183,8 @@ async function extractImages(
 
   // --- HTML img file reference: <img src="path"> ---
   const htmlFileMatches: Array<{ full: string; src: string }> = [];
-  const htmlFileRe = /<img\b[^>]*\bsrc=["'](?!data:)((?!https?:\/\/)[^"']+)["'][^>]*>/gi;
+  const htmlFileRe =
+    /<img\b[^>]*\bsrc=["'](?!data:)((?!https?:\/\/)[^"']+)["'][^>]*>/gi;
   // biome-ignore lint/suspicious/noAssignInExpressions: standard regex iteration
   while ((m = htmlFileRe.exec(processed)) !== null) {
     htmlFileMatches.push({ full: m[0], src: m[1] });
