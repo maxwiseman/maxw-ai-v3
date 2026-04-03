@@ -24,8 +24,12 @@ import {
   indexWorkspaceFiles,
   type WorkspaceFileEntry,
 } from "@/ai/sandbox/list-workspace-files";
-import { getSandboxIfRunning } from "@/ai/sandbox/sandbox-manager";
+import {
+  getSandboxIfRunning,
+  getSyncApiUrl,
+} from "@/ai/sandbox/sandbox-manager";
 import { getSkillsTree } from "@/ai/sandbox/skills-tree";
+import { createSyncToken } from "@/ai/sandbox/sync-token";
 import { getAllCanvasCourses } from "@/app/classes/classes-actions";
 import { auth } from "@/lib/auth";
 import { getUserSettings } from "@/lib/user-settings";
@@ -182,10 +186,14 @@ export async function POST(request: NextRequest) {
         try {
           const sandbox = await getSandboxIfRunning(userId, chatId);
           if (sandbox) {
+            // Pass sync env explicitly — some sandbox runtimes do not inherit
+            // envVars from `daytona.create` for executeCommand sessions.
+            const syncUrl = getSyncApiUrl();
+            const syncToken = createSyncToken(userId, chatId);
             await sandbox.process.executeCommand(
               "python3 /home/daytona/sync-workspace.py --once",
               "/home/daytona",
-              undefined,
+              { SYNC_API_URL: syncUrl, SYNC_TOKEN: syncToken },
               120,
             );
           }

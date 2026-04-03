@@ -64,22 +64,40 @@ export async function getR2SignedUrl(
   );
 }
 
-/** List objects under a prefix in R2. */
+/** List objects under a prefix in R2 (paginates past the first 1000 keys). */
 export async function listR2Objects(
   prefix: string,
 ): Promise<Array<{ key: string; size: number; lastModified?: Date }>> {
-  const command = new ListObjectsV2Command({
-    Bucket: env.R2_BUCKET_NAME,
-    Prefix: prefix,
-  });
-  const response = await r2.send(command);
-  return (response.Contents ?? [])
-    .filter((obj) => obj.Key && !obj.Key.endsWith("/"))
-    .map((obj) => ({
-      key: obj.Key!,
-      size: obj.Size ?? 0,
-      lastModified: obj.LastModified,
-    }));
+  const objects: Array<{
+    key: string;
+    size: number;
+    lastModified?: Date;
+  }> = [];
+  let continuationToken: string | undefined;
+
+  do {
+    const response = await r2.send(
+      new ListObjectsV2Command({
+        Bucket: env.R2_BUCKET_NAME,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      }),
+    );
+    for (const obj of response.Contents ?? []) {
+      if (obj.Key && !obj.Key.endsWith("/")) {
+        objects.push({
+          key: obj.Key,
+          size: obj.Size ?? 0,
+          lastModified: obj.LastModified,
+        });
+      }
+    }
+    continuationToken = response.IsTruncated
+      ? response.NextContinuationToken
+      : undefined;
+  } while (continuationToken);
+
+  return objects;
 }
 
 /** Upload a buffer to R2. */

@@ -18,23 +18,35 @@ const redis = new Redis({
 });
 
 /**
- * Resolve the public URL the sandbox sync script should call back to.
- * On Vercel preview/development deployments VERCEL_URL is used automatically
- * so NEXT_PUBLIC_SERVER_URL doesn't need to be set there.
+ * Resolve the URL the sandbox sync script should call for `/api/sandbox/sync`.
+ *
+ * **Daytona Tier 1/2:** egress is restricted to an allowlist that includes `*.vercel.app`
+ * but not arbitrary custom domains. If `NEXT_PUBLIC_SERVER_URL` is `https://beta.example.com`,
+ * sandboxes may get "connection reset" — use `SANDBOX_SYNC_API_URL` or rely on `VERCEL_URL`
+ * (see production branch below).
+ *
+ * On Vercel preview/development, `VERCEL_URL` is used automatically.
  */
-function getSyncApiUrl(): string {
+export function getSyncApiUrl(): string {
+  if (env.SANDBOX_SYNC_API_URL) return env.SANDBOX_SYNC_API_URL;
+
   const vercelEnv = process.env.VERCEL_ENV;
   if (vercelEnv === "preview" || vercelEnv === "development") {
     const vercelUrl = process.env.VERCEL_URL;
     if (vercelUrl) return `https://${vercelUrl}`;
   }
   if (vercelEnv === "production") {
-    const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    // Prefer VERCEL_URL first — it is always a *.vercel.app host, which Daytona allows on
+    // restricted tiers. VERCEL_PROJECT_PRODUCTION_URL is often a custom domain (blocked).
+    const vercelUrl =
+      process.env.VERCEL_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL;
     if (vercelUrl) return `https://${vercelUrl}`;
   }
   if (env.NEXT_PUBLIC_SERVER_URL) return env.NEXT_PUBLIC_SERVER_URL;
+  const fallbackUrl = process.env.VERCEL_URL;
+  if (fallbackUrl) return `https://${fallbackUrl}`;
   throw new Error(
-    "NEXT_PUBLIC_SERVER_URL is not set. Required for non-Vercel deployments.",
+    "Could not resolve URL for sandbox sync. Set SANDBOX_SYNC_API_URL or NEXT_PUBLIC_SERVER_URL (required outside Vercel, or when VERCEL_URL is unavailable).",
   );
 }
 

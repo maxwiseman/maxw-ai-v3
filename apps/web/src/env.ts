@@ -16,11 +16,17 @@ export const env = createEnv({
     R2_BUCKET_NAME: z.string().min(1),
     DAYTONA_SNAPSHOT: z.string().optional(),
     OPENAI_API_KEY: z.string().min(1),
+    /**
+     * Optional override for the URL the Daytona sandbox uses to call `/api/sandbox/sync`.
+     * Set to your `*.vercel.app` host if you use a custom domain publicly: Daytona Tier 1/2
+     * only allowlists `*.vercel.app` (not arbitrary domains), so sync would fail with
+     * "connection reset" while `NEXT_PUBLIC_SERVER_URL` stays `https://your-domain.com`.
+     */
+    SANDBOX_SYNC_API_URL: z.url().optional(),
   },
   client: {
     NEXT_PUBLIC_UPSTASH_SEARCH_TOKEN: z.string().optional(),
-    /** Public app origin — used by the sandbox sync script to reach /api/sandbox/sync.
-     *  Not required on Vercel preview/development — VERCEL_URL is used automatically. */
+    /** Public app origin (browser, OAuth, links). Not necessarily the same host sandboxes use for sync — see SANDBOX_SYNC_API_URL. */
     NEXT_PUBLIC_SERVER_URL: z.url().optional(),
   },
   // @ts-expect-error -- This does contain all the correct data, it's just not typed
