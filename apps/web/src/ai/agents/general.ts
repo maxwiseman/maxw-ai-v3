@@ -34,6 +34,7 @@ import { createViewImageTool } from "../tools/workspace/image";
 import { createMemoryTool } from "../tools/workspace/memory";
 import { createApplyPatchTool } from "../tools/workspace/patch";
 import { createUpdatePlanTool } from "../tools/workspace/plan";
+import { withOutputLimit } from "../tools/output-limit";
 import { requestUserInputTool } from "../tools/workspace/user-input";
 import { executeMemoryCommand } from "../utils/memory-helpers";
 
@@ -244,7 +245,7 @@ Remember: You're here to help ${ctx.role === "teacher" ? "educators" : "students
 
 /** Tools shared by all providers */
 function buildSharedTools(ctx: AgentContext): Record<string, Tool> {
-  return {
+  const tools = {
     web_fetch: createWebFetchTool(ctx.chatId, ctx.userId),
     searchContent: searchContentTool,
     getClassAssignments: getClassAssignmentsTool,
@@ -261,6 +262,13 @@ function buildSharedTools(ctx: AgentContext): Record<string, Tool> {
     close_agent: createCloseAgentTool(),
     share_file: createShareFileTool(ctx.chatId, ctx.userId),
   };
+
+  // Wrap every tool with the output size limiter. Tools that manage their own
+  // payload (view_file, web_fetch) are skipped by the wrapper automatically
+  // because they declare toModelOutput.
+  return Object.fromEntries(
+    Object.entries(tools).map(([k, v]) => [k, withOutputLimit(v) as Tool]),
+  );
 }
 
 /**

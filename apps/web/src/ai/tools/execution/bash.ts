@@ -11,6 +11,18 @@ import { openai } from "@ai-sdk/openai";
 import { seedCanvasData } from "@/ai/sandbox/data-seeder";
 import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 
+/** Maximum characters returned from a single shell command. */
+const MAX_OUTPUT_CHARS = 100_000;
+
+function truncateOutput(text: string, label: string): string {
+  if (text.length <= MAX_OUTPUT_CHARS) return text;
+  return (
+    `Error: ${label} was too large (${text.length.toLocaleString()} characters). ` +
+    `The limit is ${MAX_OUTPUT_CHARS.toLocaleString()} characters. ` +
+    `Use head/tail/grep to read specific portions, or pipe through a filter.`
+  );
+}
+
 /** Shared Daytona execution logic */
 async function runInSandbox(
   userId: string,
@@ -27,9 +39,12 @@ async function runInSandbox(
     undefined,
     timeoutSecs,
   );
+  const raw = result.result ?? "";
+  const isError = result.exitCode !== 0;
+  const limited = truncateOutput(raw, isError ? "stderr" : "stdout");
   return {
-    stdout: result.exitCode === 0 ? result.result : "",
-    stderr: result.exitCode !== 0 ? result.result : "",
+    stdout: isError ? "" : limited,
+    stderr: isError ? limited : "",
     exitCode: result.exitCode,
   };
 }

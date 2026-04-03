@@ -12,6 +12,9 @@ import { z } from "zod";
 import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 import type { Sandbox } from "@/ai/sandbox/sandbox-manager";
 
+/** Maximum characters of text content returned from a single view_file call. */
+const MAX_TEXT_CHARS = 100_000;
+
 // MIME types supported natively as multimodal media content parts
 const MEDIA_TYPES: Record<string, string> = {
   png: "image/png",
@@ -241,6 +244,14 @@ export function createViewImageTool(chatId: string, userId: string) {
           const result = await extractImages(content, path, sandbox);
           content = result.text;
           images = result.images;
+        }
+
+        if (content.length > MAX_TEXT_CHARS) {
+          return (
+            `Error: File content was too large (${content.length.toLocaleString()} characters after image extraction). ` +
+            `The limit is ${MAX_TEXT_CHARS.toLocaleString()} characters. ` +
+            `Use the bash tool with head/tail/grep to read specific portions of the file.`
+          );
         }
 
         return { path, mimeType: "text/plain", content, isText: true, images };

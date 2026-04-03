@@ -76,6 +76,14 @@ function transformGoogleWorkspaceUrl(url: string): string {
     return `${slideMatch[1]}/export?format=pdf`;
   }
 
+  // Google Drive file → direct download
+  const driveMatch = url.match(
+    /^https:\/\/drive\.google\.com\/file\/d\/([^/]+)\//,
+  );
+  if (driveMatch) {
+    return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+  }
+
   return url;
 }
 
@@ -138,10 +146,11 @@ export function createWebFetchTool(chatId: string, userId: string) {
   return tool({
     description: `Fetch content from a URL and return it.
 
-Google Workspace URLs are automatically rewritten to export URLs:
-- Google Docs  → /export?format=pdf  (PDF)
+Google URLs are automatically rewritten to direct-download equivalents:
+- Google Docs   → /export?format=md  (MD)
 - Google Sheets → /export?format=csv  (CSV)
 - Google Slides → /export?format=pdf  (PDF)
+- Google Drive  → /uc?export=download (direct file download)
 
 Images and PDFs up to 5 MB are returned as native multimodal content so you can read them directly.
 Larger binaries and unsupported types are saved to the sandbox at /tmp/web_fetch/<filename>.
