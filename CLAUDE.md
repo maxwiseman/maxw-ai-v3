@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Development
 ```bash
-bun dev              # Start all apps (web + native)
-bun dev:web          # Start web app only (http://localhost:3000)
+bun dev              # Start all apps (web + native) via Turborepo
+bun dev:web          # Start web app only (http://localhost:3000, Next.js --turbopack)
 bun dev:native       # Start mobile app with Expo
 ```
 
@@ -41,7 +41,7 @@ bun check            # Run Biome formatting and linting with auto-fix
 This is a TypeScript monorepo built with Turborepo containing:
 - **Web app** (`apps/web`): Next.js 16 with App Router and React 19
 - **Mobile app** (`apps/native`): React Native with Expo
-- **Shared packages** (`packages/*`): Common utilities (if any)
+- **Shared packages** (`packages/*`): Workspace path exists for shared packages; none are checked in yet
 
 ### Tech Stack
 - **Runtime**: Bun for package management and development
@@ -49,63 +49,44 @@ This is a TypeScript monorepo built with Turborepo containing:
 - **Database**: PostgreSQL with Drizzle ORM (Neon serverless)
 - **Auth**: Better-Auth with session management
 - **Styling**: TailwindCSS 4 with shadcn/ui components
-- **AI**: Anthropic Claude via AI SDK with native tools
+- **AI**: AI SDK v6 (`ToolLoopAgent`) with Anthropic Claude and OpenAI (Responses API) as selectable providers
+- **Sandboxes**: Daytona for per-chat shell and file workspaces; R2 for workspace file storage; Upstash Redis for skills/caching as applicable
 - **State**: Zustand (client), TanStack Query (server state)
 - **Forms**: TanStack React Form with Zod validation
 - **Search**: Upstash Search for Canvas LMS content
 
 ## AI Agent System
 
-The core feature is an AI assistant powered by **Anthropic Claude Sonnet 4.5** with native tool support.
+The core feature is a chat assistant using **AI SDK `ToolLoopAgent`**. The default model is **`claude-sonnet-4-6`** (see `apps/web/src/app/api/chat/route.ts`). If the requested model id starts with `claude`, the provider is Anthropic; otherwise the provider is OpenAI.
 
 ### Agent Architecture
 
 **Entry Point**: `apps/web/src/app/api/chat/route.ts`
-- Uses AI SDK's `ToolLoopAgent` with Anthropic's Claude Sonnet 4.5
-- Context includes: user info, geolocation, timezone, classes, chat ID
-- Supports extended thinking (10k token budget)
-- Container-based tool execution with skill persistence
+- Builds `AgentContext`, selects **Anthropic** or **OpenAI** from the requested model id, and calls `getToolsForProvider(context)`
+- For Anthropic: extended thinking (10k token budget) and prompt cache (`cacheControl`) in `providerOptions`
+- After each turn, the route can sync the Daytona workspace and stream workspace file metadata to the client (`data-workspace-files`)
 
 **Core Components** (`apps/web/src/ai/agents/`):
-- `general.ts`: System prompt builder and tool configuration
-- `AgentContext`: Type definition for per-request context (userId, classes, timezone, location)
-- Legacy agents (secretary, study, triage) kept for reference but not currently active
+- `general.ts`: System prompt (`buildSystemPrompt`), per-request context (`buildDynamicContext`), and `getToolsForProvider` / deprecated `getGeneralAgentTools`
+- `AgentContext`: Per-request context (`userId`, `fullName`, `schoolName`, `role`, `classes`, `timezone`, location fields, `chatId`, `provider`, `skillsTree`, etc.)
 
-### Native Anthropic Tools
+### Tools (high level)
 
-The agent uses Anthropic's built-in tools (not custom implementations):
-- `code_execution`: Python sandbox for calculations and programmatic tool calling
-- `web_search`: Location-aware web search (uses geolocation from request headers)
-- `memory`: Persistent user memory with filesystem-like interface
-- `web_fetch`: Fetch and process web content
+Tools are composed in `getToolsForProvider` in `general.ts`. **Anthropic** uses native tools where available (`bash`, `memory`, `web_search`); **OpenAI** uses native `shell`, native `web_search`, and custom implementations for memory and the text editor. **Shared** custom tools include Canvas search/assignments, todos, study sets, web fetch, plan/patch/image/sub-agent/share_file, etc. See the system prompt and `buildSharedTools` / `getToolsForProvider` for the authoritative list.
 
-### Custom Tools (`apps/web/src/ai/tools/`)
-
-- **Canvas Tools** (`canvas/`):
-  - `searchContent`: Upstash semantic search over Canvas LMS content
-  - `getClassAssignments`: Fetch assignments from Canvas (programmatic calling)
-
-- **Todo Tools** (`todo/`):
-  - `getTodos`, `createTodo`, `updateTodo`, `deleteTodo`: Full CRUD (programmatic calling)
-
-- **Study Tools** (`study/`):
-  - `createStudySet`: Generate flashcards with term/definition pairs
+Execution runs in a **Daytona** sandbox (not a generic “Python code_execution” container): shell is the primary automation surface; Python/Node and document tooling are available inside the sandbox as described in the system prompt.
 
 ### Programmatic Tool Calling Pattern
 
-Tools marked "programmatic calling only" are called from within Python code execution:
-```python
-result = await getClassAssignments({})  # Fetch from all classes
-todos = await getTodos({"view": "today"})
-await createTodo({"title": "...", "dueDate": "..."})
-```
+Some workflows invoke todo/Canvas helpers from shell scripts or documented patterns; the chat agent’s main interface is the tool set above.
 
 ### AI Integration Points
 
 - **Chat API**: `apps/web/src/app/api/chat/route.ts`
 - **Agent Config**: `apps/web/src/ai/agents/general.ts`
 - **Tools**: `apps/web/src/ai/tools/`
-- **Skills**: `apps/web/src/ai/skills/` (documentation for programmatic tools)
+- **Sandbox**: `apps/web/src/ai/sandbox/`
+- **Skills**: `apps/web/src/ai/sandbox/skills-tree.ts` and skill content synced for the sandbox
 - **Memory Helpers**: `apps/web/src/ai/utils/memory-helpers.ts`
 
 ## Database Schema
@@ -132,7 +113,7 @@ Located in `apps/web/src/db/schema/`
 - User memory storage for AI agent persistence
 
 **Database Configuration**:
-- `drizzle.config.ts` loads from root `.env` file (not `apps/web/.env`)
+- `apps/web/drizzle.config.ts` loads from the **repository root** `.env` file (not `apps/web/.env`)
 - Migrations stored in `apps/web/src/db/migrations`
 - All foreign keys use `{ onDelete: "cascade" }`
 
@@ -146,7 +127,7 @@ Located in `apps/web/src/db/schema/`
 ### Styling
 - **TailwindCSS 4** for all styling
 - Use `cn()` helper from `@/lib/utils` for conditional classes
-- Biome auto-sorts Tailwind classes via `useSortedClasses` rule
+- Biome nursery rule `useSortedClasses` sorts Tailwind classes (e.g. with `cn`, `clsx`, `cva`)
 - Follow shadcn/ui component patterns
 
 ### TypeScript
@@ -163,19 +144,9 @@ Located in `apps/web/src/db/schema/`
 
 Stored in `.env` at **repository root** (not in `apps/web/.env`).
 
-**Required Variables** (from `turbo.json` globalEnv):
-```bash
-DATABASE_URL                          # PostgreSQL connection string
-AUTH_SECRET                           # Better-Auth secret
-UPSTASH_SEARCH_URL                    # Upstash Search endpoint
-UPSTASH_SEARCH_TOKEN                  # Upstash Search token
-NEXT_PUBLIC_UPSTASH_SEARCH_TOKEN      # Public Upstash token
-OPENAI_API_KEY                        # OpenAI API key (for embeddings)
-ANTHROPIC_API_KEY                     # Anthropic API key (for Claude)
-GOOGLE_GENERATIVE_AI_API_KEY          # Google AI API key
-```
+**Validated at build time** (`apps/web/src/env.ts` with `@t3-oss/env-nextjs`): server vars include `DATABASE_URL`, `AUTH_SECRET`, Upstash Search, **Daytona**, **Upstash Redis**, **R2** credentials, `OPENAI_API_KEY`, optional `DAYTONA_SNAPSHOT`; client includes optional `NEXT_PUBLIC_UPSTASH_SEARCH_TOKEN` and `NEXT_PUBLIC_SERVER_URL`.
 
-Environment variables are validated at build time using `@t3-oss/env-nextjs`.
+**Turborepo `globalEnv`** (`turbo.json`, for task cache inputs): also lists `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `MISTRAL_API_KEY`, `BLOB_READ_WRITE_TOKEN`, and related keys — some are used by dependencies or runtime without going through `env.ts`. If a feature fails at runtime, check both `env.ts` and `process.env` usage.
 
 ## Canvas LMS Integration
 
@@ -206,10 +177,14 @@ Ignore Google Fonts errors if you lack network access (works in production).
 
 ## API Routes
 
-Located in `apps/web/src/app/api/`:
-- **`/api/auth`**: Better-Auth authentication endpoints
-- **`/api/chat`**: AI chat streaming endpoint (Claude Sonnet 4.5 with tools)
+Notable routes under `apps/web/src/app/api/`:
+- **`/api/auth/[...all]`**: Better-Auth authentication endpoints
+- **`/api/chat`**: AI chat streaming (`ToolLoopAgent`, workspace file parts)
 - **`/api/metadata`**: Chat metadata generation (titles, suggestions)
+- **`/api/sandbox/sync`**: Sandbox workspace sync
+- **`/api/sandbox-files/[id]`**: Serve uploaded workspace files
+- **`/api/canvas-file/[fileId]`**: Canvas file proxy/helper
+- **`/api/cron/canvas-index`**: Scheduled Canvas indexing
 
 ## Common Patterns
 
@@ -233,34 +208,15 @@ export function Component({ prop }: Props) {
 }
 ```
 
-### AI Streaming Pattern
-```typescript
-// In API route
-const agent = new ToolLoopAgent({
-  model: anthropic("claude-sonnet-4-5"),
-  instructions: buildSystemPrompt(context),
-  tools: getGeneralAgentTools(context),
-  providerOptions: {
-    anthropic: {
-      thinking: { type: "enabled", budgetTokens: 10000 },
-      container: { skills: [...] },
-    },
-  },
-});
+### AI Streaming Pattern (simplified)
 
-const result = await agent.stream({
-  messages: await convertToModelMessages(messages),
-  experimental_transform: smoothStream({ chunking: "word" }),
-});
-
-return result.toUIMessageStreamResponse();
-```
+The chat route builds a `ToolLoopAgent` with `instructions` as **two** system messages (static prompt + dynamic context), merges the agent stream via `createUIMessageStream`, and may append `data-workspace-files` after `onFinish` sync/index. See `apps/web/src/app/api/chat/route.ts` for the full flow.
 
 ## Important Notes
 
 - Web app runs on port 3000 by default (Next.js)
 - Mobile app uses Expo Go for development
 - User settings stored as JSONB in database (flexible structure)
-- All timestamps are timezone-aware via `AgentContext.timezone`
-- Geolocation extracted from Vercel request headers for location-aware search
-- Container-based tool execution persists files across conversation (~4.5 min timeout)
+- Timestamps use the user-relevant timezone via `AgentContext` and locale formatting
+- Geolocation from Vercel request headers feeds location-aware search
+- Daytona sandboxes are per chat; workspace files persist via R2 sync; environment outside the workspace is not guaranteed to persist across restarts
