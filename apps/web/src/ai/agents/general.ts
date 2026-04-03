@@ -255,7 +255,7 @@ function buildSharedTools(ctx: AgentContext): Record<string, Tool> {
     createStudySet: createStudySetTool,
     update_plan: createUpdatePlanTool(ctx.chatId, ctx.userId),
     apply_patch: createApplyPatchTool(ctx.chatId, ctx.userId),
-    view_image: createViewImageTool(ctx.chatId, ctx.userId),
+    view_file: createViewImageTool(ctx.chatId, ctx.userId),
     request_user_input: requestUserInputTool,
     spawn_agent: createSpawnAgentTool(),
     close_agent: createCloseAgentTool(),

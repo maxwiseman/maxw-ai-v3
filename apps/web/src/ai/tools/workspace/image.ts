@@ -1,44 +1,66 @@
 /**
- * View Image Tool
- * Reads an image file from the sandbox and returns it as a base64 data URL
- * so it can be rendered in the UI or passed as vision input.
+ * View File Tool
+ * Reads a file from the sandbox and returns it as multimodal content for the model.
+ * Supports images (png, jpg, gif, webp, svg), PDFs, and plain text files.
  */
 
 import { tool } from "ai";
 import { z } from "zod";
 import { getOrCreateSandbox } from "@/ai/sandbox/sandbox-manager";
 
-const SUPPORTED_TYPES: Record<string, string> = {
+// MIME types supported natively by Anthropic/OpenAI as multimodal content
+const MEDIA_TYPES: Record<string, string> = {
   png: "image/png",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   gif: "image/gif",
   webp: "image/webp",
-  svg: "image/svg+xml",
+  pdf: "application/pdf",
 };
 
-export interface ViewImageResult {
+// Extensions we'll read as UTF-8 text and return inline
+const TEXT_EXTENSIONS = new Set([
+  "txt",
+  "md",
+  "csv",
+  "json",
+  "xml",
+  "html",
+  "htm",
+  "yaml",
+  "yml",
+  "toml",
+  "log",
+  "ts",
+  "js",
+  "py",
+  "sh",
+  "css",
+]);
+
+export interface ViewFileResult {
   path: string;
-  dataUrl: string;
-  message: string;
+  mimeType: string;
+  /** base64-encoded content for binary files, or raw string for text */
+  content: string;
+  isText: boolean;
 }
 
 export function createViewImageTool(chatId: string, userId: string) {
   return tool({
     description:
-      "Read an image file from the sandbox filesystem and return it as a base64 data URL. Useful for viewing charts, diagrams, screenshots, or any image the agent has created or downloaded.",
+      "Read a file from the sandbox filesystem and return its contents to the model. Supports images (PNG, JPEG, GIF, WebP), PDFs, and plain text files. Use this to view charts, documents, screenshots, or any other file the agent has created or downloaded.",
     inputSchema: z.object({
       path: z
         .string()
         .describe(
-          "Absolute or workspace-relative path to the image file (e.g., /home/daytona/workspace/chart.png)",
+          "Absolute or workspace-relative path to the file (e.g., /home/daytona/workspace/chart.png)",
         ),
     }),
-    execute: async ({ path }): Promise<ViewImageResult | string> => {
+    execute: async ({ path }): Promise<ViewFileResult | string> => {
       const sandbox = await getOrCreateSandbox(userId, chatId);
 
       const ext = path.split(".").pop()?.toLowerCase() ?? "";
-      const mimeType = SUPPORTED_TYPES[ext] ?? "application/octet-stream";
 
       let buffer: Buffer;
       try {
@@ -47,25 +69,65 @@ export function createViewImageTool(chatId: string, userId: string) {
         return `File not found or could not be read: ${path}`;
       }
 
-      const dataUrl = `data:${mimeType};base64,${buffer.toString("base64")}`;
+      // Plain text — return as a readable string
+      if (TEXT_EXTENSIONS.has(ext)) {
+        return {
+          path,
+          mimeType: "text/plain",
+          content: buffer.toString("utf-8"),
+          isText: true,
+        };
+      }
+
+      // Binary media type supported by the model
+      const mimeType = MEDIA_TYPES[ext];
+      if (mimeType) {
+        return {
+          path,
+          mimeType,
+          content: buffer.toString("base64"),
+          isText: false,
+        };
+      }
+
+      // Unsupported type — try returning as text as a best-effort fallback
+      const text = buffer.toString("utf-8");
+      if (/[\x00-\x08\x0E-\x1F]/.test(text)) {
+        return `Unsupported file type ".${ext}". Only images (PNG, JPEG, GIF, WebP), PDFs, and text-based files are supported.`;
+      }
       return {
         path,
-        dataUrl,
-        message: `Displayed image from ${path}`,
+        mimeType: "text/plain",
+        content: text,
+        isText: true,
       };
     },
     toModelOutput: ({ output }) => {
       if (typeof output === "string") {
         return { type: "text", value: output };
       }
-      const match = output.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-      const mediaType = match?.[1] ?? "image/png";
-      const data = match?.[2] ?? "";
+
+      if (output.isText) {
+        return {
+          type: "content",
+          value: [
+            {
+              type: "text",
+              text: `Contents of ${output.path}:\n\n${output.content}`,
+            },
+          ],
+        };
+      }
+
       return {
         type: "content",
         value: [
-          { type: "text", text: output.message },
-          { type: "media", data, mediaType },
+          { type: "text", text: `File: ${output.path}` },
+          {
+            type: "media",
+            data: output.content,
+            mediaType: output.mimeType as `${string}/${string}`,
+          },
         ],
       };
     },
