@@ -184,8 +184,27 @@ Set save_to_sandbox to true to always offload to the sandbox regardless of type 
         return `HTTP ${response.status} ${response.statusText} for ${transformedUrl}`;
       }
 
-      const contentType =
+      let contentType =
         response.headers.get("content-type") ?? "application/octet-stream";
+
+      // For opaque binary responses (application/octet-stream), peek at the
+      // first few bytes to detect well-known formats that the model can handle
+      // multimodally. Google Drive's /uc?export=download endpoint, for example,
+      // returns application/octet-stream even for PDFs.
+      if (contentType.toLowerCase().startsWith("application/octet-stream")) {
+        const peek = await response.clone().arrayBuffer().then((ab) => new Uint8Array(ab, 0, 5));
+        if (peek[0] === 0x25 && peek[1] === 0x50 && peek[2] === 0x44 && peek[3] === 0x46) {
+          // %PDF magic bytes
+          contentType = "application/pdf";
+        } else if (peek[0] === 0x89 && peek[1] === 0x50 && peek[2] === 0x4e && peek[3] === 0x47) {
+          // PNG magic bytes
+          contentType = "image/png";
+        } else if (peek[0] === 0xff && peek[1] === 0xd8) {
+          // JPEG magic bytes
+          contentType = "image/jpeg";
+        }
+      }
+
       const binary = isBinary(contentType);
 
       if (save_to_sandbox === true || (binary && !isMultimodal(contentType))) {

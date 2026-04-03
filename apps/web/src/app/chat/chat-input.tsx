@@ -40,17 +40,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InputGroupAddon } from "@/components/ui/input-group";
 import { Textarea } from "@/components/ui/textarea";
+import { CHAT_MODEL_OPTIONS } from "@/lib/chat-models";
+import type { ChatModelId } from "@/lib/chat-models";
 import { cn } from "@/lib/utils";
 
 export interface ChatInputMessage extends PromptInputMessage {
   agentChoice?: string;
   toolChoice?: string;
 }
-
-const MODELS: { id: string; label: string }[] = [
-  { id: "claude-sonnet-4-6", label: "Claude" },
-  { id: "gpt-5.4", label: "GPT-5.4" },
-];
 
 interface ChatInputProps {
   text?: string;
@@ -66,8 +63,8 @@ interface ChatInputProps {
     reset: string;
     code?: string;
   } | null;
-  model?: string;
-  onModelChange?: (model: string) => void;
+  model?: ChatModelId;
+  onModelChange?: (model: ChatModelId) => void;
   className?: string;
 }
 
@@ -508,8 +505,13 @@ function ChatInputInner({
           {onModelChange && (
             <PromptInputButton
               onClick={() => {
-                const currentIndex = MODELS.findIndex((m) => m.id === model);
-                const next = MODELS[(currentIndex + 1) % MODELS.length];
+                const currentIndex = CHAT_MODEL_OPTIONS.findIndex(
+                  (m) => m.id === model,
+                );
+                const next =
+                  CHAT_MODEL_OPTIONS[
+                    (currentIndex + 1) % CHAT_MODEL_OPTIONS.length
+                  ];
                 onModelChange(next.id);
               }}
               variant="ghost"
@@ -517,7 +519,9 @@ function ChatInputInner({
               size="sm"
             >
               <span>
-                {MODELS.find((m) => m.id === model)?.label ?? model ?? "Claude"}
+                {CHAT_MODEL_OPTIONS.find((m) => m.id === model)?.label ??
+                  model ??
+                  "Claude"}
               </span>
             </PromptInputButton>
           )}

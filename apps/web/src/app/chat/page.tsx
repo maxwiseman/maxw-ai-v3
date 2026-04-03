@@ -35,12 +35,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { DEFAULT_CHAT_MODEL_ID } from "@/lib/chat-models";
 import { cn } from "@/lib/utils";
 
 const CHAT_ID = "main-chat";
 
 export default function ChatPage() {
-  const [model, setModel] = useState("claude-sonnet-4-6");
+  const [model, setModel] = useState(DEFAULT_CHAT_MODEL_ID);
   // Keep a ref so the transport's body function always reads the latest model
   // without needing to recreate the transport (which useChat wouldn't pick up).
   const modelRef = useRef(model);
@@ -61,6 +62,8 @@ export default function ChatPage() {
       console.error("useChat error:", err);
     },
   });
+
+  console.log(messages);
 
   const [filesOpen, setFilesOpen] = useState(false);
   const files = useChatFiles(messages);

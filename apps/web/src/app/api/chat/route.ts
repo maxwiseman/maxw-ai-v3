@@ -1,5 +1,5 @@
 import { type AnthropicProviderOptions, anthropic } from "@ai-sdk/anthropic";
-import { openai } from "@ai-sdk/openai";
+import { type OpenAIResponsesProviderOptions, openai } from "@ai-sdk/openai";
 import { geolocation } from "@vercel/functions";
 import {
   convertToModelMessages,
@@ -8,6 +8,7 @@ import {
   type SystemModelMessage,
   smoothStream,
   ToolLoopAgent,
+  type ToolLoopAgentSettings,
   type UIMessage,
 } from "ai";
 import { headers } from "next/headers";
@@ -32,6 +33,7 @@ import { createSyncToken } from "@/ai/sandbox/sync-token";
 import { getAllCanvasCourses } from "@/app/classes/classes-actions";
 import { auth } from "@/lib/auth";
 import { getUserSettings } from "@/lib/user-settings";
+import { resolveChatModelRequest } from "./model-config";
 
 export async function POST(request: NextRequest) {
   const location = geolocation(request);
@@ -43,11 +45,7 @@ export async function POST(request: NextRequest) {
     trigger: string;
     model?: string;
   } = await request.json();
-  const {
-    messages,
-    id: chatId,
-    model: requestedModel = "claude-sonnet-4-6",
-  } = body;
+  const { messages, id: chatId, model: requestedModelId } = body;
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     return new Response(
@@ -92,9 +90,8 @@ export async function POST(request: NextRequest) {
   // Build agent context
   const now = new Date();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const provider: "anthropic" | "openai" = requestedModel.startsWith("claude")
-    ? "anthropic"
-    : "openai";
+  const { internalId, provider, apiModelId } =
+    resolveChatModelRequest(requestedModelId);
 
   const context: AgentContext = {
     userId,
@@ -115,20 +112,23 @@ export async function POST(request: NextRequest) {
   // Get tools configured for this context and provider
   const tools = getToolsForProvider(context);
 
-  // Select model instance and provider options based on requested model
+  // Select model instance from server-side mapping (client only sends internal ids)
   const modelInstance =
     provider === "openai"
-      ? openai.responses(requestedModel)
-      : anthropic(requestedModel);
+      ? openai.responses(apiModelId)
+      : anthropic(apiModelId);
 
   const anthropicProviderOptions: AnthropicProviderOptions = {
     thinking: { type: "enabled" as const, budgetTokens: 10000 },
     cacheControl: { type: "ephemeral", ttl: "1h" },
   };
-  const providerOptions =
-    provider === "anthropic"
-      ? { anthropic: anthropicProviderOptions }
-      : ({} as { anthropic?: AnthropicProviderOptions });
+  const openaiProviderOptions: OpenAIResponsesProviderOptions = {
+    reasoningEffort: "medium",
+  };
+  const providerOptions: ToolLoopAgentSettings["providerOptions"] = {
+    anthropic: anthropicProviderOptions,
+    openai: openaiProviderOptions,
+  };
 
   try {
     // Convert UI messages to model messages
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
           );
         } else {
           console.info(
-            `OpenAI (${requestedModel}) usage for chat ${chatId}: ${inputTokens} input tokens, ${usage.outputTokens ?? 0} output tokens.`,
+            `OpenAI (${internalId} → ${apiModelId}) usage for chat ${chatId}: ${inputTokens} input tokens, ${usage.outputTokens ?? 0} output tokens.`,
           );
         }
 
