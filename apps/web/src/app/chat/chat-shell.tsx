@@ -42,6 +42,7 @@ export function ChatShell() {
   const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
   const [isLoadingRouteMessages, setIsLoadingRouteMessages] = useState(false);
   const lastDraftChatIdRef = useRef<string | null>(null);
+  const messagesLoadedForRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (isNewChatRoute) {
@@ -51,6 +52,12 @@ export function ChatShell() {
 
   useEffect(() => {
     if (!routeChatId) {
+      return;
+    }
+
+    // Guard against stale messages from a previous chat being attributed to
+    // the newly-navigated-to chat, which causes a brief title flicker.
+    if (messagesLoadedForRef.current !== routeChatId) {
       return;
     }
 
@@ -92,6 +99,7 @@ export function ChatShell() {
       })
       .then((data) => {
         if (cancelled) return;
+        messagesLoadedForRef.current = routeChatId;
         setInitialMessages(data.messages);
         setIsLoadingRouteMessages(false);
       })

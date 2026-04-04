@@ -165,7 +165,7 @@ function ChatSidebarItem({ chat, prefetch = false }: { chat: Chat, prefetch?: bo
   return (
     <div
       className={cn(
-        "group flex h-9 w-full items-center rounded-md px-3 text-sm transition-colors",
+        "group flex h-9 w-full items-center rounded-md text-sm transition-colors",
         isActive
           ? "bg-secondary text-secondary-foreground"
           : "hover:bg-accent hover:text-accent-foreground",
@@ -175,11 +175,11 @@ function ChatSidebarItem({ chat, prefetch = false }: { chat: Chat, prefetch?: bo
       <Link
         href={`/chat/${chat.chatId}`}
         prefetch={prefetch}
-        className="min-w-0 flex-1 truncate"
+        className="flex h-full min-w-0 flex-1 items-center overflow-hidden px-3 group-hover:pr-2 transition-[padding-right] duration-150"
       >
-        {chat.title ?? "New Chat"}
+        <span className="truncate">{chat.title ?? "New Chat"}</span>
       </Link>
-      <div className="w-0 shrink-0 overflow-hidden transition-[width] duration-150 group-hover:w-6">
+      <div className="w-0 shrink-0 overflow-hidden transition-[width] duration-150 group-hover:w-6 group-hover:mr-2">
         <button
           className="flex size-6 shrink-0 items-center justify-center rounded-sm hover:bg-accent-foreground/10"
           onClick={handleDelete}
