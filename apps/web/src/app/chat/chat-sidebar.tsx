@@ -134,8 +134,8 @@ export function ChatSidebarClient() {
         <IconEdit className="size-4 text-muted-foreground" />
         New Chat
       </Button>
-      {sortedChats.map((chat, i) => (
-        <ChatSidebarItem prefetch={i < 5} key={chat.chatId} chat={chat} />
+      {sortedChats.map((chat) => (
+        <ChatSidebarItem key={chat.chatId} chat={chat} />
       ))}
       {sortedChats.length === 0 && (
         <p className="px-2 py-1 text-muted-foreground text-xs">No chats yet</p>
@@ -146,7 +146,7 @@ export function ChatSidebarClient() {
   return <SidebarExtension>{content}</SidebarExtension>;
 }
 
-function ChatSidebarItem({ chat, prefetch = false }: { chat: Chat, prefetch?: boolean }) {
+function ChatSidebarItem({ chat }: { chat: Chat }) {
   const pathname = usePathname();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -174,7 +174,7 @@ function ChatSidebarItem({ chat, prefetch = false }: { chat: Chat, prefetch?: bo
     >
       <Link
         href={`/chat/${chat.chatId}`}
-        prefetch={prefetch}
+        prefetch={true}
         className="flex h-full min-w-0 flex-1 items-center overflow-hidden px-3 group-hover:pr-2 transition-[padding-right] duration-150"
       >
         <span className="truncate">{chat.title ?? "New Chat"}</span>
