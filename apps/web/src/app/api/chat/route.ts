@@ -5,6 +5,7 @@ import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
+  generateText,
   type SystemModelMessage,
   smoothStream,
   ToolLoopAgent,
@@ -19,6 +20,11 @@ import {
   buildSystemPrompt,
   getToolsForProvider,
 } from "@/ai/agents/general";
+import { saveChatMessage } from "@/ai/utils/chat-messages";
+import {
+  getOrCreateChatMetadata,
+  updateChatTitle,
+} from "@/ai/utils/chat-metadata";
 import {
   getWorkspaceFilesForStream,
   indexWorkspaceFiles,
@@ -131,6 +137,15 @@ export async function POST(request: NextRequest) {
   };
 
   try {
+    // Ensure chatMetadata row exists for this chat before writing messages
+    await getOrCreateChatMetadata(userId, chatId);
+
+    // Save the new user message before running the agent
+    const latestUserMsg = messages[messages.length - 1];
+    if (latestUserMsg?.role === "user") {
+      await saveChatMessage(userId, chatId, latestUserMsg);
+    }
+
     // Convert UI messages to model messages
     const modelMessages = await convertToModelMessages(messages);
 
@@ -207,6 +222,10 @@ export async function POST(request: NextRequest) {
     });
 
     const stream = createUIMessageStream({
+      originalMessages: messages,
+      onFinish: async ({ responseMessage }) => {
+        await saveChatMessage(userId, chatId, responseMessage);
+      },
       execute: async ({ writer }) => {
         const result = await agent.stream({
           messages: modelMessages,
@@ -226,6 +245,36 @@ export async function POST(request: NextRequest) {
             id: crypto.randomUUID(),
             data: files,
           });
+        }
+
+        // Generate a title after the first exchange (only one user message in history)
+        if (messages.length === 1) {
+          try {
+            const userText = messages[0].parts
+              .filter((p): p is { type: "text"; text: string } => p.type === "text")
+              .map((p) => p.text)
+              .join(" ")
+              .slice(0, 200);
+            const { text: rawTitle } = await generateText({
+              model: openai("gpt-5.4-nano"),
+              providerOptions: {
+                openai: {
+                  reasoningEffort: "low"
+                } satisfies OpenAIResponsesProviderOptions
+              },
+              prompt: `Write a 3-5 word title for a conversation starting with this message. Reply with ONLY the title, no punctuation:\n\n"${userText}"`,
+              maxOutputTokens: 20,
+            });
+            const title = rawTitle.trim();
+            await updateChatTitle(chatId, title);
+            writer.write({
+              type: "data-chat-title",
+              id: crypto.randomUUID(),
+              data: { chatId, title },
+            });
+          } catch (err) {
+            console.error("[title generation] failed:", err);
+          }
         }
       },
       onError: (err) => {

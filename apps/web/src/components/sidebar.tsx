@@ -44,7 +44,7 @@ export default function Sidebar({
               icon={<IconMessageCircle className="size-4.5" />}
               href="/chat"
               label="Chat"
-              isActive={pathname === "/chat"}
+              isActive={pathname.startsWith("/chat")}
             />
             <SidebarButton
               icon={<IconSchool className="size-4.5" />}
