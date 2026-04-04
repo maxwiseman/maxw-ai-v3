@@ -18,6 +18,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { authClient } from "@/lib/auth-client";
+import { getUserSettings } from "@/lib/user-settings";
 import { queryCanvasIndex } from "@/ai/utils/upstash-helpers";
 import { getAllCanvasCourses } from "@/app/classes/classes-actions";
 import {
@@ -57,6 +59,8 @@ export function SearchCommand() {
   const debouncedQuery = useDebouncedValue(query, 300);
   const router = useRouter();
   const { setTheme, theme } = useTheme();
+  const { data: session } = authClient.useSession();
+  const isTeacher = getUserSettings(session?.user)?.role === "teacher";
 
   // Fetch user's classes for navigation
   const { data: classesData } = useQuery({
@@ -135,15 +139,19 @@ export function SearchCommand() {
         icon: <IconListCheck />,
         onSelect: () => runCommand(() => router.push("/todo")),
       },
-      {
-        id: "grading",
-        label: "Grading",
-        keywords: ["grade", "score", "rubric", "exam", "quiz"],
-        icon: <IconClipboardCheck />,
-        onSelect: () => runCommand(() => router.push("/grading")),
-      },
+      ...(isTeacher
+        ? [
+            {
+              id: "grading",
+              label: "Grading",
+              keywords: ["grade", "score", "rubric", "exam", "quiz"],
+              icon: <IconClipboardCheck />,
+              onSelect: () => runCommand(() => router.push("/grading")),
+            } satisfies StaticItem,
+          ]
+        : []),
     ],
-    [runCommand, router],
+    [runCommand, router, isTeacher],
   );
 
   const actions: StaticItem[] = useMemo(

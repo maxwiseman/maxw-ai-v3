@@ -31,6 +31,7 @@ export default function SignUpForm({
         },
         {
           onSuccess: () => {
+            router.refresh();
             router.push("/onboarding");
           },
           onError: (error) => {

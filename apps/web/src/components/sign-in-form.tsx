@@ -29,6 +29,7 @@ export default function SignInForm({
         },
         {
           onSuccess: () => {
+            router.refresh();
             router.push("/");
           },
           onError: (error) => {

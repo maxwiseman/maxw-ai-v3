@@ -134,8 +134,8 @@ export function ChatSidebarClient() {
         <IconEdit className="size-4 text-muted-foreground" />
         New Chat
       </Button>
-      {sortedChats.map((chat) => (
-        <ChatSidebarItem key={chat.chatId} chat={chat} />
+      {sortedChats.map((chat, i) => (
+        <ChatSidebarItem prefetch={i < 5} key={chat.chatId} chat={chat} />
       ))}
       {sortedChats.length === 0 && (
         <p className="px-2 py-1 text-muted-foreground text-xs">No chats yet</p>
@@ -146,7 +146,7 @@ export function ChatSidebarClient() {
   return <SidebarExtension>{content}</SidebarExtension>;
 }
 
-function ChatSidebarItem({ chat }: { chat: Chat }) {
+function ChatSidebarItem({ chat, prefetch = false }: { chat: Chat, prefetch?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -163,28 +163,31 @@ function ChatSidebarItem({ chat }: { chat: Chat }) {
   };
 
   return (
-    <div className="group relative flex items-center">
-      <Button
-        asChild
-        className={cn(
-          "w-full justify-start truncate shadow-none",
-          isPending && "opacity-50",
-        )}
-        variant={isActive ? "secondary" : "ghost"}
+    <div
+      className={cn(
+        "group flex h-9 w-full items-center rounded-md px-3 text-sm transition-colors",
+        isActive
+          ? "bg-secondary text-secondary-foreground"
+          : "hover:bg-accent hover:text-accent-foreground",
+        isPending && "opacity-50",
+      )}
+    >
+      <Link
+        href={`/chat/${chat.chatId}`}
+        prefetch={prefetch}
+        className="min-w-0 flex-1 truncate"
       >
-        <Link href={`/chat/${chat.chatId}`} prefetch={false}>
-          <span className="truncate">{chat.title ?? "New Chat"}</span>
-        </Link>
-      </Button>
-      <Button
-        size="icon"
-        variant="ghost"
-        className="absolute right-1 size-6 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-        onClick={handleDelete}
-        title="Delete chat"
-      >
-        <IconTrash className="size-3.5 text-muted-foreground" />
-      </Button>
+        {chat.title ?? "New Chat"}
+      </Link>
+      <div className="w-0 shrink-0 overflow-hidden transition-[width] duration-150 group-hover:w-6">
+        <button
+          className="flex size-6 shrink-0 items-center justify-center rounded-sm hover:bg-accent-foreground/10"
+          onClick={handleDelete}
+          title="Delete chat"
+        >
+          <IconTrash className="size-3.5 text-muted-foreground" />
+        </button>
+      </div>
     </div>
   );
 }
