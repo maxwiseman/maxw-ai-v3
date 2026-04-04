@@ -16,7 +16,6 @@ import { toolStatus } from "@/ai/tools/tool-status";
 import type { UserInputQuestion } from "@/ai/tools/workspace/user-input";
 import { AnimatedStatus } from "@/app/chat/animated-status";
 import { ChatInput, type ChatInputMessage } from "@/app/chat/chat-input";
-import { ChatTitle } from "@/app/chat/chat-title";
 import { EmptyState } from "@/app/chat/empty-state";
 import { ChatFilesPanel, useChatFiles } from "@/app/chat/files-panel";
 import { PromptSuggestions } from "@/app/chat/prompt-suggestions";
@@ -175,8 +174,7 @@ export default function ChatPageClient({
         ) : (
           <>
             <Conversation>
-              <div className="absolute inset-x-0 top-0 z-10 flex h-10 items-center justify-center bg-background/90 backdrop-blur-sm">
-                <ChatTitle />
+              <div className="absolute inset-x-0 top-0 z-10 flex h-10 items-center justify-center">
                 {/* Files panel toggle */}
                 <div className="absolute right-2 flex items-center">
                   <Button
