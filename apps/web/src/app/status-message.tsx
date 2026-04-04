@@ -14,23 +14,31 @@ export function StatusMessage() {
       try {
         const response = await fetch("/api/status-message");
         if (!response.ok || !response.body) {
-          setIsLoading(false);
+          if (!cancelled) setIsLoading(false);
           return;
         }
 
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        let isFirstChunk = true;
 
         while (true) {
           const { done, value } = await reader.read();
           if (done || cancelled) break;
           const chunk = decoder.decode(value, { stream: true });
-          setContent((prev) => (prev ?? "") + chunk);
+          // First chunk replaces any stale content (handles router cache re-activation
+          // and React Strict Mode double-invocation without duplicating text)
+          if (isFirstChunk) {
+            setContent(chunk);
+            isFirstChunk = false;
+          } else {
+            setContent((prev) => (prev ?? "") + chunk);
+          }
         }
       } catch {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     }
 
