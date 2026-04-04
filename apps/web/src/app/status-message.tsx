@@ -61,7 +61,7 @@ export function StatusMessage() {
 
   return (
     <Streamdown
-      className="text-neutral-500 dark:text-neutral-400 [&>p]:m-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_strong]:font-medium [&_strong]:text-foreground"
+      className="text-neutral-500 dark:text-neutral-400 [&>p]:m-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 **:data-[streamdown='strong']:font-medium **:data-[streamdown='strong']:text-foreground"
     >
       {content}
     </Streamdown>
