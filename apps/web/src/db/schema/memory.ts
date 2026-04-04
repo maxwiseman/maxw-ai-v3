@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 
 /**
@@ -21,6 +21,26 @@ export const memory = pgTable("memory", {
     .$onUpdate(() => new Date())
     .notNull(),
 });
+
+/**
+ * Daily AI-generated status message for the home page dashboard
+ * Generated once per day per user by looking at Canvas assignments
+ */
+export const dailyStatusMessage = pgTable(
+  "status_message",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    date: text("date").notNull(), // YYYY-MM-DD
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("daily_status_message_user_date_idx").on(table.userId, table.date)],
+);
 
 /**
  * Sandbox session tracking for code execution persistence

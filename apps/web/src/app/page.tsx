@@ -6,6 +6,7 @@ import { getDashboardData } from "@/app/dashboard-actions";
 import { DashboardCard } from "@/app/dashboard-card";
 import { DashboardHeader } from "@/app/dashboard-header";
 import { RecentClasses } from "@/app/recent-classes";
+import { StatusMessage } from "@/app/status-message";
 import { TodoSummary } from "@/app/todo-summary";
 import { UpcomingAssignments } from "@/app/upcoming-assignments";
 
@@ -24,10 +25,7 @@ export default function Home() {
           title="Upcoming Assignments"
           actions={[{ text: "View todo list", href: "/todo" }]}
         >
-          <span className="text-neutral-500 dark:text-neutral-400 [&>strong]:font-medium [&>strong]:text-foreground">
-            You have a <strong>Bio test</strong> on Thursday, and a{" "}
-            <strong>ToK assignment</strong> due Sunday night
-          </span>
+          <StatusMessage />
         </DashboardCard>
         <UpcomingAssignments assignments={dashboardData?.assignments ?? []} />
         <TodoSummary />
