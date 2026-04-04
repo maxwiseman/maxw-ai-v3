@@ -2,12 +2,38 @@
 
 import type { UIMessage } from "ai";
 import { useEffect, useRef, useState } from "react";
+import { type ChatModelId, isChatModelId } from "@/lib/chat-models";
 import { useActiveChat } from "./active-chat-provider";
 import ChatPageClient from "./chat-page-client";
 import { useChatSidebarState } from "./chat-sidebar";
 
 interface ChatMessagesResponse {
   messages: UIMessage[];
+}
+
+function getInitialModel(messages: UIMessage[]): ChatModelId | undefined {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    if (message.role !== "user") continue;
+
+    const modelPart = message.parts.find(
+      (part) => part.type === "data-chat-model",
+    );
+    if (!modelPart || modelPart.type !== "data-chat-model") {
+      continue;
+    }
+
+    const model =
+      typeof modelPart.data === "object" && modelPart.data !== null
+        ? (modelPart.data as { model?: string }).model
+        : undefined;
+
+    if (model && isChatModelId(model)) {
+      return model;
+    }
+  }
+
+  return undefined;
 }
 
 export function ChatShell() {
@@ -103,10 +129,11 @@ export function ChatShell() {
       key={activeChatId}
       chatId={activeChatId}
       initialMessages={initialMessages}
+      initialModel={getInitialModel(initialMessages)}
       isDraftChat={isNewChatRoute}
-      onChatTitle={(title) => {
-        if (!activeChatId) return;
-        setOptimisticTitle(activeChatId, title);
+      onChatTitle={({ chatId, title }) => {
+        if (!chatId) return;
+        setOptimisticTitle(chatId, title);
       }}
       onUserMessageSent={() => {
         if (!activeChatId) return;

@@ -36,25 +36,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { DEFAULT_CHAT_MODEL_ID } from "@/lib/chat-models";
+import { type ChatModelId, DEFAULT_CHAT_MODEL_ID } from "@/lib/chat-models";
 import { cn } from "@/lib/utils";
 
 interface Props {
   chatId: string;
   initialMessages: UIMessage[];
+  initialModel?: ChatModelId;
   isDraftChat?: boolean;
-  onChatTitle?: (title: string) => void;
+  onChatTitle?: (payload: { chatId: string; title: string }) => void;
   onUserMessageSent?: () => void;
 }
 
 export default function ChatPageClient({
   chatId,
   initialMessages,
+  initialModel,
   isDraftChat = false,
   onChatTitle,
   onUserMessageSent,
 }: Props) {
-  const [model, setModel] = useState(DEFAULT_CHAT_MODEL_ID);
+  const [model, setModel] = useState<ChatModelId>(
+    initialModel ?? DEFAULT_CHAT_MODEL_ID,
+  );
   // Keep a ref so the transport's body function always reads the latest model
   // without needing to recreate the transport (which useChat wouldn't pick up).
   const modelRef = useRef(model);
@@ -86,7 +90,10 @@ export default function ChatPageClient({
   useDataPart<{ chatId: string; title: string }>("chat-title", {
     onData: (dataPart) => {
       if (!dataPart.data.title) return;
-      onChatTitle?.(dataPart.data.title);
+      onChatTitle?.({
+        chatId: dataPart.data.chatId,
+        title: dataPart.data.title,
+      });
     },
   });
 
@@ -135,6 +142,10 @@ export default function ChatPageClient({
     sendMessage({
       role: "user",
       parts: [
+        {
+          type: "data-chat-model" as const,
+          data: { model },
+        },
         ...(message.files ?? []),
         ...(message.text
           ? [{ type: "text" as const, text: message.text }]
@@ -313,7 +324,11 @@ function StatusMessage({
   parts: UIMessage<unknown, UIDataTypes, UITools>["parts"];
   status: ChatStatus;
 }) {
-  const ignoredParts = ["data-chat-title", "data-workspace-files"];
+  const ignoredParts = [
+    "data-chat-title",
+    "data-workspace-files",
+    "data-chat-model",
+  ];
   const filteredParts = parts.filter((p) => !ignoredParts.includes(p.type));
   const lastPart = filteredParts[filteredParts.length - 1];
   const latestToolStatus = lastPart?.type.startsWith("tool-")
