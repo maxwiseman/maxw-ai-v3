@@ -7,13 +7,13 @@
  * @module resources/announcements
  */
 
-import type { CanvasHttpClient, CanvasPagedList } from "../http.js";
+import type { CanvasHttpClient, CanvasPagedList } from "../http";
 import type {
   Announcement,
   CourseId,
   CreateAnnouncementParams,
   ListAnnouncementsParams,
-} from "../types/index.js";
+} from "../types/index";
 
 /**
  * Provides access to announcements within a course.

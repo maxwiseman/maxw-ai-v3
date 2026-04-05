@@ -4,7 +4,7 @@
  * @module resources/assignments
  */
 
-import type { CanvasHttpClient, CanvasPagedList } from "../http.js";
+import type { CanvasHttpClient, CanvasPagedList } from "../http";
 import type {
   Assignment,
   AssignmentId,
@@ -13,7 +13,7 @@ import type {
   GetAssignmentParams,
   ListAssignmentsParams,
   UpdateAssignmentParams,
-} from "../types/index.js";
+} from "../types/index";
 
 /**
  * Provides access to assignments within a course.

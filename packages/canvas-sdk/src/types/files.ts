@@ -5,7 +5,7 @@
  * @module types/files
  */
 
-import type { FileId, FolderId, ISO8601 } from "./common.js";
+import type { FileId, FolderId, ISO8601 } from "./common";
 
 // ---------------------------------------------------------------------------
 // Core types

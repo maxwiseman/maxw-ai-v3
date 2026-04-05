@@ -5,7 +5,7 @@
  * @module types/users
  */
 
-import type { ISO8601, UserId } from "./common.js";
+import type { ISO8601, UserId } from "./common";
 
 // ---------------------------------------------------------------------------
 // Core types

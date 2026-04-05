@@ -4,16 +4,16 @@
  * @module types
  */
 
-export * from "./announcements.js";
-export * from "./assignments.js";
-export * from "./calendar-events.js";
-export * from "./common.js";
-export * from "./courses.js";
-export * from "./discussions.js";
-export * from "./enrollments.js";
-export * from "./files.js";
-export * from "./modules.js";
-export * from "./pages.js";
-export * from "./quizzes.js";
-export * from "./submissions.js";
-export * from "./users.js";
+export * from "./announcements";
+export * from "./assignments";
+export * from "./calendar-events";
+export * from "./common";
+export * from "./courses";
+export * from "./discussions";
+export * from "./enrollments";
+export * from "./files";
+export * from "./modules";
+export * from "./pages";
+export * from "./quizzes";
+export * from "./submissions";
+export * from "./users";

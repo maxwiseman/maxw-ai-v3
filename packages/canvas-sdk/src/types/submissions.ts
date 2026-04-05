@@ -12,8 +12,8 @@ import type {
   RubricAssessment,
   SubmissionId,
   UserId,
-} from "./common.js";
-import type { SubmissionType } from "./assignments.js";
+} from "./common";
+import type { SubmissionType } from "./assignments";
 
 // ---------------------------------------------------------------------------
 // Enumerations

@@ -4,14 +4,14 @@
  * @module resources/calendar-events
  */
 
-import type { CanvasHttpClient, CanvasPagedList } from "../http.js";
+import type { CanvasHttpClient, CanvasPagedList } from "../http";
 import type {
   CalendarEvent,
   CalendarEventId,
   CreateCalendarEventParams,
   ListCalendarEventsParams,
   UpdateCalendarEventParams,
-} from "../types/index.js";
+} from "../types/index";
 
 /**
  * Provides access to Calendar Events.

@@ -4,12 +4,12 @@
  * @module client
  */
 
-import { CanvasHttpClient, type HttpClientOptions } from "./http.js";
-import { AnnouncementsResource } from "./resources/announcements.js";
-import { CalendarEventsResource } from "./resources/calendar-events.js";
-import { CoursesResource } from "./resources/courses.js";
-import { FilesResource } from "./resources/files.js";
-import { UsersResource } from "./resources/users.js";
+import { CanvasHttpClient, type HttpClientOptions } from "./http";
+import { AnnouncementsResource } from "./resources/announcements";
+import { CalendarEventsResource } from "./resources/calendar-events";
+import { CoursesResource } from "./resources/courses";
+import { FilesResource } from "./resources/files";
+import { UsersResource } from "./resources/users";
 
 // ---------------------------------------------------------------------------
 // Client options

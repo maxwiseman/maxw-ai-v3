@@ -4,8 +4,8 @@
  * @module resources/courses
  */
 
-import type { CanvasHttpClient } from "../http.js";
-import { type CanvasPagedList } from "../http.js";
+import type { CanvasHttpClient } from "../http";
+import { type CanvasPagedList } from "../http";
 import type {
   AssignmentGroup,
   Course,
@@ -15,16 +15,16 @@ import type {
   GetCourseParams,
   ListCoursesParams,
   UpdateCourseParams,
-} from "../types/index.js";
-import { AssignmentsResource } from "./assignments.js";
-import { DiscussionsResource } from "./discussions.js";
-import { EnrollmentsResource } from "./enrollments.js";
-import { FilesResource } from "./files.js";
-import { ModulesResource } from "./modules.js";
-import { PagesResource } from "./pages.js";
-import { QuizzesResource } from "./quizzes.js";
-import { SubmissionsResource } from "./submissions.js";
-import { AnnouncementsResource } from "./announcements.js";
+} from "../types/index";
+import { AssignmentsResource } from "./assignments";
+import { DiscussionsResource } from "./discussions";
+import { EnrollmentsResource } from "./enrollments";
+import { FilesResource } from "./files";
+import { ModulesResource } from "./modules";
+import { PagesResource } from "./pages";
+import { QuizzesResource } from "./quizzes";
+import { SubmissionsResource } from "./submissions";
+import { AnnouncementsResource } from "./announcements";
 
 /**
  * Provides access to Canvas course-level resources.

@@ -4,7 +4,7 @@
  * @module resources/submissions
  */
 
-import type { CanvasHttpClient, CanvasPagedList } from "../http.js";
+import type { CanvasHttpClient, CanvasPagedList } from "../http";
 import type {
   AssignmentId,
   CourseId,
@@ -14,7 +14,7 @@ import type {
   ListSubmissionsParams,
   Submission,
   UserId,
-} from "../types/index.js";
+} from "../types/index";
 
 /**
  * Provides access to assignment submissions within a course.

@@ -13,7 +13,7 @@ import type {
   LockInfo,
   RubricCriterion,
   RubricSettings,
-} from "./common.js";
+} from "./common";
 
 // ---------------------------------------------------------------------------
 // Enumerations

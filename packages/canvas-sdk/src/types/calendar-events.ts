@@ -5,7 +5,7 @@
  * @module types/calendar-events
  */
 
-import type { CalendarEventId, ISO8601 } from "./common.js";
+import type { CalendarEventId, ISO8601 } from "./common";
 
 // ---------------------------------------------------------------------------
 // Enumerations

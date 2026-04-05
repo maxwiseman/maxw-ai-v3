@@ -4,7 +4,7 @@
  * @module resources/users
  */
 
-import type { CanvasHttpClient, CanvasPagedList } from "../http.js";
+import type { CanvasHttpClient, CanvasPagedList } from "../http";
 import type {
   ActivityStreamItem,
   GetUserParams,
@@ -13,7 +13,7 @@ import type {
   User,
   UserId,
   UserProfile,
-} from "../types/index.js";
+} from "../types/index";
 
 /**
  * Provides access to Canvas user resources.

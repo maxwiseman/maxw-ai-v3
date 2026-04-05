@@ -35,15 +35,15 @@
 // Main client
 // ---------------------------------------------------------------------------
 
-export { CanvasClient } from "./client.js";
-export type { CanvasClientOptions } from "./client.js";
+export { CanvasClient } from "./client";
+export type { CanvasClientOptions } from "./client";
 
 // ---------------------------------------------------------------------------
 // HTTP / pagination primitives (useful for advanced use-cases)
 // ---------------------------------------------------------------------------
 
-export { CanvasPagedList } from "./http.js";
-export type { PageResult, HttpClientOptions, ListParams } from "./http.js";
+export { CanvasPagedList } from "./http";
+export type { PageResult, HttpClientOptions, ListParams } from "./http";
 
 // ---------------------------------------------------------------------------
 // Error types
@@ -59,25 +59,25 @@ export {
   CanvasRateLimitError,
   CanvasServerError,
   CanvasNetworkError,
-} from "./errors.js";
-export type { CanvasErrorBody, CanvasErrorObject } from "./errors.js";
+} from "./errors";
+export type { CanvasErrorBody, CanvasErrorObject } from "./errors";
 
 // ---------------------------------------------------------------------------
 // Resource classes (exported for isinstance checks and extension)
 // ---------------------------------------------------------------------------
 
-export { CoursesResource } from "./resources/courses.js";
-export { AssignmentsResource } from "./resources/assignments.js";
-export { SubmissionsResource } from "./resources/submissions.js";
-export { EnrollmentsResource } from "./resources/enrollments.js";
-export { ModulesResource } from "./resources/modules.js";
-export { PagesResource } from "./resources/pages.js";
-export { FilesResource } from "./resources/files.js";
-export { DiscussionsResource } from "./resources/discussions.js";
-export { QuizzesResource } from "./resources/quizzes.js";
-export { AnnouncementsResource } from "./resources/announcements.js";
-export { UsersResource } from "./resources/users.js";
-export { CalendarEventsResource } from "./resources/calendar-events.js";
+export { CoursesResource } from "./resources/courses";
+export { AssignmentsResource } from "./resources/assignments";
+export { SubmissionsResource } from "./resources/submissions";
+export { EnrollmentsResource } from "./resources/enrollments";
+export { ModulesResource } from "./resources/modules";
+export { PagesResource } from "./resources/pages";
+export { FilesResource } from "./resources/files";
+export { DiscussionsResource } from "./resources/discussions";
+export { QuizzesResource } from "./resources/quizzes";
+export { AnnouncementsResource } from "./resources/announcements";
+export { UsersResource } from "./resources/users";
+export { CalendarEventsResource } from "./resources/calendar-events";
 
 // ---------------------------------------------------------------------------
 // All types
@@ -223,4 +223,4 @@ export type {
   ListCalendarEventsParams,
   CreateCalendarEventParams,
   UpdateCalendarEventParams,
-} from "./types/index.js";
+} from "./types/index";

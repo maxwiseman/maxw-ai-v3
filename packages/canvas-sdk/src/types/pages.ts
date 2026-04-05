@@ -5,7 +5,7 @@
  * @module types/pages
  */
 
-import type { ISO8601, PageId } from "./common.js";
+import type { ISO8601, PageId } from "./common";
 
 // ---------------------------------------------------------------------------
 // Enumerations

@@ -14,7 +14,7 @@ import {
   CanvasNetworkError,
   type CanvasErrorBody,
   createAPIError,
-} from "./errors.js";
+} from "./errors";
 
 // ---------------------------------------------------------------------------
 // Public types

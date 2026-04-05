@@ -5,7 +5,7 @@
  * @module types/enrollments
  */
 
-import type { CourseId, EnrollmentId, ISO8601, SectionId, UserId } from "./common.js";
+import type { CourseId, EnrollmentId, ISO8601, SectionId, UserId } from "./common";
 
 // ---------------------------------------------------------------------------
 // Enumerations

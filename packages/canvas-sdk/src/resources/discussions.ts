@@ -4,7 +4,7 @@
  * @module resources/discussions
  */
 
-import type { CanvasHttpClient, CanvasPagedList } from "../http.js";
+import type { CanvasHttpClient, CanvasPagedList } from "../http";
 import type {
   CourseId,
   CreateDiscussionEntryParams,
@@ -14,7 +14,7 @@ import type {
   DiscussionTopicId,
   DiscussionView,
   ListDiscussionTopicsParams,
-} from "../types/index.js";
+} from "../types/index";
 
 /**
  * Provides access to discussion topics within a course.

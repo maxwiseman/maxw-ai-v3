@@ -4,14 +4,14 @@
  * @module resources/enrollments
  */
 
-import type { CanvasHttpClient, CanvasPagedList } from "../http.js";
+import type { CanvasHttpClient, CanvasPagedList } from "../http";
 import type {
   CourseId,
   Enrollment,
   EnrollmentId,
   EnrollUserParams,
   ListEnrollmentsParams,
-} from "../types/index.js";
+} from "../types/index";
 
 /**
  * Provides access to enrollments within a course.

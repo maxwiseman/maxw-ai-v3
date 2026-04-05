@@ -5,8 +5,8 @@
  * @module types/discussions
  */
 
-import type { DiscussionEntryId, DiscussionTopicId, ISO8601, UserId } from "./common.js";
-import type { Assignment } from "./assignments.js";
+import type { DiscussionEntryId, DiscussionTopicId, ISO8601, UserId } from "./common";
+import type { Assignment } from "./assignments";
 
 // ---------------------------------------------------------------------------
 // Sub-objects

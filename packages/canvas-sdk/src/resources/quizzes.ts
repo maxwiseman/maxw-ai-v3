@@ -4,8 +4,8 @@
  * @module resources/quizzes
  */
 
-import { CanvasNotFoundError } from "../errors.js";
-import type { CanvasHttpClient, CanvasPagedList } from "../http.js";
+import { CanvasNotFoundError } from "../errors";
+import type { CanvasHttpClient, CanvasPagedList } from "../http";
 import type {
   CourseId,
   CreateQuizParams,
@@ -15,7 +15,7 @@ import type {
   QuizQuestion,
   QuizSubmission,
   UpdateQuizParams,
-} from "../types/index.js";
+} from "../types/index";
 
 /**
  * Provides access to quizzes within a course.

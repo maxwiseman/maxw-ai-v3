@@ -4,7 +4,7 @@
  * @module resources/pages
  */
 
-import type { CanvasHttpClient, CanvasPagedList } from "../http.js";
+import type { CanvasHttpClient, CanvasPagedList } from "../http";
 import type {
   CourseId,
   CreatePageParams,
@@ -12,7 +12,7 @@ import type {
   ListPagesParams,
   Page,
   UpdatePageParams,
-} from "../types/index.js";
+} from "../types/index";
 
 /**
  * Provides access to wiki pages within a course.

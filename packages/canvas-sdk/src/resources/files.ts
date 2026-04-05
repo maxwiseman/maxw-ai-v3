@@ -4,7 +4,7 @@
  * @module resources/files
  */
 
-import type { CanvasHttpClient, CanvasPagedList } from "../http.js";
+import type { CanvasHttpClient, CanvasPagedList } from "../http";
 import type {
   CourseId,
   File,
@@ -14,7 +14,7 @@ import type {
   FolderId,
   InitiateFileUploadParams,
   ListFilesParams,
-} from "../types/index.js";
+} from "../types/index";
 
 /**
  * Provides access to files and folders within a course (or globally).

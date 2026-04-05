@@ -8,8 +8,8 @@
  * @module types/announcements
  */
 
-import type { ISO8601 } from "./common.js";
-import type { DiscussionTopic } from "./discussions.js";
+import type { ISO8601 } from "./common";
+import type { DiscussionTopic } from "./discussions";
 
 // ---------------------------------------------------------------------------
 // Re-export convenience alias

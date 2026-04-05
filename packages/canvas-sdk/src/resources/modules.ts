@@ -4,7 +4,7 @@
  * @module resources/modules
  */
 
-import type { CanvasHttpClient, CanvasPagedList } from "../http.js";
+import type { CanvasHttpClient, CanvasPagedList } from "../http";
 import type {
   CourseId,
   CreateModuleParams,
@@ -15,7 +15,7 @@ import type {
   ModuleItem,
   ModuleItemId,
   UpdateModuleParams,
-} from "../types/index.js";
+} from "../types/index";
 
 /**
  * Provides access to modules within a course.

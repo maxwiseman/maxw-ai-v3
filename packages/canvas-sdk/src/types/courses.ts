@@ -11,7 +11,7 @@ import type {
   ISO8601,
   Term,
   UserId,
-} from "./common.js";
+} from "./common";
 
 // ---------------------------------------------------------------------------
 // Enumerations
