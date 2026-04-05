@@ -5,7 +5,7 @@
  * @module types/modules
  */
 
-import type { CourseId, ISO8601, LockInfo, ModuleId, ModuleItemId } from "./common.js";
+import type { ISO8601, LockInfo, ModuleId, ModuleItemId } from "./common.js";
 
 // ---------------------------------------------------------------------------
 // Enumerations

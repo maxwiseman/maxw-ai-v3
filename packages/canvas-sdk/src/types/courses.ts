@@ -9,7 +9,6 @@ import type {
   CourseId,
   GradingPeriod,
   ISO8601,
-  RubricCriterion,
   Term,
   UserId,
 } from "./common.js";
