@@ -29,9 +29,9 @@ async function getAuthedClient() {
 // Courses
 // ---------------------------------------------------------------------------
 
-export async function getAllCanvasCourses() {
+export async function getAllCanvasCourses(): Promise<"Unauthorized" | "Settings not configured" | Course[]> {
   const res = await getAuthedClient();
-  if ("error" in res) return res.error;
+  if ("error" in res) return res.error as "Unauthorized" | "Settings not configured";
 
   return res.canvas.courses.list({
     enrollment_state: "active",
@@ -81,7 +81,7 @@ export async function getClassModules({ classId }: { classId: string }) {
 export async function getAssignment(args: {
   classId: string;
   assignmentId: string;
-  filter?: never;
+  filter?: undefined;
 }): Promise<Assignment>;
 export async function getAssignment(args: {
   classId: string;
@@ -112,7 +112,7 @@ export async function getAssignment({
     | "future";
 }) {
   const res = await getAuthedClient();
-  if ("error" in res) return res.error;
+  if ("error" in res) return res.error as "Unauthorized" | "Settings not configured";
 
   const assignments = res.canvas.courses.assignments(Number(classId));
 
@@ -147,7 +147,7 @@ export async function getCanvasFile({
 export async function getPage(args: {
   classId: string;
   pageId: string;
-  filter?: never;
+  filter?: undefined;
 }): Promise<
   Page | { message: "That page has been disabled for this course" }
 >;
@@ -166,9 +166,15 @@ export async function getPage({
   classId: string;
   pageId?: string;
   filter?: "published" | "unpublished" | "all";
-}) {
+}): Promise<
+  | Page
+  | { message: "That page has been disabled for this course" }
+  | (Page | { message: "That page has been disabled for this course" })[]
+  | "Unauthorized"
+  | "Settings not configured"
+> {
   const res = await getAuthedClient();
-  if ("error" in res) return res.error;
+  if ("error" in res) return res.error as "Unauthorized" | "Settings not configured";
 
   const pages = res.canvas.courses.pages(Number(classId));
 
