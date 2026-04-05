@@ -9,7 +9,7 @@
  */
 
 import type { ISO8601 } from "./common.js";
-import type { DiscussionTopic, ListDiscussionTopicsParams } from "./discussions.js";
+import type { DiscussionTopic } from "./discussions.js";
 
 // ---------------------------------------------------------------------------
 // Re-export convenience alias

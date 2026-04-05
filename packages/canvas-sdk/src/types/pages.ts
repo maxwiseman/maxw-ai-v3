@@ -40,7 +40,7 @@ export interface Page {
    * Numeric page ID.
    * Present on most responses; may be absent in some list contexts.
    */
-  page_id: PageId;
+  page_id?: PageId | undefined;
   /** Page title. */
   title: string;
   /**

@@ -44,7 +44,7 @@ export interface User {
   locale?: string | undefined;
   /** Timestamp of the user's last login. */
   last_login?: ISO8601 | undefined;
-  /** Whether the user has a Canvas account that they can log in to. */
+  /** Enrollments for this user (present when `include[]=enrollments`). */
   enrollments?: unknown[] | undefined;
   /** Custom data attached to the user (admin-only). */
   custom_data?: unknown | undefined;

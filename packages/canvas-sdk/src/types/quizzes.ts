@@ -5,7 +5,7 @@
  * @module types/quizzes
  */
 
-import type { CourseId, ISO8601, QuizId, QuizSubmissionId, UserId } from "./common.js";
+import type { ISO8601, QuizId, QuizSubmissionId, UserId } from "./common.js";
 
 // ---------------------------------------------------------------------------
 // Enumerations

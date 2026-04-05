@@ -4,6 +4,7 @@
  * @module resources/quizzes
  */
 
+import { CanvasNotFoundError } from "../errors.js";
 import type { CanvasHttpClient, CanvasPagedList } from "../http.js";
 import type {
   CourseId,
@@ -159,7 +160,10 @@ export class QuizzesResource {
       )
       .then((res) => {
         const sub = res.quiz_submissions[0];
-        if (!sub) throw new Error("No quiz submission found");
+        if (!sub)
+          throw new CanvasNotFoundError(
+            `/courses/${this.#courseId}/quizzes/${quizId}/submission`,
+          );
         return sub;
       });
   }

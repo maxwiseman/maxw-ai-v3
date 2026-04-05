@@ -92,7 +92,7 @@ export interface ModuleItemContentDetails {
   display_name?: string | undefined;
   /** Thumbnail URL (for files/images). */
   thumbnail_url?: string | null | undefined;
-  /** Whether the item is published. */
+  /** Whether the item is hidden from students. */
   hidden?: boolean | undefined;
 }
 

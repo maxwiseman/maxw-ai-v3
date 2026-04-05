@@ -87,6 +87,10 @@ export interface ListParams {
  * Implements {@link AsyncIterable} so it can be used directly in `for await`
  * loops. Individual pages can also be fetched on demand via {@link nextPage}.
  *
+ * **Single-use**: the pagination cursor is shared across all access patterns
+ * (iteration, `.all()`, `.nextPage()`). To re-iterate from the start, call
+ * the originating list method again to obtain a new `CanvasPagedList`.
+ *
  * @typeParam T - The resource type contained in this list.
  *
  * @example Iterate over every item across all pages
@@ -109,12 +113,14 @@ export interface ListParams {
  */
 export class CanvasPagedList<T> implements AsyncIterable<T> {
   readonly #http: CanvasHttpClient;
+  readonly #initialUrl: string;
   #nextUrl: string | undefined;
   #started = false;
 
   /** @internal */
   constructor(http: CanvasHttpClient, initialUrl: string) {
     this.#http = http;
+    this.#initialUrl = initialUrl;
     this.#nextUrl = initialUrl;
   }
 
@@ -122,10 +128,16 @@ export class CanvasPagedList<T> implements AsyncIterable<T> {
   // AsyncIterable
   // -------------------------------------------------------------------------
 
+  /**
+   * Returns an `AsyncIterator` over every item across all pages.
+   *
+   * ⚠️ **Single-use cursor**: `CanvasPagedList` maintains a single pagination
+   * cursor. If you iterate the same instance twice the second loop will yield
+   * nothing (the cursor is already exhausted). To restart from the first page
+   * call the originating list method again — e.g. `canvas.courses.list()` —
+   * which always creates a fresh `CanvasPagedList`.
+   */
   [Symbol.asyncIterator](): AsyncIterator<T> {
-    // Each call to [Symbol.asyncIterator] returns an independent iterator that
-    // starts from the beginning if pagination hasn't been touched yet, or
-    // from wherever we left off if it has.
     const self = this;
     let buffer: T[] = [];
     let bufferIndex = 0;
