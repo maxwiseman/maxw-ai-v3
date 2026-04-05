@@ -6,6 +6,7 @@
  */
 
 import type { DiscussionEntryId, DiscussionTopicId, ISO8601, UserId } from "./common.js";
+import type { Assignment } from "./assignments.js";
 
 // ---------------------------------------------------------------------------
 // Sub-objects
@@ -182,7 +183,7 @@ export interface DiscussionTopic {
    * The associated assignment.
    * Present only when `include[]=assignment`.
    */
-  assignment?: unknown | undefined;
+  assignment?: Assignment | undefined;
   /** Student to-do date. */
   todo_date: ISO8601 | null;
   /** Whether this topic is an announcement. */
@@ -249,8 +250,8 @@ export interface CreateDiscussionTopicParams {
   lock_at?: ISO8601 | undefined;
   /** Whether to require an initial post. */
   require_initial_post?: boolean | undefined;
-  /** Whether to make an assignment. */
-  assignment?: unknown | undefined;
+  /** Whether to make an assignment (pass an assignment creation object). */
+  assignment?: Partial<Assignment> | undefined;
   /** Whether it is a group discussion. */
   is_group_discussion?: boolean | undefined;
   /** Group category ID for group discussions. */

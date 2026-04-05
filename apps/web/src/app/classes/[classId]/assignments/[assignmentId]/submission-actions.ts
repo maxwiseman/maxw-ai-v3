@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { type CanvasClient } from "@maxw-ai/canvas";
 import { auth } from "@/lib/auth";
 import { getCanvasClient } from "@/lib/canvas-client";
 
@@ -21,7 +22,7 @@ async function getAuthedClient() {
 async function uploadFileToCanvas(
   file: File,
   courseId: string,
-  canvas: Awaited<ReturnType<typeof getAuthedClient>> extends { canvas: infer C } ? C : never,
+  canvas: CanvasClient,
 ): Promise<number> {
   // Step 1 — request upload URL from Canvas
   const target = await canvas.courses.files(Number(courseId)).initiate({
@@ -34,7 +35,7 @@ async function uploadFileToCanvas(
   // Step 2 — upload file bytes directly to the storage provider (S3, etc.)
   const uploadFormData = new FormData();
   for (const [k, v] of Object.entries(target.upload_params)) {
-    uploadFormData.append(k, v);
+    uploadFormData.append(k, v as string);
   }
   uploadFormData.append("file", file);
 
