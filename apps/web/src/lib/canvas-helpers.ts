@@ -1,6 +1,6 @@
-import type { CanvasModuleItem } from "@/types/canvas";
+import type { ModuleItem } from "@maxw-ai/canvas";
 
-export function moduleItemDetailsUrl(classId: string, item: CanvasModuleItem) {
+export function moduleItemDetailsUrl(classId: string, item: ModuleItem) {
   if (!item) return;
   if (item.type === "Assignment")
     return `/classes/${classId}/assignments/${item.content_id}`;

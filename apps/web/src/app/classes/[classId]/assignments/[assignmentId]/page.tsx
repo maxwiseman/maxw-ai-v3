@@ -1,9 +1,9 @@
 "use cache: private";
 
-import { eq } from "drizzle-orm";
 import { cacheLife } from "next/cache";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import type { Assignment } from "@maxw-ai/canvas";
 import { CanvasHTML } from "@/components/canvas-html";
 import { CanvasLogo } from "@/components/custom-icons";
 import { DateDisplay } from "@/components/date-display";
@@ -17,11 +17,9 @@ import {
   PageHeaderTitle,
 } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
+import { getCanvasClient } from "@/lib/canvas-client";
 import { getUserSettings } from "@/lib/user-settings";
-import type { CanvasAssignment } from "@/types/canvas";
 import { SubmissionProvider } from "./submission-provider";
 
 export const unstable_prefetch = {
@@ -121,7 +119,7 @@ export default async function AssignmentPage({
         </PageHeaderActions>
       </PageHeader>
       <CanvasHTML className="min-h-96 px-8 pb-8">
-        {data?.description?.length === 0 ? "No description" : data.description}
+        {data?.description?.length === 0 ? "No description" : (data.description ?? undefined)}
       </CanvasHTML>
       {!isTeacher && data.submission_types.length >= 1 && (
         <SubmissionProvider
@@ -152,19 +150,9 @@ async function fetchData({
     | "upcoming"
     | "future";
 }) {
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, userId) })
-  )?.settings;
-
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured";
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/assignments/${assignmentId}${filter !== undefined ? `?bucket=${filter}` : ""}`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasAssignment;
-  return data;
+  const result = await getCanvasClient(userId);
+  if (result.error) return result.error;
+  return result.canvas.courses
+    .assignments(Number(classId))
+    .retrieve(Number(assignmentId), filter ? { bucket: filter } : undefined) as Promise<Assignment>;
 }

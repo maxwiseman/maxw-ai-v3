@@ -1,92 +1,44 @@
 "use server";
 
-import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
+import { getCanvasClient } from "@/lib/canvas-client";
 
-interface SubmitTextEntryParams {
-  classId: string;
-  assignmentId: string;
-  body: string;
-  comment?: string;
-}
-
-interface SubmitFileUploadParams {
-  classId: string;
-  assignmentId: string;
-  fileIds: number[];
-  comment?: string;
-}
-
-async function getCanvasSettings() {
+async function getAuthedClient() {
   const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) {
-    return { error: "Unauthorized" as const };
-  }
+  if (!authData) return { error: "Unauthorized" as const };
 
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, authData.user.id) })
-  )?.settings;
+  const result = await getCanvasClient(authData.user.id);
+  if (result.error) return { error: result.error };
 
-  if (!settings?.canvasApiKey || !settings.canvasDomain) {
-    return { error: "Settings not configured" as const };
-  }
-
-  return {
-    apiKey: settings.canvasApiKey,
-    domain: settings.canvasDomain,
-    userId: authData.user.id,
-  };
+  return { canvas: result.canvas };
 }
 
 /**
- * Upload a file to Canvas and return the file ID
+ * Uploads a file to Canvas using the three-step process and returns the
+ * resulting Canvas file ID.
  */
 async function uploadFileToCanvas(
   file: File,
   courseId: string,
-  apiKey: string,
-  domain: string,
+  canvas: Awaited<ReturnType<typeof getAuthedClient>> extends { canvas: infer C } ? C : never,
 ): Promise<number> {
-  // Step 1: Get upload URL and parameters
-  const uploadUrlResponse = await fetch(
-    `https://${domain}/api/v1/courses/${courseId}/files`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: file.name,
-        size: file.size,
-        content_type: file.type || "application/octet-stream",
-        parent_folder_path: "unfiled",
-      }),
-    },
-  );
-
-  if (!uploadUrlResponse.ok) {
-    const error = await uploadUrlResponse.json().catch(() => ({}));
-    throw new Error(
-      `Failed to get upload URL: ${error.message || uploadUrlResponse.statusText}`,
-    );
-  }
-
-  const uploadData = await uploadUrlResponse.json();
-
-  // Step 2: Upload file to the provided URL
-  const uploadFormData = new FormData();
-  const uploadParams = uploadData.upload_params as Record<string, string>;
-  Object.entries(uploadParams).forEach(([key, value]) => {
-    uploadFormData.append(key, value);
+  // Step 1 — request upload URL from Canvas
+  const target = await canvas.courses.files(Number(courseId)).initiate({
+    name: file.name,
+    size: file.size,
+    content_type: file.type || "application/octet-stream",
+    parent_folder_path: "unfiled",
   });
-  // File objects can be appended directly to FormData in Node.js 18+
+
+  // Step 2 — upload file bytes directly to the storage provider (S3, etc.)
+  const uploadFormData = new FormData();
+  for (const [k, v] of Object.entries(target.upload_params)) {
+    uploadFormData.append(k, v);
+  }
   uploadFormData.append("file", file);
 
-  const uploadResponse = await fetch(uploadData.upload_url, {
+  const uploadResponse = await fetch(target.upload_url, {
     method: "POST",
     body: uploadFormData,
   });
@@ -95,19 +47,14 @@ async function uploadFileToCanvas(
     throw new Error(`Failed to upload file: ${uploadResponse.statusText}`);
   }
 
-  // Step 3: Confirm the upload by POSTing to the file location URL
-  const confirmResponse = await fetch(uploadParams.url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-  });
+  // Step 3 — confirm the upload via the URL embedded in upload_params
+  const confirmUrl = target.upload_params["url"];
+  if (!confirmUrl) throw new Error("Missing confirmation URL in upload params");
 
-  if (!confirmResponse.ok) {
-    throw new Error(`Failed to confirm upload: ${confirmResponse.statusText}`);
-  }
+  const fileData = await canvas.courses
+    .files(Number(courseId))
+    .confirmUpload(confirmUrl);
 
-  const fileData = await confirmResponse.json();
   return fileData.id;
 }
 
@@ -116,39 +63,22 @@ export async function submitTextEntry({
   assignmentId,
   body,
   comment,
-}: SubmitTextEntryParams) {
-  const settings = await getCanvasSettings();
-  if ("error" in settings) {
-    return { error: settings.error };
-  }
+}: {
+  classId: string;
+  assignmentId: string;
+  body: string;
+  comment?: string;
+}) {
+  const res = await getAuthedClient();
+  if ("error" in res) return { error: res.error };
 
   try {
-    const formData = new FormData();
-    formData.append("submission[submission_type]", "online_text_entry");
-    formData.append("submission[body]", body);
-    if (comment) {
-      formData.append("comment[text_comment]", comment);
-    }
-
-    const response = await fetch(
-      `https://${settings.domain}/api/v1/courses/${classId}/assignments/${assignmentId}/submissions`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${settings.apiKey}`,
-        },
-        body: formData,
-      },
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
-      return {
-        error: error.message || `Failed to submit: ${response.statusText}`,
-      };
-    }
-
-    const submission = await response.json();
+    const submission = await res.canvas.courses
+      .submissions(Number(classId))
+      .submit(Number(assignmentId), {
+        submission: { submission_type: "online_text_entry", body },
+        ...(comment && { comment: { text_comment: comment } }),
+      });
     return { success: true, submission };
   } catch (error) {
     return {
@@ -168,48 +98,20 @@ export async function submitFileUpload({
   files: File[];
   comment?: string;
 }) {
-  const settings = await getCanvasSettings();
-  if ("error" in settings) {
-    return { error: settings.error };
-  }
+  const res = await getAuthedClient();
+  if ("error" in res) return { error: res.error };
 
   try {
-    // Step 1: Upload all files
     const fileIds = await Promise.all(
-      files.map((file) =>
-        uploadFileToCanvas(file, classId, settings.apiKey, settings.domain),
-      ),
+      files.map((file) => uploadFileToCanvas(file, classId, res.canvas)),
     );
 
-    // Step 2: Submit the assignment with file IDs
-    const formData = new FormData();
-    formData.append("submission[submission_type]", "online_upload");
-    fileIds.forEach((fileId) => {
-      formData.append("submission[file_ids][]", fileId.toString());
-    });
-    if (comment) {
-      formData.append("comment[text_comment]", comment);
-    }
-
-    const response = await fetch(
-      `https://${settings.domain}/api/v1/courses/${classId}/assignments/${assignmentId}/submissions`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${settings.apiKey}`,
-        },
-        body: formData,
-      },
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
-      return {
-        error: error.message || `Failed to submit: ${response.statusText}`,
-      };
-    }
-
-    const submission = await response.json();
+    const submission = await res.canvas.courses
+      .submissions(Number(classId))
+      .submit(Number(assignmentId), {
+        submission: { submission_type: "online_upload", file_ids: fileIds },
+        ...(comment && { comment: { text_comment: comment } }),
+      });
     return { success: true, submission };
   } catch (error) {
     return {

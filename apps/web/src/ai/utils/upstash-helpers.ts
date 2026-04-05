@@ -207,7 +207,7 @@ async function processPages(course: {
   );
 
   return validPages.flatMap((page) => {
-    const id = `page-${page.page_id.toString()}`;
+    const id = `page-${(page.page_id ?? page.url).toString()}`;
     const metadata = { classId: course.id, type: "page" };
     const content = {
       ...convertHtmlToMarkdown(

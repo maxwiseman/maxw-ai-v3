@@ -150,8 +150,8 @@ export interface DiscussionTopic {
   can_lock: boolean;
   /** Whether comments are disabled. */
   comments_disabled: boolean;
-  /** The author of the discussion. */
-  author: DiscussionParticipant;
+  /** The author of the discussion. May be omitted for anonymous discussions or when not included in the response. */
+  author?: DiscussionParticipant | undefined;
   /** URL to the discussion in Canvas. */
   html_url: string;
   /** URL to the discussion (same as html_url in most contexts). */

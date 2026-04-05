@@ -1,103 +1,88 @@
 "use server";
 
-import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
-import { auth } from "@/lib/auth";
 import type {
-  CanvasAssignment,
-  CanvasCourse,
-  CanvasFile,
-  CanvasModule,
-  CanvasPage,
-} from "@/types/canvas";
+  Assignment,
+  Course,
+  File,
+  Module,
+  Page,
+} from "@maxw-ai/canvas";
+import { auth } from "@/lib/auth";
+import { getCanvasClient } from "@/lib/canvas-client";
+
+// ---------------------------------------------------------------------------
+// Auth + settings helper used by every action in this file
+// ---------------------------------------------------------------------------
+
+async function getAuthedClient() {
+  const authData = await auth.api.getSession({ headers: await headers() });
+  if (!authData) return { error: "Unauthorized" as const };
+
+  const result = await getCanvasClient(authData.user.id);
+  if (result.error) return { error: result.error };
+
+  return { canvas: result.canvas };
+}
+
+// ---------------------------------------------------------------------------
+// Courses
+// ---------------------------------------------------------------------------
 
 export async function getAllCanvasCourses() {
-  const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) return "Unauthorized" as const;
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, authData.user.id) })
-  )?.settings;
+  const res = await getAuthedClient();
+  if ("error" in res) return res.error;
 
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured";
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses?enrollment_state=active&per_page=50&include[]=teachers`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasCourse[];
-  return data;
+  return res.canvas.courses.list({
+    enrollment_state: "active",
+    include: ["teachers"],
+    per_page: 50,
+  }).all() as Promise<Course[]>;
 }
 
 export async function getCanvasCourse({ classId }: { classId: string }) {
-  const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) return "Unauthorized" as const;
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, authData.user.id) })
-  )?.settings;
+  const res = await getAuthedClient();
+  if ("error" in res) return res.error;
 
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured";
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}?include[]=teachers&enrollment_state=active`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasCourse;
-  return data;
+  return res.canvas.courses.retrieve(Number(classId), {
+    include: ["teachers"],
+  });
 }
+
+// ---------------------------------------------------------------------------
+// Front page
+// ---------------------------------------------------------------------------
 
 export async function getFrontPage({ classId }: { classId: string }) {
-  const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) return "Unauthorized" as const;
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, authData.user.id) })
-  )?.settings;
+  const res = await getAuthedClient();
+  if ("error" in res) return res.error;
 
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured";
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/front_page`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasPage;
-  return data;
+  return res.canvas.courses.pages(Number(classId)).retrieveFrontPage();
 }
+
+// ---------------------------------------------------------------------------
+// Modules
+// ---------------------------------------------------------------------------
 
 export async function getClassModules({ classId }: { classId: string }) {
-  const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) return "Unauthorized" as const;
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, authData.user.id) })
-  )?.settings;
+  const res = await getAuthedClient();
+  if ("error" in res) return res.error as "Unauthorized" | "Settings not configured";
 
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured" as const;
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/modules?include[]=items`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasModule[];
-  return data;
+  return res.canvas.courses
+    .modules(Number(classId))
+    .list({ include: ["items"] })
+    .all() as Promise<Module[]>;
 }
+
+// ---------------------------------------------------------------------------
+// Assignments (overloaded: single or list)
+// ---------------------------------------------------------------------------
 
 export async function getAssignment(args: {
   classId: string;
   assignmentId: string;
   filter?: never;
-}): Promise<CanvasAssignment>;
+}): Promise<Assignment>;
 export async function getAssignment(args: {
   classId: string;
   assignmentId?: undefined;
@@ -109,7 +94,7 @@ export async function getAssignment(args: {
     | "unsubmitted"
     | "upcoming"
     | "future";
-}): Promise<CanvasAssignment[] | "Settings not configured" | "Unauthorized">;
+}): Promise<Assignment[] | "Settings not configured" | "Unauthorized">;
 export async function getAssignment({
   classId,
   assignmentId,
@@ -126,66 +111,52 @@ export async function getAssignment({
     | "upcoming"
     | "future";
 }) {
-  const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) return "Unauthorized" as const;
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, authData.user.id) })
-  )?.settings;
+  const res = await getAuthedClient();
+  if ("error" in res) return res.error;
 
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured";
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/assignments${
-      assignmentId ? `/${assignmentId}` : ""
-    }${filter !== undefined ? `?per_page=100&bucket=${filter}` : "?per_page=100"}`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasAssignment | CanvasAssignment[];
-  return data;
+  const assignments = res.canvas.courses.assignments(Number(classId));
+
+  if (assignmentId) {
+    return assignments.retrieve(Number(assignmentId));
+  }
+
+  return assignments.list({ bucket: filter, per_page: 100 }).all();
 }
 
+// ---------------------------------------------------------------------------
+// Files
+// ---------------------------------------------------------------------------
+
 export async function getCanvasFile({
-  classId,
+  classId: _classId,
   fileId,
 }: {
   classId: string;
   fileId: string;
 }) {
-  const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) return "Unauthorized" as const;
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, authData.user.id) })
-  )?.settings;
+  const res = await getAuthedClient();
+  if ("error" in res) return res.error as "Unauthorized" | "Settings not configured";
 
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured" as const;
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/files/${fileId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasFile;
-  return data;
+  return res.canvas.files.retrieve(Number(fileId));
 }
+
+// ---------------------------------------------------------------------------
+// Pages (overloaded: single or list)
+// ---------------------------------------------------------------------------
 
 export async function getPage(args: {
   classId: string;
   pageId: string;
   filter?: never;
 }): Promise<
-  CanvasPage | { message: "That page has been disabled for this course" }
+  Page | { message: "That page has been disabled for this course" }
 >;
 export async function getPage(args: {
   classId: string;
   pageId?: undefined;
   filter?: "published" | "unpublished" | "all";
 }): Promise<
-  (CanvasPage | { message: "That page has been disabled for this course" })[]
+  (Page | { message: "That page has been disabled for this course" })[]
 >;
 export async function getPage({
   classId,
@@ -196,29 +167,17 @@ export async function getPage({
   pageId?: string;
   filter?: "published" | "unpublished" | "all";
 }) {
-  const authData = await auth.api.getSession({ headers: await headers() });
-  if (!authData) return "Unauthorized" as const;
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, authData.user.id) })
-  )?.settings;
+  const res = await getAuthedClient();
+  if ("error" in res) return res.error;
 
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured";
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/pages${
-      pageId ? `/${pageId}` : ""
-    }${filter !== undefined ? `?per_page=100&published=${filter === "published" ? "true" : filter === "unpublished" ? "false" : "all"}` : "?per_page=100"}`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as
-    | (CanvasPage | { message: "That page has been disabled for this course" })
-    | (
-        | CanvasPage
-        | { message: "That page has been disabled for this course" }
-      )[];
-  // Array.isArray(data) ? data.flatMap(i => "message" in i ? "Pages disabled" : i) : "message" in data ? "Pages disabled" : data;
-  return data;
+  const pages = res.canvas.courses.pages(Number(classId));
+
+  if (pageId) {
+    return pages.retrieve(pageId);
+  }
+
+  const published =
+    filter === "published" ? true : filter === "unpublished" ? false : undefined;
+
+  return pages.list({ published, per_page: 100 }).all();
 }

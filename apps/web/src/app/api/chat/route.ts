@@ -36,6 +36,7 @@ import {
 } from "@/ai/sandbox/sandbox-manager";
 import { getSkillsTree } from "@/ai/sandbox/skills-tree";
 import { createSyncToken } from "@/ai/sandbox/sync-token";
+import type { Course } from "@maxw-ai/canvas";
 import { getAllCanvasCourses } from "@/app/classes/classes-actions";
 import { auth } from "@/lib/auth";
 import { getUserSettings } from "@/lib/user-settings";
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
     getAllCanvasCourses(),
     getSkillsTree(userId),
   ]);
-  const classes = typeof classesResponse === "string" ? [] : classesResponse;
+  const classes: Course[] = typeof classesResponse === "string" ? [] : (classesResponse ?? []);
   const settings = getUserSettings(authData.user);
   const role = settings?.role ?? "student";
   const schoolName = settings?.schoolName ?? "your school";

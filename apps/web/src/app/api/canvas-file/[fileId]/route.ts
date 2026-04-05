@@ -1,10 +1,7 @@
-import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import type { NextRequest } from "next/server";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
-import type { CanvasFile } from "@/types/canvas";
+import { getCanvasClient } from "@/lib/canvas-client";
 
 export async function GET(
   _request: NextRequest,
@@ -13,20 +10,13 @@ export async function GET(
   const authData = await auth.api.getSession({ headers: await headers() });
   if (!authData) return new Response("Unauthorized", { status: 401 });
 
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, authData.user.id) })
-  )?.settings;
-
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return new Response("Canvas not configured", { status: 400 });
+  const result = await getCanvasClient(authData.user.id);
+  if (result.error) return new Response("Canvas not configured", { status: 400 });
 
   const { fileId } = await params;
 
   // Fetch file metadata to get the CDN download URL and filename
-  const fileMeta = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/files/${fileId}`,
-    { headers: { Authorization: `Bearer ${settings.canvasApiKey}` } },
-  ).then((res) => res.json())) as CanvasFile;
+  const fileMeta = await result.canvas.files.retrieve(Number(fileId));
 
   if (!fileMeta?.url) return new Response("File not found", { status: 404 });
 

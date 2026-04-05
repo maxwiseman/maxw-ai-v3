@@ -1,9 +1,9 @@
 "use cache: private";
 
-import { eq } from "drizzle-orm";
 import { cacheLife } from "next/cache";
 import { headers } from "next/headers";
 import Link from "next/link";
+import type { Course } from "@maxw-ai/canvas";
 import { NotAuthenticated } from "@/components/not-authenticated";
 import {
   PageHeader,
@@ -13,11 +13,9 @@ import {
 } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
+import { getCanvasClient } from "@/lib/canvas-client";
 import { toTitleCase } from "@/lib/utils";
-import type { CanvasCourse } from "@/types/canvas";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -54,7 +52,7 @@ export default async function ClassesPage() {
       {typeof data === "object" ? (
         <div className="grid grid-cols-1 gap-4 px-8 pb-8 sm:grid-cols-2 lg:grid-cols-3">
           {data.map((course) => (
-            <ClassCard key={course.id} {...course} />
+            <ClassCard key={course.id} id={course.id} name={course.name} teachers={course.teachers} />
           ))}
         </div>
       ) : (
@@ -66,15 +64,15 @@ export default async function ClassesPage() {
   );
 }
 
-function ClassCard(courseData: CanvasCourse) {
-  const teacher = courseData.teachers?.[0]?.display_name;
+function ClassCard({ id, name, teachers }: Pick<Course, "id" | "name" | "teachers">) {
+  const teacher = teachers?.[0]?.display_name;
   return (
-    <Link href={`/classes/${courseData.id}`}>
+    <Link href={`/classes/${id}`}>
       <Button variant="outline" asChild>
         <Card className="flex h-auto cursor-pointer flex-col items-start gap-0 p-0">
           <CardHeader className="block w-full p-4 pb-0">
             <CardTitle className="line-clamp-1 overflow-ellipsis font-normal text-lg">
-              {courseData.name}
+              {name}
             </CardTitle>
           </CardHeader>
           <CardContent className="w-full p-4 pt-0!">
@@ -89,19 +87,9 @@ function ClassCard(courseData: CanvasCourse) {
 }
 
 async function getAllCanvasCourses({ userId }: { userId: string }) {
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, userId) })
-  )?.settings;
-
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured";
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses?enrollment_state=active&per_page=50&include[]=teachers`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasCourse[];
-  return data;
+  const result = await getCanvasClient(userId);
+  if (result.error) return result.error;
+  return result.canvas.courses
+    .list({ enrollment_state: "active", per_page: 50, include: ["teachers"] })
+    .all() as Promise<Course[]>;
 }

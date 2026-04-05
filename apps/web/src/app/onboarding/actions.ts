@@ -5,10 +5,11 @@ import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import z from "zod/v4";
+import { CanvasClient } from "@maxw-ai/canvas";
+import type { Course } from "@maxw-ai/canvas";
 import { db } from "@/db";
 import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
-import type { CanvasCourse } from "@/types/canvas";
 
 export async function saveOnboardingSettings(data: {
   role: "student" | "teacher";
@@ -36,45 +37,35 @@ export async function validateAndFetchCourses(
   canvasApiKey: string,
   canvasDomain: string,
 ): Promise<
-  | { success: true; courses: Pick<CanvasCourse, "id" | "name">[] }
+  | { success: true; courses: Pick<Course, "id" | "name">[] }
   | { success: false; error: string }
 > {
   try {
-    const res = await fetch(
-      `https://${canvasDomain}/api/v1/courses?enrollment_state=active&per_page=50`,
-      {
-        headers: { Authorization: `Bearer ${canvasApiKey}` },
-      },
-    );
-
-    if (res.status === 401) return { success: false, error: "Invalid API key" };
-    if (!res.ok)
-      return {
-        success: false,
-        error: `Canvas returned ${res.status} — check your domain`,
-      };
-
-    const data = (await res.json()) as CanvasCourse[];
-
-    if (!Array.isArray(data))
-      return { success: false, error: "Unexpected response from Canvas" };
+    const canvas = new CanvasClient({ token: canvasApiKey, domain: canvasDomain });
+    const courses = await canvas.courses
+      .list({ enrollment_state: "active", per_page: 50 })
+      .all() as Course[];
 
     return {
       success: true,
-      courses: data.map((c) => ({ id: c.id, name: c.name })),
+      courses: courses.map((c) => ({ id: c.id, name: c.name })),
     };
-  } catch {
-    return {
-      success: false,
-      error: "Could not reach Canvas — check the domain",
-    };
+  } catch (err: unknown) {
+    // CanvasAuthenticationError has status 401
+    if (err instanceof Error && err.message.includes("401")) {
+      return { success: false, error: "Invalid API key" };
+    }
+    if (err instanceof Error && err.message.match(/4\d\d/)) {
+      return { success: false, error: `Canvas returned an error — check your domain` };
+    }
+    return { success: false, error: "Could not reach Canvas — check the domain" };
   }
 }
 
 /** Uses GPT-4o-mini to identify course codes that need a human-readable name,
  *  then sets per-user nicknames via the Canvas API. */
 export async function processAndRenameCoursesIfNeeded(
-  courses: Pick<CanvasCourse, "id" | "name">[],
+  courses: Pick<Course, "id" | "name">[],
   canvasApiKey: string,
   canvasDomain: string,
 ): Promise<{ renamed: { id: number; original: string; newName: string }[] }> {
@@ -108,6 +99,7 @@ ${courses.map((c) => `- id: ${c.id}, name: "${c.name}"`).join("\n")}
 Return JSON with the courses array, each with id, needsRename (boolean), and suggestedName (string, only when needsRename is true).`,
   });
 
+  const canvas = new CanvasClient({ token: canvasApiKey, domain: canvasDomain });
   const renamed: { id: number; original: string; newName: string }[] = [];
 
   await Promise.all(
@@ -117,26 +109,18 @@ Return JSON with the courses array, each with id, needsRename (boolean), and sug
         const original = courses.find((course) => Number(course.id) === c.id);
         if (!original) return;
 
-        const res = await fetch(
-          `https://${canvasDomain}/api/v1/users/self/course_nicknames/${c.id}`,
-          {
-            method: "PUT",
-            headers: {
-              Authorization: `Bearer ${canvasApiKey}`,
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: new URLSearchParams({
-              nickname: c.suggestedName!,
-            }).toString(),
-          },
-        );
-
-        if (res.ok) {
+        try {
+          await canvas._http.put(
+            `/users/self/course_nicknames/${c.id}`,
+            { nickname: c.suggestedName! },
+          );
           renamed.push({
             id: c.id,
             original: original.name,
             newName: c.suggestedName!,
           });
+        } catch {
+          // Silently ignore failures to rename individual courses
         }
       }),
   );

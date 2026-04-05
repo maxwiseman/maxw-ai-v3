@@ -3,14 +3,14 @@
 import { IconSchool } from "@tabler/icons-react";
 import Link from "next/link";
 import type { ComponentProps } from "react";
-import type { CanvasTodoItem } from "@/app/dashboard-actions";
+import type { TodoItem } from "@maxw-ai/canvas";
 import { humanReadableDate } from "@/lib/utils";
 import { DashboardCard } from "./dashboard-card";
 
 export function UpcomingAssignments({
   assignments,
 }: {
-  assignments: CanvasTodoItem[];
+  assignments: TodoItem[];
 }) {
   return (
     <DashboardCard

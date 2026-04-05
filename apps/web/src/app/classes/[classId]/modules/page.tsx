@@ -11,13 +11,13 @@ import {
   IconNotebook,
 } from "@tabler/icons-react";
 // import { useModulesState } from "../../modules-store";
-import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ComponentProps } from "react";
+import type { Module, ModuleItem, ModuleItemType } from "@maxw-ai/canvas";
 import { DateDisplay } from "@/components/date-display";
 import { NotAuthenticated } from "@/components/not-authenticated";
 import {
@@ -31,15 +31,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
+import { getCanvasClient } from "@/lib/canvas-client";
 import { moduleItemDetailsUrl } from "@/lib/canvas-helpers";
-import type {
-  CanvasModule,
-  CanvasModuleItem,
-  CanvasModuleItemType,
-} from "@/types/canvas";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -109,8 +103,8 @@ export default async function ClassModulesPage({
               </AccordionTrigger>
               <AccordionContent className="divide-y pb-1">
                 {module.items?.map((item) => (
-                  <ModuleItem
-                    key={item.id}
+                  <ModuleItemCard
+                    key={Number(item.id)}
                     item={item}
                     classId={params.classId}
                   />
@@ -123,7 +117,7 @@ export default async function ClassModulesPage({
   );
 }
 
-const moduleItemIcons: Partial<Record<CanvasModuleItemType, Icon>> = {
+const moduleItemIcons: Partial<Record<ModuleItemType, Icon>> = {
   Assignment: IconNotebook,
   File: IconFile,
   Page: IconFileDescription,
@@ -132,14 +126,14 @@ const moduleItemIcons: Partial<Record<CanvasModuleItemType, Icon>> = {
   ExternalUrl: IconLink,
 };
 
-function ModuleItem({
+function ModuleItemCard({
   item,
   classId,
 }: {
-  item: CanvasModuleItem;
+  item: ModuleItem;
   classId: string;
 }) {
-  const Icon = moduleItemIcons[item.type] ?? IconFileDots;
+  const ItemIcon = moduleItemIcons[item.type] ?? IconFileDots;
 
   if (classId === undefined) return;
 
@@ -161,7 +155,7 @@ function ModuleItem({
       key={item.id}
       target={item.type === "ExternalUrl" ? "_blank" : undefined}
     >
-      <Icon className="size-5 text-muted-foreground" />
+      <ItemIcon className="size-5 text-muted-foreground" />
       <div>
         {item.title}
         {item.content_details?.due_at && (
@@ -183,19 +177,10 @@ async function fetchData({
   classId: string;
   userId: string;
 }) {
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, userId) })
-  )?.settings;
-
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured" as const;
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/modules?include[]=items&include[]=content_details`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasModule[];
-  return data;
+  const result = await getCanvasClient(userId);
+  if (result.error) return result.error as "Settings not configured";
+  return result.canvas.courses
+    .modules(Number(classId))
+    .list({ include: ["items", "content_details"] })
+    .all() as Promise<Module[]>;
 }

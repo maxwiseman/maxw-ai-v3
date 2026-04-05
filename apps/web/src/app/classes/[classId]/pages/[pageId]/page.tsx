@@ -1,10 +1,10 @@
 "use cache: private";
 
 import { IconPlus } from "@tabler/icons-react";
-import { eq } from "drizzle-orm";
 import { cacheLife } from "next/cache";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import type { Page } from "@maxw-ai/canvas";
 import { CanvasHTML } from "@/components/canvas-html";
 import { NotAuthenticated } from "@/components/not-authenticated";
 import {
@@ -14,10 +14,8 @@ import {
   PageHeaderTitle,
 } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
-import type { CanvasPage } from "@/types/canvas";
+import { getCanvasClient } from "@/lib/canvas-client";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -77,19 +75,7 @@ async function fetchData({
   pageId: string;
   userId: string;
 }) {
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, userId) })
-  )?.settings;
-
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured";
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/pages/${pageId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasPage;
-  return data;
+  const result = await getCanvasClient(userId);
+  if (result.error) return result.error;
+  return result.canvas.courses.pages(Number(classId)).retrieve(pageId) as Promise<Page>;
 }

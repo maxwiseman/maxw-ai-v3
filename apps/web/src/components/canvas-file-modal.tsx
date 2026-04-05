@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { CanvasFile } from "@/types/canvas";
+import type { File } from "@maxw-ai/canvas";
 
 interface CanvasFileModalProps {
   courseId: string;
@@ -24,7 +24,7 @@ export function CanvasFileModal({
   children,
 }: CanvasFileModalProps) {
   const [open, setOpen] = useState(false);
-  const [file, setFile] = useState<CanvasFile | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleOpenChange(isOpen: boolean) {

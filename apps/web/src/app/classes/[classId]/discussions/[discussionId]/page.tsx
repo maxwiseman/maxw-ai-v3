@@ -1,9 +1,9 @@
 "use cache: private";
 
 import { IconPlus, IconUser } from "@tabler/icons-react";
-import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import type { DiscussionEntry, DiscussionTopic, DiscussionView } from "@maxw-ai/canvas";
 import { CanvasHTML } from "@/components/canvas-html";
 import { DateDisplay } from "@/components/date-display";
 import { NotAuthenticated } from "@/components/not-authenticated";
@@ -23,15 +23,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
+import { getCanvasClient } from "@/lib/canvas-client";
 import { toTitleCase } from "@/lib/utils";
-import type {
-  CanvasDiscussion,
-  CanvasDiscussionEntry,
-  CanvasDiscussionView,
-} from "@/types/canvas";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -92,7 +86,7 @@ export default async function DiscussionPage({
       <CanvasHTML className="px-8 pb-8">{data.message}</CanvasHTML>
       <div className="space-y-16 px-8 pb-8">
         {data.view.reverse().map((entry) => (
-          <DiscussionEntry
+          <DiscussionEntryCard
             key={entry.id}
             participants={data.participants}
             entry={entry}
@@ -103,26 +97,26 @@ export default async function DiscussionPage({
   );
 }
 
-function DiscussionEntry({
+function DiscussionEntryCard({
   participants,
   entry,
 }: {
-  participants: CanvasDiscussionView["participants"];
-  entry: CanvasDiscussionEntry;
+  participants: DiscussionView["participants"];
+  entry: DiscussionEntry;
 }) {
-  const user = participants.find((p) => p.id === entry.user_id);
+  const participant = participants.find((p) => p.id === entry.user_id);
   return (
     <Card className="mx-auto max-w-3xl" key={entry.id}>
       <CardHeader className="flex items-center gap-4">
         <Avatar className="size-10 bg-accent">
-          <AvatarImage src={user?.avatar_image_url ?? ""} />
+          <AvatarImage src={participant?.avatar_image_url ?? ""} />
           <AvatarFallback>
             <IconUser />
           </AvatarFallback>
         </Avatar>
         <div>
           <CardTitle className="font-normal text-md">
-            {toTitleCase(user?.display_name ?? "")}
+            {toTitleCase(participant?.display_name ?? "")}
           </CardTitle>
           <CardDescription className="">
             <DateDisplay
@@ -148,30 +142,14 @@ async function fetchData({
   discussionId: string;
   userId: string;
 }) {
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, userId) })
-  )?.settings;
+  const result = await getCanvasClient(userId);
+  if (result.error) return result.error;
 
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured";
-
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/discussion_topics/${discussionId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasDiscussion;
-
+  const discussions = result.canvas.courses.discussions(Number(classId));
   // TODO: This sometimes just returns "require_initial_post" instead of JSON, which causes an error
-  const view = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/discussion_topics/${discussionId}/view`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasDiscussionView;
+  const [data, view] = await Promise.all([
+    discussions.retrieve(Number(discussionId)) as Promise<DiscussionTopic>,
+    discussions.retrieveView(Number(discussionId)) as Promise<DiscussionView>,
+  ]);
   return { ...data, ...view };
 }

@@ -419,6 +419,19 @@ export interface GetAssignmentParams {
   needs_grading_count_by_section?: boolean | undefined;
   /** All dates. */
   all_dates?: boolean | undefined;
+  /**
+   * Return only assignments in this state bucket.
+   * Only valid when `assignment_id` is omitted.
+   */
+  bucket?:
+    | "past"
+    | "overdue"
+    | "undated"
+    | "ungraded"
+    | "unsubmitted"
+    | "upcoming"
+    | "future"
+    | undefined;
 }
 
 /**

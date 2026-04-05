@@ -1,45 +1,27 @@
 "use server";
 
-import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
+import type { Course, TodoItem } from "@maxw-ai/canvas";
 import { auth } from "@/lib/auth";
-import type { CanvasAssignment, CanvasCourse } from "@/types/canvas";
+import { getCanvasClient } from "@/lib/canvas-client";
+
+export type { TodoItem };
 
 export async function getDashboardData() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) return null;
 
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, session.user.id) })
-  )?.settings;
+  const result = await getCanvasClient(session.user.id);
+  if (result.error) return { error: result.error };
 
-  if (!settings?.canvasApiKey || !settings.canvasDomain) {
-    return { error: "Settings not configured" };
-  }
-
-  const headersInit = {
-    Authorization: `Bearer ${settings.canvasApiKey}`,
-  };
+  const { canvas } = result;
 
   try {
-    // Fetch courses
-    const coursesPromise = fetch(
-      `https://${settings.canvasDomain}/api/v1/courses?enrollment_state=active&per_page=6&include[]=teachers&order_by=activity`,
-      { headers: headersInit },
-    ).then((res) => res.json() as Promise<CanvasCourse[]>);
-
-    // Fetch upcoming assignments (using user todo list for relevance)
-    // /api/v1/users/self/todo
-    const todoPromise = fetch(
-      `https://${settings.canvasDomain}/api/v1/users/self/todo?per_page=5`,
-      { headers: headersInit },
-    ).then((res) => res.json() as Promise<CanvasTodoItem[]>);
-
     const [courses, todoItems] = await Promise.all([
-      coursesPromise,
-      todoPromise,
+      canvas.courses
+        .list({ enrollment_state: "active", per_page: 6, include: ["teachers"] })
+        .all() as Promise<Course[]>,
+      canvas.users.todoItems({ per_page: 5 }),
     ]);
 
     return {
@@ -50,15 +32,4 @@ export async function getDashboardData() {
     console.error("Failed to fetch dashboard data:", error);
     return { error: "Failed to fetch data" };
   }
-}
-
-export interface CanvasTodoItem {
-  type: "submitting" | "grading";
-  assignment: CanvasAssignment;
-  ignore: string;
-  ignore_permanently: string;
-  html_url: string;
-  context_type: "Course" | "Group";
-  course_id: number;
-  group_id: null;
 }

@@ -2,11 +2,11 @@
 
 import { IconNotebook } from "@tabler/icons-react";
 // import { useModulesState } from "../../modules-store";
-import { eq } from "drizzle-orm";
 import { cacheLife } from "next/cache";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Assignment } from "@maxw-ai/canvas";
 import { DateDisplay } from "@/components/date-display";
 import { NotAuthenticated } from "@/components/not-authenticated";
 import {
@@ -20,10 +20,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
-import type { CanvasAssignment } from "@/types/canvas";
+import { getCanvasClient } from "@/lib/canvas-client";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -176,19 +174,10 @@ async function fetchData({
   classId: string;
   userId: string;
 }) {
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, userId) })
-  )?.settings;
-
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured" as const;
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/assignments?order_by=due_at`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasAssignment[];
-  return data;
+  const result = await getCanvasClient(userId);
+  if (result.error) return result.error as "Settings not configured";
+  return result.canvas.courses
+    .assignments(Number(classId))
+    .list({ order_by: "due_at" })
+    .all() as Promise<Assignment[]>;
 }
