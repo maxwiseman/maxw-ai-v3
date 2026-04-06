@@ -5,7 +5,7 @@ import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import z from "zod/v4";
-import { CanvasClient } from "@maxw-ai/canvas";
+import { CanvasAPIError, CanvasAuthenticationError, CanvasClient } from "@maxw-ai/canvas";
 import type { Course } from "@maxw-ai/canvas";
 import { db } from "@/db";
 import { user } from "@/db/schema/auth";
@@ -51,12 +51,11 @@ export async function validateAndFetchCourses(
       courses: courses.map((c) => ({ id: c.id, name: c.name })),
     };
   } catch (err: unknown) {
-    // CanvasAuthenticationError has status 401
-    if (err instanceof Error && err.message.includes("401")) {
+    if (err instanceof CanvasAuthenticationError) {
       return { success: false, error: "Invalid API key" };
     }
-    if (err instanceof Error && err.message.match(/4\d\d/)) {
-      return { success: false, error: `Canvas returned an error — check your domain` };
+    if (err instanceof CanvasAPIError) {
+      return { success: false, error: "Canvas returned an error — check your domain" };
     }
     return { success: false, error: "Could not reach Canvas — check the domain" };
   }
@@ -99,7 +98,6 @@ ${courses.map((c) => `- id: ${c.id}, name: "${c.name}"`).join("\n")}
 Return JSON with the courses array, each with id, needsRename (boolean), and suggestedName (string, only when needsRename is true).`,
   });
 
-  const canvas = new CanvasClient({ token: canvasApiKey, domain: canvasDomain });
   const renamed: { id: number; original: string; newName: string }[] = [];
 
   await Promise.all(
@@ -110,9 +108,16 @@ Return JSON with the courses array, each with id, needsRename (boolean), and sug
         if (!original) return;
 
         try {
-          await canvas._http.put(
-            `/users/self/course_nicknames/${c.id}`,
-            { nickname: c.suggestedName! },
+          await fetch(
+            `https://${canvasDomain}/api/v1/users/self/course_nicknames/${c.id}`,
+            {
+              method: "PUT",
+              headers: {
+                Authorization: `Bearer ${canvasApiKey}`,
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              body: new URLSearchParams({ nickname: c.suggestedName! }).toString(),
+            },
           );
           renamed.push({
             id: c.id,

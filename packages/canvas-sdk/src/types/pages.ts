@@ -52,7 +52,7 @@ export interface Page {
    * Who can edit this page.
    * @see {@link PageEditingRole}
    */
-  editing_roles: string;
+  editing_roles: PageEditingRole | string;
   /** ISO 8601 creation timestamp. */
   created_at: ISO8601;
   /** ISO 8601 last-updated timestamp. */

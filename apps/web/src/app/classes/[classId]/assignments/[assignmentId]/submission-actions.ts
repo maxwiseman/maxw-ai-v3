@@ -48,9 +48,12 @@ async function uploadFileToCanvas(
     throw new Error(`Failed to upload file: ${uploadResponse.statusText}`);
   }
 
-  // Step 3 — confirm the upload via the URL embedded in upload_params
-  const confirmUrl = target.upload_params["url"];
-  if (!confirmUrl) throw new Error("Missing confirmation URL in upload params");
+  // Step 3 — confirm the upload using the Location header from the upload response
+  const locationHeader = uploadResponse.headers.get("location");
+  if (!locationHeader) {
+    throw new Error("Missing confirmation URL in upload response headers");
+  }
+  const confirmUrl = new URL(locationHeader, uploadResponse.url || target.upload_url).toString();
 
   const fileData = await canvas.courses
     .files(Number(courseId))
