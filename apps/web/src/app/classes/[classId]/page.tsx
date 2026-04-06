@@ -1,9 +1,9 @@
 "use cache: private";
 
-import { eq } from "drizzle-orm";
 import { cacheLife } from "next/cache";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import type { Course, Page } from "@maxw-ai/canvas";
 import { CanvasHTML } from "@/components/canvas-html";
 import { NotAuthenticated } from "@/components/not-authenticated";
 import {
@@ -12,11 +12,9 @@ import {
   PageHeaderDescription,
   PageHeaderTitle,
 } from "@/components/page-header";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
+import { getCanvasClient } from "@/lib/canvas-client";
 import { toTitleCase } from "@/lib/utils";
-import type { CanvasCourse, CanvasPage } from "@/types/canvas";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -84,27 +82,12 @@ async function fetchData({
   classId: string;
   userId: string;
 }) {
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, userId) })
-  )?.settings;
-
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured";
-  const classData = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}?include[]=teachers`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasCourse;
-  const frontPageData = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/courses/${classId}/front_page`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasPage;
+  const result = await getCanvasClient(userId);
+  if (result.error) return result.error;
+  const { canvas } = result;
+  const [classData, frontPageData] = await Promise.all([
+    canvas.courses.retrieve(Number(classId), { include: ["teachers"] }) as Promise<Course>,
+    canvas.courses.pages(Number(classId)).retrieveFrontPage() as Promise<Page>,
+  ]);
   return { classData, frontPageData };
 }

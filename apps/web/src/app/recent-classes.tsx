@@ -2,10 +2,10 @@
 
 import { IconBooks } from "@tabler/icons-react";
 import Link from "next/link";
-import type { CanvasCourse } from "@/types/canvas";
+import type { Course } from "@maxw-ai/canvas";
 import { DashboardCard } from "./dashboard-card";
 
-export function RecentClasses({ courses }: { courses: CanvasCourse[] }) {
+export function RecentClasses({ courses }: { courses: Course[] }) {
   return (
     <DashboardCard
       icon={IconBooks}

@@ -7,7 +7,7 @@ import {
   IconVideo,
 } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
-import type { CanvasFile } from "@/types/canvas";
+import type { File } from "@maxw-ai/canvas";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -27,7 +27,7 @@ function FileIcon({ mimeClass }: { mimeClass: string }) {
   return <IconFile className="size-12 text-muted-foreground" />;
 }
 
-export function CanvasFilePreview({ file }: { file: CanvasFile }) {
+export function CanvasFilePreview({ file }: { file: File }) {
   const isImage =
     file.mime_class === "image" || file.content_type?.startsWith("image/");
   const isPdf =

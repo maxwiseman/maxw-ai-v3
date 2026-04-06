@@ -1,6 +1,6 @@
 "use client";
 
-import type { CanvasAssignment } from "@/types/canvas";
+import type { Assignment } from "@maxw-ai/canvas";
 import { FloatingSubmission } from "./floating-submission";
 import { InlineSubmission } from "./inline-submission";
 import { useSubmissionStore } from "./submission-store";
@@ -8,7 +8,7 @@ import { useSubmissionStore } from "./submission-store";
 interface SubmissionProviderProps {
   classId: string;
   assignmentId: string;
-  submissionTypes: CanvasAssignment["submission_types"];
+  submissionTypes: Assignment["submission_types"];
 }
 
 export function SubmissionProvider({

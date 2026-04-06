@@ -20,7 +20,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@maxw-ai/canvas": ["../../packages/canvas-sdk/src/index.ts"]
     }
   },
   "include": [

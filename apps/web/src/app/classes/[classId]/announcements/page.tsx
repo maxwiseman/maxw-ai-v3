@@ -1,10 +1,10 @@
 "use cache: private";
 
 import { IconBell } from "@tabler/icons-react";
-import { eq } from "drizzle-orm";
 import { cacheLife } from "next/cache";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import type { Announcement } from "@maxw-ai/canvas";
 import { CanvasHTML } from "@/components/canvas-html";
 import { DateDisplay } from "@/components/date-display";
 import { NotAuthenticated } from "@/components/not-authenticated";
@@ -21,14 +21,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { db } from "@/db";
-import { user } from "@/db/schema/auth";
 import { auth } from "@/lib/auth";
+import { getCanvasClient } from "@/lib/canvas-client";
 import { toTitleCase } from "@/lib/utils";
-import type {
-  CanvasDiscussionParticipant,
-  CanvasDiscussionTopic,
-} from "@/types/canvas";
 
 export const unstable_prefetch = {
   mode: "runtime",
@@ -65,7 +60,7 @@ export default async function AnnouncementsPage({
 
   if (typeof data === "string") notFound();
 
-  const announcements = [...data].sort((a, b) => {
+  const announcements = [...(data as Announcement[])].sort((a, b) => {
     const aTime = a.posted_at ? new Date(a.posted_at).getTime() : 0;
     const bTime = b.posted_at ? new Date(b.posted_at).getTime() : 0;
     return bTime - aTime;
@@ -99,10 +94,7 @@ export default async function AnnouncementsPage({
 function AnnouncementCard({
   announcement,
 }: {
-  announcement: CanvasDiscussionTopic & {
-    author?: CanvasDiscussionParticipant;
-    user_name?: string | null;
-  };
+  announcement: Announcement;
 }) {
   const authorName =
     announcement.author?.display_name ?? announcement.user_name ?? null;
@@ -153,32 +145,20 @@ async function fetchData({
   classId: string;
   userId: string;
 }) {
-  const settings = (
-    await db.query.user.findFirst({ where: eq(user.id, userId) })
-  )?.settings;
-
-  if (!settings?.canvasApiKey || !settings.canvasDomain)
-    return "Settings not configured" as const;
+  const result = await getCanvasClient(userId);
+  if (result.error) return result.error as "Settings not configured";
 
   const startDate = new Date();
   startDate.setFullYear(startDate.getFullYear() - 2);
   const endDate = new Date();
 
-  const query = new URLSearchParams({
-    active_only: "true",
-    per_page: "100",
-    start_date: startDate.toISOString(),
-    end_date: endDate.toISOString(),
-  });
-  query.append("context_codes[]", `course_${classId}`);
-
-  const data = (await fetch(
-    `https://${settings.canvasDomain}/api/v1/announcements?${query.toString()}`,
-    {
-      headers: {
-        Authorization: `Bearer ${settings.canvasApiKey}`,
-      },
-    },
-  ).then((res) => res.json())) as CanvasDiscussionTopic[];
-  return data;
+  return result.canvas.courses
+    .announcements(Number(classId))
+    .list({
+      active_only: true,
+      per_page: 100,
+      start_date: startDate.toISOString(),
+      end_date: endDate.toISOString(),
+    })
+    .all() as Promise<Announcement[]>;
 }

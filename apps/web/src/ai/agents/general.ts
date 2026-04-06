@@ -6,7 +6,7 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 import type { Tool } from "ai";
-import type { CanvasCourse } from "@/types/canvas";
+import type { Course } from "@maxw-ai/canvas";
 import { getClassAssignmentsTool } from "../tools/canvas/get-class-assignments";
 import { searchContentTool } from "../tools/canvas/search-content";
 import { createBashTool, createShellToolOpenAI } from "../tools/execution/bash";
@@ -44,7 +44,7 @@ export interface AgentContext {
   fullName: string;
   schoolName: string;
   role: "student" | "teacher";
-  classes: CanvasCourse[];
+  classes: Course[];
   currentDateTime: string;
   timezone: string;
   chatId: string;

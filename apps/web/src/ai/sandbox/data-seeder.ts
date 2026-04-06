@@ -32,7 +32,7 @@ interface CanvasData {
 async function fetchCanvasData(): Promise<CanvasData | null> {
   const courses = await getAllCanvasCourses();
 
-  if (courses === "Unauthorized" || courses === "Settings not configured") {
+  if (!courses || courses === "Unauthorized" || courses === "Settings not configured") {
     return null;
   }
 

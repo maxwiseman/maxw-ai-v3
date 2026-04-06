@@ -15,6 +15,7 @@
     "@ai-sdk-tools/agents": "1.2.0",
     "@ai-sdk-tools/artifacts": "1.2.0",
     "@ai-sdk-tools/cache": "^1.2.0",
+    "@maxw-ai/canvas": "workspace:*",
     "@ai-sdk-tools/devtools": "1.2.0",
     "@ai-sdk-tools/memory": "1.2.0",
     "@ai-sdk-tools/store": "1.2.0",
