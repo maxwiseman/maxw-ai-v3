@@ -3,6 +3,7 @@
 import { cacheLife } from "next/cache";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { CanvasNotFoundError } from "@maxw-ai/canvas";
 import type { Course, Page } from "@maxw-ai/canvas";
 import { CanvasHTML } from "@/components/canvas-html";
 import { NotAuthenticated } from "@/components/not-authenticated";
@@ -68,7 +69,7 @@ export default async function ClassPage({
           </PageHeaderDescription>
         </PageHeaderContent>
       </PageHeader>
-      {typeof frontPageData === "object" && (
+      {frontPageData != null && typeof frontPageData === "object" && (
         <CanvasHTML className="px-8 pb-8">{frontPageData.body}</CanvasHTML>
       )}
     </div>
@@ -87,7 +88,9 @@ async function fetchData({
   const { canvas } = result;
   const [classData, frontPageData] = await Promise.all([
     canvas.courses.retrieve(Number(classId), { include: ["teachers"] }) as Promise<Course>,
-    canvas.courses.pages(Number(classId)).retrieveFrontPage() as Promise<Page>,
+    (canvas.courses.pages(Number(classId)).retrieveFrontPage() as Promise<Page>).catch(
+      (err) => (err instanceof CanvasNotFoundError ? null : Promise.reject(err)),
+    ),
   ]);
   return { classData, frontPageData };
 }
